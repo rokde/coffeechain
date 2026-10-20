@@ -1,5 +1,6 @@
 import { balance } from './balance'
 import type { FarmState } from './farm/parcels'
+import type { MarketState } from './market/market'
 import type { StorageState } from './storage/storage'
 import type { TimeState } from './time/time'
 import { generateWorld } from './world/generate'
@@ -15,6 +16,7 @@ export interface GameState {
   money: number
   farm: FarmState
   storage: StorageState
+  market: MarketState
 }
 
 export function createState(seed: number): GameState {
@@ -26,5 +28,6 @@ export function createState(seed: number): GameState {
     money: Math.round(balance().economy.startCapital * 100),
     farm: { parcels: {}, fields: [], nextFieldId: 0, plants: {} },
     storage: { batches: [] },
+    market: { volumes: [], seeds: {} },
   }
 }
