@@ -728,3 +728,64 @@ test('S25: first steps tick, highlight and close', async ({ page }) => {
   await expect(page.getByTestId('message-panel')).toBeVisible()
   await expect(page.locator('[data-guide="next"]')).toHaveCount(0)
 })
+
+test('S35a: help overlay opens and closes', async ({ page }) => {
+  await page.goto('/')
+  const overlay = page.getByTestId('help-overlay')
+  await expect(overlay).toHaveCount(0)
+  await page.getByTestId('help-button').click()
+  await expect(overlay).toBeVisible()
+  await page.screenshot({ path: 'docs/progress/help-overlay.png' })
+  await page.keyboard.press('Escape')
+  await expect(overlay).toHaveCount(0)
+  await page.keyboard.press('h')
+  await expect(overlay).toBeVisible()
+  await page.getByTestId('help-close').click()
+  await expect(overlay).toHaveCount(0)
+})
+
+test('S35a: help keys leave the speed alone and ignore inputs', async ({ page }) => {
+  await page.goto('/')
+  const pressed = (s: number) => page.getByTestId(`speed-${s}`)
+  await page.keyboard.press('3')
+  await expect(pressed(4)).toHaveAttribute('aria-pressed', 'true')
+  await page.keyboard.press('h')
+  await expect(page.getByTestId('help-overlay')).toBeVisible()
+  await expect(pressed(4)).toHaveAttribute('aria-pressed', 'true')
+  await page.keyboard.press('H')
+  await expect(page.getByTestId('help-overlay')).toHaveCount(0)
+  await expect(pressed(4)).toHaveAttribute('aria-pressed', 'true')
+  await page.keyboard.press('Space')
+  await expect(pressed(0)).toHaveAttribute('aria-pressed', 'true')
+
+  await page.evaluate(() => {
+    const input = document.createElement('input')
+    input.dataset.testid = 'probe-input'
+    document.body.append(input)
+  })
+  await page.getByTestId('probe-input').focus()
+  await page.keyboard.press('h')
+  await expect(page.getByTestId('help-overlay')).toHaveCount(0)
+})
+
+test('S35a: help button and overlay fit a narrow window', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 640 })
+  await page.goto('/')
+  const bar = (await page.getByTestId('hud-top-bar').boundingBox())!
+  const button = (await page.getByTestId('help-button').boundingBox())!
+  expect(button.x + button.width).toBeLessThanOrEqual(bar.x + bar.width)
+  await page.getByTestId('help-button').click()
+  const panel = (await page.getByTestId('help-overlay').boundingBox())!
+  expect(panel.x).toBeGreaterThanOrEqual(0)
+  expect(panel.x + panel.width).toBeLessThanOrEqual(360)
+})
+
+test('S25: help keys work while the checklist is open', async ({ page }) => {
+  await page.goto('/?seed=48213')
+  await expect(page.getByTestId('first-steps')).toBeVisible()
+  await page.keyboard.press('h')
+  await expect(page.getByTestId('help-overlay')).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.getByTestId('help-overlay')).toHaveCount(0)
+  await expect(page.getByTestId('first-steps')).toBeVisible()
+})

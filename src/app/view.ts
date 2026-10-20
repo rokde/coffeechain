@@ -11,5 +11,10 @@ export const useViewStore = defineStore('view', () => {
     overlay.value = overlay.value === mode ? 'none' : mode
   }
 
-  return { overlay, toggle }
+  const helpOpen = ref(false)
+  function toggleHelp() {
+    helpOpen.value = !helpOpen.value
+  }
+
+  return { overlay, toggle, helpOpen, toggleHelp }
 })

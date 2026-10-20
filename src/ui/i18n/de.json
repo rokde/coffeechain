@@ -180,5 +180,30 @@
     "needsCare": "Feld {name} braucht Pflege",
     "storageFull": "Lager voll",
     "none": "Keine Meldungen"
+  },
+  "help": {
+    "open": "Hilfe",
+    "heading": "Hilfe",
+    "close": "Hilfe schließen",
+    "loopHeading": "Spielablauf",
+    "loop": [
+      { "name": "Parzelle", "text": "Kaufe eine Parzelle auf der Insel." },
+      { "name": "Pflanzen", "text": "Setze eine Kaffeepflanze auf dein Feld." },
+      { "name": "Pflegen", "text": "Dünge, wässere und schütze die Pflanzen." },
+      { "name": "Ernten", "text": "Ernte die reifen Pflanzen, bevor sie überreif sind." },
+      { "name": "Verkaufen", "text": "Verkaufe den Kaffee aus dem Lager am Markt." },
+      { "name": "Reinvestieren", "text": "Kaufe mit dem Geld neue Parzellen und pflanze mehr an." }
+    ],
+    "controlsHeading": "Steuerung",
+    "controls": [
+      { "keys": "Mausrad / Trackpad-Pinch", "text": "Zoom" },
+      { "keys": "Rechte Maustaste ziehen", "text": "Karte verschieben" },
+      { "keys": "W A S D", "text": "Karte verschieben" },
+      { "keys": "Q / E", "text": "Kamera drehen" },
+      { "keys": "0 / 1–5", "text": "Pause / 1× / 2× / 4× / 8× / 16×" },
+      { "keys": "Leertaste", "text": "Pause an / aus" },
+      { "keys": "H", "text": "Hilfe öffnen / schließen" },
+      { "keys": "Esc", "text": "Hilfe schließen" }
+    ]
   }
 }

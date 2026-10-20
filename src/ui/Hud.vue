@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useFirstStepsStore } from '../app/firstSteps'
 import { isFarmTool, useSelectionStore } from '../app/selection'
 import { useGameStore } from '../app/store'
+import { useViewStore } from '../app/view'
 import { balance } from '../sim/balance'
 import type { GameState } from '../sim/state'
 import { storageUsed } from '../sim/storage/storage'
@@ -11,6 +12,7 @@ import de from './i18n/de.json'
 import { formatMoney } from './money'
 import FirstSteps from './FirstSteps.vue'
 import FarmTool from './FarmTool.vue'
+import HelpOverlay from './HelpOverlay.vue'
 import MarketPanel from './MarketPanel.vue'
 import MessagePanel from './MessagePanel.vue'
 import ParcelInspector from './ParcelInspector.vue'
@@ -22,6 +24,7 @@ import { tools } from './toolbar'
 const store = useGameStore()
 const selection = useSelectionStore()
 const steps = useFirstStepsStore()
+const view = useViewStore()
 const speeds = balance().time.speeds
 const clockText = computed(() => {
   const { day, hourOfDay } = clock(store.state.time.hour)
@@ -71,6 +74,15 @@ const storageText = computed(() =>
         <span class="chip" data-testid="storage">{{ storageText }}</span>
         <span class="chip money" data-testid="money">{{ formatMoney(store.state.money) }}</span>
       </div>
+      <button
+        type="button"
+        class="help-button"
+        data-testid="help-button"
+        :aria-label="de.help.open"
+        @click="view.toggleHelp()"
+      >
+        ?
+      </button>
     </header>
     <aside class="frame left-panel" data-testid="hud-left-panel">
       <FirstSteps v-if="steps.open" /><MessagePanel v-else />
@@ -96,6 +108,7 @@ const storageText = computed(() =>
         {{ tool.label }}
       </button>
     </nav>
+    <HelpOverlay v-if="view.helpOpen" />
   </div>
 </template>
 
@@ -153,6 +166,24 @@ const storageText = computed(() =>
   font-size: 15px;
   font-weight: 600;
 }
+.help-button {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  margin-left: 12px;
+  border: 0;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 8%);
+  color: inherit;
+  font: inherit;
+  font-size: 20px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.help-button:focus-visible {
+  outline: 2px solid #f2c48d;
+  outline-offset: 2px;
+}
 .speeds {
   display: flex;
   gap: 4px;
@@ -180,7 +211,7 @@ const storageText = computed(() =>
 }
 @media (max-width: 480px) {
   .top-bar {
-    padding: 0 12px;
+    padding: 0 8px;
   }
   .name strong {
     display: none;
@@ -213,18 +244,22 @@ const storageText = computed(() =>
     background: none;
   }
   .time {
-    gap: 8px;
+    gap: 4px;
   }
   .chip {
-    padding: 8px 10px;
+    padding: 8px 4px;
+    font-size: 14px;
   }
   .speeds {
-    gap: 2px;
+    gap: 0;
   }
-  /* Six speed buttons must fit beside the clock. */
+  /* Six speed buttons and the help button must fit beside the clock. */
   .speeds button {
-    min-width: 32px;
-    padding: 0 2px;
+    min-width: 26px;
+    padding: 0 1px;
+  }
+  .help-button {
+    margin-left: 4px;
   }
 }
 .left-panel {
