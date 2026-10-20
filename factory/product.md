@@ -82,7 +82,7 @@ Robert gets a singleplayer 3D coffee farm game for the Mac: he builds a farm on 
 30. S30 Premium and Specialty: the plant tool offers Arabica Premium in phase 2 and Specialty in phase 3, Specialty only on volcano parcels. Needs S13, S29.
 31. S31 Harvest milestone: "Ernte-Profi" after 1,000 harvested units gives +5 % harvest quality for good. Needs S16.
 32. S32 Event engine: a seeded scheduler starts events with at least 1 day of warning, at most 2 at the same time, none in the first 5 days, at most 7 days long; test over 1,000 days. Needs S9.
-33. S33 Event effects: the six events of PRD §9 change yield, cycle time and prices, always within ±30 %; tests per event. Needs S19, S32.
+33. S33 Event effects: the six events of PRD §9 change yield, cycle time and prices, always within ±30 %; `pestProtected` halves the pest loss (`farm.pestControlLossReduction`, PRD §6), which today has no effect at all (Robert 2026-10-20: keep the care cost, fix with M5); tests per event. Needs S19, S32.
 34. S34 Event HUD: the top bar shows the active event, and the left panel shows warnings such as "Frost-Warnung ab morgen". Needs S18, S33.
 35. S35 Tooltips and shortcuts: tooltips on toolbar and inspector values; keys for tools, pause and speed. Needs S18.
 36. S36 Performance pass: 48 × 48 parcels and 2,000 plants run at 60 fps on Apple Silicon; a debug fps meter shows it. Needs S13.
