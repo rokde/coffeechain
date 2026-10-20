@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useSelectionStore } from '../app/selection'
+import { isFarmTool, useSelectionStore } from '../app/selection'
 import { useGameStore } from '../app/store'
 import { balance } from '../sim/balance'
+import type { GameState } from '../sim/state'
+import { storageUsed } from '../sim/storage/storage'
 import { clock } from '../sim/time/time'
 import de from './i18n/de.json'
 import { formatMoney } from './money'
+import FarmTool from './FarmTool.vue'
 import MarketPanel from './MarketPanel.vue'
 import ParcelInspector from './ParcelInspector.vue'
 import OverlayPanel from './OverlayPanel.vue'
@@ -22,6 +25,13 @@ const clockText = computed(() => {
     .replace('{day}', String(day))
     .replace('{hour}', String(hourOfDay).padStart(2, '0'))
 })
+// storageUsed only reads the state, so the cast of the readonly snapshot is safe.
+// shortcut: capacity is startCapacity, add the upgrades with S27.
+const storageText = computed(() =>
+  de.storage
+    .replace('{used}', String(storageUsed((store.state as GameState).storage)))
+    .replace('{capacity}', String(balance().storage.startCapacity)),
+)
 </script>
 
 <template>
@@ -53,13 +63,17 @@ const clockText = computed(() => {
           </button>
         </div>
       </div>
-      <span class="chip money" data-testid="money">{{ formatMoney(store.state.money) }}</span>
+      <div class="stats">
+        <span class="chip" data-testid="storage">{{ storageText }}</span>
+        <span class="chip money" data-testid="money">{{ formatMoney(store.state.money) }}</span>
+      </div>
     </header>
     <aside class="frame left-panel" data-testid="hud-left-panel" />
     <OverlayPanel />
     <aside class="frame right-panel" data-testid="hud-right-panel">
       <ParcelTool v-if="selection.tool === 'parcel'" />
       <PlantTool v-else-if="selection.tool === 'plant'" />
+      <FarmTool v-else-if="isFarmTool(selection.tool)" />
       <MarketPanel v-else-if="selection.tool === 'market'" />
       <ParcelInspector v-else />
     </aside>
@@ -126,7 +140,9 @@ const clockText = computed(() => {
   background: rgb(255 255 255 / 8%);
   white-space: nowrap;
 }
-.money {
+.stats {
+  display: flex;
+  gap: 8px;
   font-size: 15px;
   font-weight: 600;
 }
@@ -175,7 +191,7 @@ const clockText = computed(() => {
     white-space: nowrap;
   }
   /* Same tab as the seed, on the right. */
-  .chip.money {
+  .stats {
     position: absolute;
     top: 100%;
     right: 12px;
@@ -184,6 +200,10 @@ const clockText = computed(() => {
     background: var(--hud-bg);
     font-size: 11px;
     line-height: 13px;
+  }
+  .stats .chip {
+    padding: 0;
+    background: none;
   }
   .time {
     gap: 8px;
@@ -218,7 +238,9 @@ const clockText = computed(() => {
   padding: 8px;
 }
 .toolbar button {
-  min-width: 96px;
+  flex: 1 0 0;
+  min-width: 0;
+  padding: 0 4px;
   border: 0;
   border-radius: 8px;
   background: rgb(255 255 255 / 8%);
@@ -237,10 +259,14 @@ const clockText = computed(() => {
   outline-offset: 2px;
 }
 @media (max-width: 480px) {
-  /* Four tools do not fit at 96 px each. */
+  /* Eight tools do not fit in one row, so they use two rows of four. */
+  .toolbar {
+    height: auto;
+    flex-wrap: wrap;
+  }
   .toolbar button {
-    flex: 1;
-    min-width: 0;
+    flex-basis: calc(25% - 6px);
+    height: 44px;
   }
 }
 </style>

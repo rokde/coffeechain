@@ -5,7 +5,7 @@ import raw from '../config/balance.json'
 import { loadBalance } from '../config/balance.schema'
 import { advance } from './app/loop'
 import { selectParcel } from './app/market'
-import { useSelectionStore } from './app/selection'
+import { isFarmTool, useSelectionStore } from './app/selection'
 import { useGameStore } from './app/store'
 import { useViewStore } from './app/view'
 import { createCamera } from './render/camera'
@@ -166,7 +166,7 @@ function start() {
     watch(() => (selection.tool === 'select' ? selection.parcel : null), outline.show)
     watch(() => selection.parcels, outlines.show)
     // Select tool: a click on the terrain selects its parcel, a click beside it clears the selection.
-    // Parcel and plant tool: a click on the terrain adds or removes its parcel.
+    // Parcel, plant and farm tools: a click on the terrain adds or removes its parcel.
     canvas.addEventListener('click', (event) => {
       const ndc = new Vector2(
         (event.offsetX / canvas.clientWidth) * 2 - 1,
@@ -174,7 +174,8 @@ function start() {
       )
       const parcel = pickParcel(ndc, view.camera, terrain, world.size)
       // toggle only reads the state, so the cast of the readonly snapshot is safe.
-      if (selection.tool === 'parcel' || selection.tool === 'plant') {
+      const { tool } = selection
+      if (tool === 'parcel' || tool === 'plant' || isFarmTool(tool)) {
         if (parcel) selection.toggle(store.state as GameState, parcel)
       } else selectParcel(selection, store.state as GameState, parcel)
     })

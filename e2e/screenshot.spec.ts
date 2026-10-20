@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test'
 
+const tools = ['select', 'parcel', 'plant', 'fertilize', 'irrigate', 'protect', 'harvest', 'market']
+
 test('M0: scene and empty HUD frame', async ({ page }) => {
   const errors: string[] = []
   page.on('console', (msg) => {
@@ -50,6 +52,7 @@ test('S9: top bar fits a narrow window', async ({ page }) => {
     await expect(page.getByTestId(`speed-${s}`)).toBeInViewport({ ratio: 1 })
   await expect(page.getByTestId('world-seed')).toBeInViewport({ ratio: 1 })
   await expect(page.getByTestId('money')).toBeInViewport({ ratio: 1 })
+  await expect(page.getByTestId('storage')).toBeInViewport({ ratio: 1 })
 })
 
 test('S5: terrain and world seed', async ({ page }) => {
@@ -250,6 +253,9 @@ for (const [width, height] of [
       ['hud-overlay-panel', 'money'],
       ['hud-right-panel', 'money'],
       ['hud-left-panel', 'money'],
+      ['hud-overlay-panel', 'storage'],
+      ['hud-right-panel', 'storage'],
+      ['hud-left-panel', 'storage'],
     ]
     for (const [first, second] of pairs) {
       const a = await box(first!)
@@ -383,7 +389,7 @@ test('S20: market panel from the toolbar and the market stand', async ({ page })
 test('S20: market panel fits a narrow window', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
-  for (const tool of ['select', 'parcel', 'plant', 'market'])
+  for (const tool of tools)
     await expect(page.getByTestId(`tool-${tool}`)).toBeInViewport({ ratio: 1 })
   await page.getByTestId('tool-market').click()
   const panel = page.getByTestId('market-panel')
@@ -418,3 +424,84 @@ test('S13b: plant meshes', async ({ page }) => {
   await page.screenshot({ path: 'docs/progress/S13b.png' })
   expect(errors).toEqual([])
 })
+
+test('S18a: care and harvest tools, storage chip', async ({ page }) => {
+  const errors: string[] = []
+  page.on('console', (msg) => {
+    if (msg.type() === 'error') errors.push(msg.text())
+  })
+  page.on('pageerror', (error) => errors.push(error.message))
+
+  // A fake clock lets the test jump over the growth time.
+  await page.clock.install()
+  await page.goto('/?seed=48213')
+  const money = page.getByTestId('money')
+  const storage = page.getByTestId('storage')
+  const canvas = page.locator('canvas#scene')
+  await expect(storage).toHaveText('Lager 0 / 100')
+  // Buildable lowland parcels (18, 23) and (21, 23) of seed 48213 at the start camera.
+  const clicks = [
+    { x: 640, y: 370 },
+    { x: 690, y: 400 },
+  ]
+  await page.getByTestId('tool-parcel').click()
+  for (const position of clicks) await canvas.click({ position })
+  await page.getByTestId('parcel-tool-create').click()
+  await page.getByTestId('tool-plant').click()
+  for (const position of clicks) await canvas.click({ position })
+  await page.getByTestId('plant-tool-plant').click()
+  await expect(money).toHaveText('348 CC')
+
+  const labels = await page.getByTestId('hud-toolbar').getByRole('button').allTextContents()
+  expect(labels.map((l) => l.trim())).toEqual([
+    'Auswählen',
+    'Parzelle',
+    'Pflanzen',
+    'Düngen',
+    'Wässern',
+    'Schutz',
+    'Ernten',
+    'Markt',
+  ])
+
+  await page.getByTestId('tool-fertilize').click()
+  await expect(page.getByTestId('farm-tool')).toBeVisible()
+  await expect(page.getByTestId('parcel-inspector')).toHaveCount(0)
+  await expect(page.getByTestId('farm-tool-apply')).toBeDisabled()
+  for (const position of clicks) await canvas.click({ position })
+  await expect(page.getByTestId('farm-tool-count')).toHaveText('2')
+  await expect(page.getByTestId('farm-tool-total')).toHaveText('2 CC')
+  await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
+  await page.screenshot({ path: 'docs/progress/S18a.png' })
+  await page.getByTestId('farm-tool-apply').click()
+  await expect(money).toHaveText('346 CC')
+  await expect(page.getByTestId('farm-tool-count')).toHaveText('0')
+
+  // Robusta needs 72 ticks. One frame runs at most 24 ticks, so jump 4 times at speed 4.
+  await page.getByTestId('speed-4').click()
+  for (let i = 0; i < 4; i++) await page.clock.fastForward(60_000)
+  await page.getByTestId('speed-0').click()
+  await page.getByTestId('tool-harvest').click()
+  for (const position of clicks) await canvas.click({ position })
+  await expect(page.getByTestId('farm-tool-count')).toHaveText('2')
+  await page.getByTestId('farm-tool-apply').click()
+  await expect(page.getByTestId('farm-tool-count')).toHaveText('0')
+  await expect(storage).not.toHaveText('Lager 0 / 100')
+  await expect(storage).toHaveText(/^Lager \d+ \/ 100$/)
+  expect(errors).toEqual([])
+})
+
+for (const width of [1280, 390]) {
+  test(`S18a: all tools fit the toolbar at ${width} px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 })
+    await page.goto('/')
+    const toolbar = page.getByTestId('hud-toolbar')
+    expect(await toolbar.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+    for (const tool of tools) {
+      const button = page.getByTestId(`tool-${tool}`)
+      await expect(button).toBeInViewport({ ratio: 1 })
+      // The label is not cut off.
+      expect(await button.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+    }
+  })
+}

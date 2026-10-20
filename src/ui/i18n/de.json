@@ -57,6 +57,10 @@
     "select": "Auswählen",
     "parcel": "Parzelle",
     "plant": "Pflanzen",
+    "fertilize": "Düngen",
+    "irrigate": "Wässern",
+    "protect": "Schutz",
+    "harvest": "Ernten",
     "market": "Markt"
   },
   "parcelTool": {
@@ -86,5 +90,31 @@
     "coffeeLine": "Kaffee, {days} Tage",
     "seedLine": "Saatgut, {days} Tage",
     "sell": "Verkaufen"
+  },
+  "storage": "Lager {used} / {capacity}",
+  "farmTool": {
+    "count": "Ausgewählt",
+    "total": "Kosten",
+    "tooExpensive": "Nicht genug CC.",
+    "fertilize": {
+      "heading": "Düngen",
+      "hint": "Klicke eigene Parzellen mit einer unreifen, ungedüngten Pflanze an. Ein zweiter Klick entfernt sie. Dünger gibt mehr Ertrag.",
+      "action": "Düngen"
+    },
+    "irrigate": {
+      "heading": "Wässern",
+      "hint": "Klicke eigene Parzellen mit einer unreifen, ungewässerten Pflanze an. Ein zweiter Klick entfernt sie.",
+      "action": "Wässern"
+    },
+    "protect": {
+      "heading": "Schädlingsschutz",
+      "hint": "Klicke eigene Parzellen mit einer unreifen, ungeschützten Pflanze an. Ein zweiter Klick entfernt sie.",
+      "action": "Schützen"
+    },
+    "harvest": {
+      "heading": "Ernten",
+      "hint": "Klicke eigene Parzellen mit einer reifen Pflanze an. Ein zweiter Klick entfernt sie. Was nicht ins Lager passt, bleibt an der Pflanze.",
+      "action": "Ernten"
+    }
   }
 }

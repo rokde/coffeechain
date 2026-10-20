@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { balance } from '../balance'
 import { dispatch } from '../commands'
+import { quoteCare } from './care'
 import { createState, type GameState } from '../state'
 import { soilClassOf } from '../world/generate'
 import type { Parcel, World } from '../world/types'
@@ -199,5 +200,17 @@ describe('rejected care', () => {
     const state = ripe('robusta')
     const almost = { ...state, money: 100, time: { ...state.time, hour: state.time.hour - 1 } }
     expect(care(almost, 'Fertilize', [0, 0]).money).toBe(0)
+  })
+})
+
+describe('quoteCare (S18a)', () => {
+  it('sums careCost per plant in hundredths of CC and skips parcels without a plant', () => {
+    const parcels = [
+      { x: 0, y: 0 },
+      { x: 1, y: 0 },
+      { x: 3, y: 0 },
+    ]
+    for (const type of ['Fertilize', 'Irrigate', 'ProtectPests'] as const)
+      expect(quoteCare(testState(), { type, parcels })).toBe(100 + 200)
   })
 })
