@@ -27,10 +27,11 @@ export type Stage = keyof Balance['farm']['visualStages'] | 'reif'
 export function plant(state: GameState, command: Plant): GameState {
   const { size } = state.world
   const cfg = balance()
-  const variety = cfg.varieties[command.variety]
-  if (!variety) throw new Error(`Unknown variety: ${command.variety}`)
+  if (!Object.hasOwn(cfg.varieties, command.variety))
+    throw new Error(`Unknown variety: ${command.variety}`)
   // shortcut: only varieties with unlockCapital 0 can be planted, use the capital check from S29.
-  if (variety.unlockCapital > 0) throw new Error(`Variety ${command.variety} is locked`)
+  if (cfg.varieties[command.variety].unlockCapital > 0)
+    throw new Error(`Variety ${command.variety} is locked`)
 
   const plants = { ...state.farm.plants }
   for (const { x, y } of command.parcels) {
@@ -59,7 +60,8 @@ const missingSeeds = (state: GameState, variety: Variety, count: number) =>
 
 // Cost in hundredths of CC of the seed that the stock lacks for count parcels, with the rounding of buy().
 export function quotePlant(state: GameState, variety: Variety, count: number): number {
-  return Math.round(missingSeeds(state, variety, count) * bankSellPrice(state, variety) * 100)
+  const missing = missingSeeds(state, variety, count)
+  return Math.round(missing * bankSellPrice(state, variety, missing) * 100)
 }
 
 // Growth comes only from the game hours since planting, so it needs no per-tick state.
