@@ -37,6 +37,12 @@ async function askNewGame(ask: boolean) {
   // The cancel button gets the focus, so Enter does not overwrite the game.
   ;(ask ? cancelButton : newGameButton).value?.focus()
 }
+// newGame returns only after a failed write. Then the trigger is back and gets the focus.
+async function startNewGame() {
+  await panel.newGame()
+  await nextTick()
+  newGameButton.value?.focus()
+}
 </script>
 
 <template>
@@ -113,7 +119,7 @@ async function askNewGame(ask: boolean) {
             type="button"
             class="danger"
             data-testid="save-new-game-confirm"
-            @click="panel.newGame()"
+            @click="startNewGame"
           >
             {{ t.newGameYes }}
           </button>

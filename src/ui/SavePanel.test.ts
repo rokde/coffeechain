@@ -245,9 +245,11 @@ describe('SavePanel (S42b)', () => {
     it('AC-3: a failed write shows the error and does not reload', async () => {
       vi.mocked(isTauri).mockReturnValue(true)
       vi.mocked(invoke).mockRejectedValue('disk full')
-      const { pinia, panel } = setup()
+      const { pinia, game, panel } = setup()
+      game.dispatch({ type: 'SetSpeed', speed: 4 })
       panel.confirmNewGame = true
       await expect(panel.newGame()).resolves.toBeUndefined()
+      expect(game.state.time.speed).toBe(4)
       expect(replace).not.toHaveBeenCalled()
       expect(invoke).toHaveBeenCalledOnce()
       expect(invoke).toHaveBeenCalledWith('save_write', {

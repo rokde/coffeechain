@@ -41,7 +41,8 @@ export const gameStateSchema = z.object({
   props: z.object({
     hut: place,
     market: place,
-    path: z.array(place),
+    // The path mesh needs two places at least.
+    path: z.array(place).min(2),
     trees: z.array(place),
   }),
   money: num,

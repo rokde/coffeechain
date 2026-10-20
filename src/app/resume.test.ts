@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { invoke, isTauri } from '@tauri-apps/api/core'
 import { serialize } from '../sim/save/save'
 import { createState } from '../sim/state'
-import { startState } from './resume'
+import { skipResume, startState } from './resume'
 
 vi.mock('@tauri-apps/api/core', () => ({ isTauri: vi.fn(() => false), invoke: vi.fn() }))
 
@@ -19,8 +19,10 @@ beforeEach(() => {
   vi.stubGlobal('localStorage', { getItem, setItem: (k: string, v: string) => local.set(k, v) })
   vi.stubGlobal('sessionStorage', {
     getItem: (k: string) => session.get(k) ?? null,
+    setItem: (k: string, v: string) => session.set(k, v),
     removeItem: (k: string) => session.delete(k),
   })
+  vi.stubGlobal('location', { reload: vi.fn() })
   vi.mocked(isTauri).mockReturnValue(false)
   vi.mocked(invoke).mockReset()
 })
@@ -64,6 +66,26 @@ describe('startState (S43b)', () => {
     local.set(AUTOSAVE, serialize({ ...state, world }))
     await expect(startState('')).resolves.toBeNull()
     expect(String(error.mock.calls[0]?.[1])).toMatch(/Parcel count does not match size/)
+  })
+
+  it.each([[[]], [[{ x: 1, y: 2 }]]])(
+    'AC-1: returns null for a save with the path %j',
+    async (path) => {
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const state = saved()
+      local.set(AUTOSAVE, serialize({ ...state, props: { ...state.props, path } }))
+      await expect(startState('')).resolves.toBeNull()
+      expect(String(error.mock.calls[0]?.[1])).toMatch(/path/)
+    },
+  )
+
+  it('a failed start skips the autosave for the next start only', async () => {
+    local.set(AUTOSAVE, serialize(saved()))
+    skipResume()
+    expect(location.reload).toHaveBeenCalledOnce()
+    expect(await startState('')).toBeNull()
+    expect(getItem).not.toHaveBeenCalled()
+    expect(await startState('')).toEqual(saved())
   })
 
   it('AC-1: returns null and logs when readSlot rejects', async () => {
