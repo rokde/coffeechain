@@ -8,7 +8,7 @@ import { selectParcel } from './app/market'
 import { isFarmTool, useSelectionStore } from './app/selection'
 import { useGameStore } from './app/store'
 import { useViewStore } from './app/view'
-import { createCamera } from './render/camera'
+import { CAMERA, createCamera, gestureZoomDelta, wheelZoomDelta } from './render/camera'
 import { createFieldMarks, FIELD_LABEL_STYLE, fieldAnchors, hoveredField } from './render/fields'
 import { loadModel, MODEL_IDS } from './render/models'
 import { createPlants, plantsKey } from './render/plants'
@@ -72,7 +72,7 @@ function showModelRow(scene: Scene, camera: Camera) {
 function start() {
   const canvas = document.querySelector<HTMLCanvasElement>('#scene')!
   const { renderer, scene } = createScene(canvas)
-  const view = createCamera(window.innerWidth / window.innerHeight)
+  const view = createCamera(window.innerWidth / window.innerHeight, balance().world.size)
 
   const resize = () => {
     renderer.setSize(window.innerWidth, window.innerHeight, false)
@@ -81,15 +81,82 @@ function start() {
   resize()
   window.addEventListener('resize', resize)
 
+  const held = new Set<string>()
   window.addEventListener('keydown', (event) => {
     if (event.repeat || event.metaKey || event.ctrlKey || event.altKey) return
+    const t = event.target
+    if (
+      t instanceof HTMLInputElement ||
+      t instanceof HTMLTextAreaElement ||
+      (t as HTMLElement).isContentEditable
+    )
+      return
     const key = event.key.toLowerCase()
     if (key === 'q') view.rotate(-1)
     if (key === 'e') view.rotate(1)
+    if (key.length === 1 && 'wasd'.includes(key)) held.add(key)
   })
+  window.addEventListener('keyup', (event) => held.delete(event.key.toLowerCase()))
+  // A key release outside the window never arrives.
+  window.addEventListener('blur', () => held.clear())
+
+  const ndcOf = (event: MouseEvent) =>
+    new Vector2(
+      (event.offsetX / canvas.clientWidth) * 2 - 1,
+      1 - (event.offsetY / canvas.clientHeight) * 2,
+    )
+  // Chromium sends a trackpad pinch as wheel events with ctrlKey. preventDefault stops the page zoom.
+  canvas.addEventListener(
+    'wheel',
+    (event) => {
+      event.preventDefault()
+      view.zoomAt(ndcOf(event), wheelZoomDelta(event.deltaY, event.ctrlKey))
+    },
+    { passive: false },
+  )
+  // WebKit (Tauri on macOS) sends a trackpad pinch as gesture events. TypeScript has no type for them.
+  type GestureEvent = UIEvent & { scale: number; clientX: number; clientY: number }
+  let lastScale = 1
+  canvas.addEventListener('gesturestart', (event) => {
+    event.preventDefault()
+    lastScale = 1
+  })
+  canvas.addEventListener('gesturechange', (event) => {
+    event.preventDefault()
+    const { scale, clientX, clientY } = event as GestureEvent
+    const rect = canvas.getBoundingClientRect()
+    const ndc = new Vector2(
+      ((clientX - rect.left) / rect.width) * 2 - 1,
+      1 - ((clientY - rect.top) / rect.height) * 2,
+    )
+    view.zoomAt(ndc, gestureZoomDelta(scale, lastScale))
+    lastScale = scale
+  })
+  canvas.addEventListener('gestureend', (event) => event.preventDefault())
+  canvas.addEventListener('contextmenu', (event) => event.preventDefault())
+  let drag: { x: number; y: number } | null = null
+  canvas.addEventListener('pointerdown', (event) => {
+    if (event.button !== 2) return
+    drag = { x: event.clientX, y: event.clientY }
+    canvas.setPointerCapture(event.pointerId)
+  })
+  canvas.addEventListener('pointermove', (event) => {
+    if (!drag) return
+    view.pan(event.clientX - drag.x, event.clientY - drag.y, canvas.clientHeight)
+    drag = { x: event.clientX, y: event.clientY }
+  })
+  const endDrag = (event: PointerEvent) => {
+    if (!drag) return
+    drag = null
+    canvas.releasePointerCapture(event.pointerId)
+  }
+  canvas.addEventListener('pointerup', endDrag)
+  canvas.addEventListener('pointercancel', endDrag)
 
   const debugModels = new URLSearchParams(location.search).get('debug') === 'models'
   let placeLabels = () => {}
+  // Checks the hover again for the last pointer position.
+  let rehover = () => {}
   if (debugModels) {
     view.camera.zoom = 2
     view.camera.updateProjectionMatrix()
@@ -166,18 +233,20 @@ function start() {
       }
     }
     // The label of the field under the mouse fades out, so the player sees the field.
-    canvas.addEventListener('pointermove', (event) => {
-      const ndc = new Vector2(
-        (event.offsetX / canvas.clientWidth) * 2 - 1,
-        1 - (event.offsetY / canvas.clientHeight) * 2,
-      )
-      const parcel = pickParcel(ndc, view.camera, terrain, world.size)
+    let pointer: { ndc: Vector2; x: number; y: number } | null = null
+    rehover = () => {
+      if (!pointer) return
+      const parcel = pickParcel(pointer.ndc, view.camera, terrain, world.size)
       const boxes = fieldLabels.map(({ id, label }) => ({ id, box: label.getBoundingClientRect() }))
-      const pointer = { x: event.clientX, y: event.clientY }
       fadedField = hoveredField(parcel, store.state.farm as FarmState, world.size, pointer, boxes)
       fadeLabels()
+    }
+    canvas.addEventListener('pointermove', (event) => {
+      pointer = { ndc: ndcOf(event), x: event.clientX, y: event.clientY }
+      rehover()
     })
     canvas.addEventListener('pointerleave', () => {
+      pointer = null
       fadedField = null
       fadeLabels()
     })
@@ -187,11 +256,7 @@ function start() {
     // Select tool: a click on the terrain selects its parcel, a click beside it clears the selection.
     // Parcel, plant and farm tools: a click on the terrain adds or removes its parcel.
     canvas.addEventListener('click', (event) => {
-      const ndc = new Vector2(
-        (event.offsetX / canvas.clientWidth) * 2 - 1,
-        1 - (event.offsetY / canvas.clientHeight) * 2,
-      )
-      const parcel = pickParcel(ndc, view.camera, terrain, world.size)
+      const parcel = pickParcel(ndcOf(event), view.camera, terrain, world.size)
       // toggle only reads the state, so the cast of the readonly snapshot is safe.
       const { tool } = selection
       if (tool === 'parcel' || tool === 'plant' || isFarmTool(tool)) {
@@ -203,11 +268,19 @@ function start() {
   const msPerTick = (realSecondsPerGameDay * 1000) / ticksPerGameDay
   let carryMs = 0
   let last: number | undefined
+  let lastCameraKey = ''
 
   // setAnimationLoop runs on requestAnimationFrame.
   renderer.setAnimationLoop((now) => {
-    const due = advance(carryMs, now - (last ?? now), store.state.time.speed, msPerTick)
+    const frameMs = now - (last ?? now)
+    const due = advance(carryMs, frameMs, store.state.time.speed, msPerTick)
     last = now
+    const right = Number(held.has('d')) - Number(held.has('a'))
+    const up = Number(held.has('w')) - Number(held.has('s'))
+    if (right || up) {
+      const dist = (CAMERA.keySpeed * frameMs) / 1000 / view.camera.zoom
+      view.panBy(right * dist, up * dist)
+    }
     carryMs = due.carryMs
     // step never changes its input, so the cast of the readonly snapshot is safe.
     let state = store.state as GameState
@@ -215,6 +288,10 @@ function start() {
     if (due.ticks > 0) store.replace(state)
     renderer.render(scene, view.camera)
     placeLabels()
+    // A zoom, pan or rotation moves the ground under a still mouse.
+    const cameraKey = `${view.camera.position.toArray().join()},${view.camera.zoom}`
+    if (cameraKey !== lastCameraKey) rehover()
+    lastCameraKey = cameraKey
   })
   createApp(Hud).use(pinia).mount('#hud')
 }
