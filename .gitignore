@@ -11,3 +11,8 @@ factory/agents/
 factory/audit.md
 .claude/worktrees/
 # <<< software factory
+
+node_modules/
+dist/
+test-results/
+playwright-report/

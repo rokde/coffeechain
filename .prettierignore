@@ -1,0 +1,7 @@
+factory/
+.claude/
+docs/
+PRD.md
+CLAUDE.md
+config/balance.json
+package-lock.json
