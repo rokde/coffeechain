@@ -69,7 +69,7 @@ Example: `- [ ] PROJ-1 a hello CLI command that greets a name passed as an argum
 - [ ] S51c Monsoon cycle time (M7): monsoon slows growth; waits for Robert's answer in `docs/open-questions.md` (GDD 11.8 `cycleTime +0.5` vs. PRD §9 ±30 % cap). Needs 045-event-effects.
 - [x] T1 Stable balance-sim test: `tools/balance-sim.test.ts` "gives one capital per day, repeats per seed, and grows the farm without debt" times out at the 5000 ms default under parallel load (about six times so far; it passes alone). Make it reliably fast or give it a fitting timeout, without weakening what it checks. → 050-stable-balance-sim
 - [x] S52 Event HUD (M7): the top bar shows active events, the left panel shows warnings such as "Frost-Warnung ab morgen" and which care helps. Needs S51. → 056-event-hud
-- [ ] S53 Tooltips and tool shortcuts (M7): tooltips on toolbar and inspector values; number/letter keys for the tools; the help overlay lists them. Needs S40.
+- [x] S53 Tooltips and tool shortcuts (M7): tooltips on toolbar and inspector values; number/letter keys for the tools; the help overlay lists them. Needs S40. → 057-tooltips-shortcuts
 - [x] S54 Performance pass (M7): 48 × 48 parcels and 2,000 plants run at 60 fps on Apple Silicon (PRD §11); a debug fps meter (toggle key) shows it. → 051-performance-pass
 - [x] S54b Instanced trees (M7): `src/render/props.ts` clones one mesh per Kenney tree (see its `shortcut` comment); draw them as `InstancedMesh` per tree model so draw calls stay flat on big maps. Split from 051-performance-pass. → 053-instanced-trees
 - [ ] S55 30-day run (M7): a Playwright run plays day 1 to day 30 without errors and writes a screenshot series to `docs/progress/`. Needs S43, S48, S52.
