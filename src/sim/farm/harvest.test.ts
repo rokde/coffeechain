@@ -288,7 +288,20 @@ describe('Harvest milestone (S49)', () => {
     expect(harvestQuality(state, cfg(80))).toBe(80)
     expect(harvestQuality(pro, cfg(80))).toBeCloseTo(84)
     expect(harvestQuality(pro, cfg(100))).toBe(100)
-    const reach = harvest(withMilestones(state, { harvested: 999 }), [0, 0])
-    expect(reach.storage.batches[0]!.quality).toBe(balance().storage.harvestQuality)
+  })
+
+  it('AC-3: harvest() stores 80 at the milestone and 84 after it', () => {
+    const { storage } = balance()
+    const original = storage.harvestQuality
+    storage.harvestQuality = 80
+    try {
+      const reach = harvest(withMilestones(testState(), { harvested: 999 }), [0, 0])
+      expect(reach.milestones.harvestProHour).toBeDefined()
+      expect(reach.storage.batches[0]!.quality).toBe(80)
+      const next = harvest(reach, [1, 0])
+      expect(next.storage.batches[1]!.quality).toBeCloseTo(84)
+    } finally {
+      storage.harvestQuality = original
+    }
   })
 })
