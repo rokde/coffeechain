@@ -1,10 +1,12 @@
 import { createPinia } from 'pinia'
+import { Vector3, type Camera, type Scene } from 'three'
 import { createApp } from 'vue'
 import raw from '../config/balance.json'
 import { loadBalance } from '../config/balance.schema'
 import { advance } from './app/loop'
 import { useGameStore } from './app/store'
 import { createCamera } from './render/camera'
+import { loadModel, MODEL_IDS } from './render/models'
 import { createScene } from './render/scene'
 import { balance } from './sim/balance'
 import type { GameState } from './sim/state'
@@ -22,6 +24,37 @@ function configIsValid(): boolean {
     pre.textContent = `Fehler in config/balance.json:\n\n${error instanceof Error ? error.message : String(error)}`
     document.body.append(pre)
     return false
+  }
+}
+
+// Debug view at /?debug=models: all models in one row, each with an HTML label.
+function showModelRow(scene: Scene, camera: Camera) {
+  // Run the row along the screen x axis of the start camera (yaw 45°), between the HUD panels.
+  const spacing = new Vector3(1, 0, -1).setLength(1.9)
+  const labels = MODEL_IDS.map((id, i) => {
+    // Lift a little above the water plane, so that the path tiles (top at y = -0.05) stay visible.
+    const at = spacing
+      .clone()
+      .multiplyScalar(i - (MODEL_IDS.length - 1) / 2)
+      .setY(0.1)
+    void loadModel(id).then((model) => {
+      model.position.copy(at)
+      scene.add(model)
+    })
+    const label = document.createElement('div')
+    label.dataset.testid = `model-${id}`
+    label.textContent = id
+    label.style.cssText =
+      'position:fixed;transform:translate(-50%,0);font:10px monospace;background:#fffc;padding:1px 4px'
+    document.body.append(label)
+    return { label, at: at.clone().setY(-0.5) }
+  })
+  return () => {
+    for (const { label, at } of labels) {
+      const p = at.clone().project(camera)
+      label.style.left = `${((p.x + 1) / 2) * window.innerWidth}px`
+      label.style.top = `${((1 - p.y) / 2) * window.innerHeight}px`
+    }
   }
 }
 
@@ -44,6 +77,13 @@ function start() {
     if (key === 'e') view.rotate(1)
   })
 
+  let placeLabels = () => {}
+  if (new URLSearchParams(location.search).get('debug') === 'models') {
+    view.camera.zoom = 2
+    view.camera.updateProjectionMatrix()
+    placeLabels = showModelRow(scene, view.camera)
+  }
+
   const pinia = createPinia()
   const store = useGameStore(pinia)
   const { realSecondsPerGameDay, ticksPerGameDay } = balance().time
@@ -61,6 +101,7 @@ function start() {
     for (let i = 0; i < due.ticks; i++) state = step(state)
     if (due.ticks > 0) store.replace(state)
     renderer.render(scene, view.camera)
+    placeLabels()
   })
   createApp(Hud).use(pinia).mount('#hud')
 }
