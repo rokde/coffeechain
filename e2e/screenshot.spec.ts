@@ -633,10 +633,13 @@ test('S23: field labels fade on hover', async ({ page }) => {
   await page.getByTestId('tool-parcel').click()
   await canvas.hover({ position: { x: 640, y: 370 } })
   await expect.poll(() => opacity(labelA)).toBe('0')
+  // pointerId 1 is the mouse in Chromium. The stroke captures it, so the test releases it.
   await page.evaluate(() => {
-    const at = { clientX: 720, clientY: 450, button: 0, buttons: 1 }
-    document.querySelector('canvas#scene')!.dispatchEvent(new PointerEvent('pointerdown', at))
-    document.querySelector('canvas#scene')!.dispatchEvent(new PointerEvent('pointerup', at))
+    const canvas = document.querySelector('canvas#scene')!
+    const at = { clientX: 720, clientY: 450, button: 0, buttons: 1, pointerId: 1 }
+    canvas.dispatchEvent(new PointerEvent('pointerdown', at))
+    canvas.dispatchEvent(new PointerEvent('pointerup', at))
+    canvas.releasePointerCapture(1)
   })
   await expect(page.getByTestId('field-label-C')).toBeAttached()
   expect(await opacity(labelA)).toBe('0')
