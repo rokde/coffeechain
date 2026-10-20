@@ -309,3 +309,41 @@ test('S13: plant tool', async ({ page }) => {
   await expect(page.getByTestId('plant-tool-count')).toHaveText('0')
   expect(errors).toEqual([])
 })
+
+test('S12b: owned parcel marks and field labels', async ({ page }) => {
+  const errors: string[] = []
+  page.on('console', (msg) => {
+    if (msg.type() === 'error') errors.push(msg.text())
+  })
+  page.on('pageerror', (error) => errors.push(error.message))
+
+  await page.goto('/?seed=48213')
+  const labels = page.locator('[data-testid^="field-label-"]')
+  await expect(page.getByTestId('hud-top-bar')).toBeVisible()
+  await expect(labels).toHaveCount(0)
+
+  // Buildable lowland parcels (18, 23) and (21, 23) of seed 48213 at the start camera.
+  await page.getByTestId('tool-parcel').click()
+  const canvas = page.locator('canvas#scene')
+  await canvas.click({ position: { x: 640, y: 370 } })
+  await canvas.click({ position: { x: 690, y: 400 } })
+  await page.getByTestId('parcel-tool-create').click()
+
+  await expect(page.getByTestId('field-label-A')).toHaveText('Feld A')
+  await expect(page.getByTestId('field-label-B')).toHaveText('Feld B')
+  await expect(labels).toHaveCount(2)
+  const bounds = (await canvas.boundingBox())!
+  for (const name of ['A', 'B']) {
+    const label = page.getByTestId(`field-label-${name}`)
+    // The animation loop places a label after its first frame.
+    await expect(label).not.toHaveAttribute('style', /^((?!left).)*$/)
+    const b = (await label.boundingBox())!
+    expect(b.x >= bounds.x && b.y >= bounds.y).toBe(true)
+    expect(b.x + b.width <= bounds.x + bounds.width).toBe(true)
+    expect(b.y + b.height <= bounds.y + bounds.height).toBe(true)
+  }
+  await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
+  await page.getByTestId('tool-select').click()
+  await page.screenshot({ path: 'docs/progress/S12b.png' })
+  expect(errors).toEqual([])
+})

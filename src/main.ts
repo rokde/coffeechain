@@ -8,6 +8,7 @@ import { useSelectionStore } from './app/selection'
 import { useGameStore } from './app/store'
 import { useViewStore } from './app/view'
 import { createCamera } from './render/camera'
+import { createFieldMarks, fieldAnchors } from './render/fields'
 import { loadModel, MODEL_IDS } from './render/models'
 import { createOutline, createOutlines, pickParcel } from './render/picking'
 import { createProps, syncTrees } from './render/props'
@@ -15,9 +16,11 @@ import { applyOverlay } from './render/overlays'
 import { createScene } from './render/scene'
 import { createTerrain } from './render/terrain'
 import { balance } from './sim/balance'
+import type { FarmState } from './sim/farm/parcels'
 import type { GameState } from './sim/state'
 import { step } from './sim/time/time'
 import Hud from './ui/Hud.vue'
+import de from './ui/i18n/de.json'
 
 function configIsValid(): boolean {
   try {
@@ -118,6 +121,39 @@ function start() {
         canvas.dataset.props = 'ready'
       })
       .catch((error: unknown) => console.error('Props did not load:', error))
+    const marks = createFieldMarks(terrain)
+    scene.add(marks.mesh)
+    // Field labels lie above the canvas and below the HUD.
+    const fieldLayer = document.createElement('div')
+    fieldLayer.style.cssText = 'position:fixed;inset:0;pointer-events:none;overflow:hidden'
+    document.querySelector('#hud')!.before(fieldLayer)
+    let fieldLabels: { label: HTMLElement; at: Vector3 }[] = []
+    watch(
+      () => store.state.farm,
+      (farm) => {
+        // show and fieldAnchors only read the farm, so the cast of the readonly snapshot is safe.
+        marks.show(farm as FarmState)
+        fieldLabels = fieldAnchors(world, farm as FarmState).map(({ name, position }) => {
+          const label = document.createElement('div')
+          label.dataset.testid = `field-label-${name}`
+          label.textContent = de.field.label.replace('{name}', name)
+          label.style.cssText =
+            'position:absolute;transform:translate(-50%,calc(-100% - 8px));white-space:nowrap;' +
+            'padding:5px 12px;border-radius:999px;background:rgb(43 36 32 / 92%);color:#f5ece0;' +
+            'font:600 14px system-ui,sans-serif'
+          return { label, at: new Vector3(position.x, position.y, position.z) }
+        })
+        fieldLayer.replaceChildren(...fieldLabels.map(({ label }) => label))
+      },
+      { immediate: true },
+    )
+    placeLabels = () => {
+      for (const { label, at } of fieldLabels) {
+        const p = at.clone().project(view.camera)
+        label.style.left = `${((p.x + 1) / 2) * window.innerWidth}px`
+        label.style.top = `${((1 - p.y) / 2) * window.innerHeight}px`
+      }
+    }
     const selection = useSelectionStore(pinia)
     watch(() => (selection.tool === 'select' ? selection.parcel : null), outline.show)
     watch(() => selection.parcels, outlines.show)

@@ -2,6 +2,9 @@
   "game": {
     "name": "CoffeeChain"
   },
+  "field": {
+    "label": "Feld {name}"
+  },
   "world": {
     "seed": "Welt #{seed}"
   },
