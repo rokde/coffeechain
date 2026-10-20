@@ -177,6 +177,25 @@ describe('event effects', () => {
     }
   })
 
+  it('S51b AC-3: a harvest with one research breakthrough uses the bonus factor', () => {
+    const bonus = 1 + cfg.events.types.research.yieldBonus
+    const state = { ...testState(), research: [day] }
+    for (const i of [0, 1]) expect(harvested(state, i)).toBe(expectedYield(i, bonus))
+    expect(harvested(state, 0)).toBeGreaterThan(harvested(testState(), 0))
+  })
+
+  it('S51b AC-4: research and frost on Hochland stay within ±maxEffect', () => {
+    for (const research of [[day], [day, day], [day, day, day]]) {
+      const state = { ...testState('frost'), research }
+      const f = yieldEventFactor(state, 1, day)
+      expect(f).toBeGreaterThanOrEqual(1 - max)
+      expect(f).toBeLessThanOrEqual(1 + max)
+    }
+    expect(yieldEventFactor({ ...testState('frost'), research: [day] }, 1, day)).toBeCloseTo(
+      0.7 * (1 + cfg.events.types.research.yieldBonus),
+    )
+  })
+
   it('AC-5: 1,000 days on 20 seeds keep at most 2 active events and factors in [0.7, 1.3]', () => {
     for (let s = 1; s <= 20; s++) {
       let state = createState(s)
