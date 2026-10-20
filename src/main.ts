@@ -8,6 +8,7 @@ import { useGameStore } from './app/store'
 import { createCamera } from './render/camera'
 import { loadModel, MODEL_IDS } from './render/models'
 import { createScene } from './render/scene'
+import { createTerrain } from './render/terrain'
 import { balance } from './sim/balance'
 import type { GameState } from './sim/state'
 import { step } from './sim/time/time'
@@ -77,8 +78,9 @@ function start() {
     if (key === 'e') view.rotate(1)
   })
 
+  const debugModels = new URLSearchParams(location.search).get('debug') === 'models'
   let placeLabels = () => {}
-  if (new URLSearchParams(location.search).get('debug') === 'models') {
+  if (debugModels) {
     view.camera.zoom = 2
     view.camera.updateProjectionMatrix()
     placeLabels = showModelRow(scene, view.camera)
@@ -86,6 +88,9 @@ function start() {
 
   const pinia = createPinia()
   const store = useGameStore(pinia)
+  // The model row lies at the origin, so the debug view has no terrain.
+  // createTerrain only reads the world, so the cast of the readonly snapshot is safe.
+  if (!debugModels) scene.add(createTerrain(store.state.world as GameState['world']))
   const { realSecondsPerGameDay, ticksPerGameDay } = balance().time
   const msPerTick = (realSecondsPerGameDay * 1000) / ticksPerGameDay
   let carryMs = 0

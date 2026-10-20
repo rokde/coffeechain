@@ -42,9 +42,25 @@ test('S9: clock and speed buttons', async ({ page }) => {
 
 test('S9: top bar fits a narrow window', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto('/')
+  // The longest seed is the worst case for the width.
+  await page.goto('/?seed=4294967295')
   const bar = page.getByTestId('hud-top-bar')
   expect(await bar.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
   for (const s of [0, 1, 2, 4])
     await expect(page.getByTestId(`speed-${s}`)).toBeInViewport({ ratio: 1 })
+  await expect(page.getByTestId('world-seed')).toBeInViewport({ ratio: 1 })
+})
+
+test('S5: terrain and world seed', async ({ page }) => {
+  const errors: string[] = []
+  page.on('console', (msg) => {
+    if (msg.type() === 'error') errors.push(msg.text())
+  })
+  page.on('pageerror', (error) => errors.push(error.message))
+
+  await page.goto('/?seed=48213')
+  await expect(page.getByTestId('world-seed')).toHaveText('Welt #48213')
+  await expect(page.getByTestId('hud-top-bar')).toContainText('Welt #48213')
+  await page.screenshot({ path: 'docs/progress/S5.png' })
+  expect(errors).toEqual([])
 })

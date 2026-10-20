@@ -2,6 +2,9 @@
   "game": {
     "name": "CoffeeChain"
   },
+  "world": {
+    "seed": "Welt #{seed}"
+  },
   "time": {
     "clock": "Tag {day} · {hour}:00",
     "speeds": "Spielgeschwindigkeit",

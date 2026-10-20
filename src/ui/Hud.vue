@@ -19,7 +19,12 @@ const clockText = computed(() => {
 <template>
   <div class="hud">
     <header class="frame top-bar" data-testid="hud-top-bar">
-      <strong class="name">{{ de.game.name }}</strong>
+      <div class="name">
+        <strong>{{ de.game.name }}</strong>
+        <small data-testid="world-seed">{{
+          de.world.seed.replace('{seed}', String(store.state.world.seed))
+        }}</small>
+      </div>
       <div class="time">
         <span class="chip" data-testid="clock">{{ clockText }}</span>
         <div class="speeds" role="group" :aria-label="de.time.speeds">
@@ -75,6 +80,14 @@ const clockText = computed(() => {
   padding: 0 20px;
   font-size: 20px;
 }
+.name {
+  display: flex;
+  flex-direction: column;
+}
+.name small {
+  font-size: 12px;
+  opacity: 0.8;
+}
 .time {
   display: flex;
   align-items: center;
@@ -118,8 +131,20 @@ const clockText = computed(() => {
   .top-bar {
     padding: 0 12px;
   }
-  .name {
+  .name strong {
     display: none;
+  }
+  /* The bar has no room for the seed, so it hangs below the bar as a tab. */
+  .name small {
+    position: absolute;
+    top: 100%;
+    left: 12px;
+    padding: 1px 8px;
+    border-radius: 0 0 6px 6px;
+    background: var(--hud-bg);
+    font-size: 11px;
+    line-height: 13px;
+    white-space: nowrap;
   }
   .time {
     gap: 8px;
