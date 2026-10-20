@@ -392,3 +392,29 @@ test('S20: market panel fits a narrow window', async ({ page }) => {
   for (const row of await panel.locator('dl').all())
     expect(await row.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
 })
+
+test('S13b: plant meshes', async ({ page }) => {
+  const errors: string[] = []
+  page.on('console', (msg) => {
+    if (msg.type() === 'error') errors.push(msg.text())
+  })
+  page.on('pageerror', (error) => errors.push(error.message))
+
+  await page.goto('/?seed=48213')
+  const canvas = page.locator('canvas#scene')
+  // Buildable lowland parcels (18, 23) and (21, 23) of seed 48213 at the start camera.
+  const clicks = [
+    { x: 640, y: 370 },
+    { x: 690, y: 400 },
+  ]
+  await page.getByTestId('tool-parcel').click()
+  for (const position of clicks) await canvas.click({ position })
+  await page.getByTestId('parcel-tool-create').click()
+  await page.getByTestId('tool-plant').click()
+  for (const position of clicks) await canvas.click({ position })
+  await page.getByTestId('plant-tool-plant').click()
+  await expect(page.getByTestId('money')).toHaveText('348 CC')
+  await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
+  await page.screenshot({ path: 'docs/progress/S13b.png' })
+  expect(errors).toEqual([])
+})
