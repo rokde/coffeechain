@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useFirstStepsStore } from '../app/firstSteps'
 import { useViewStore } from '../app/view'
 import { SOIL_COLORS, ZONE_OVERLAY_COLORS } from '../render/overlays'
 import de from './i18n/de.json'
 
 const view = useViewStore()
+const steps = useFirstStepsStore()
 const modes = ['soil', 'zone'] as const
 const hex = (color: number) => `#${color.toString(16).padStart(6, '0')}`
 const legend = computed(() => {
@@ -31,6 +33,7 @@ const legend = computed(() => {
       role="switch"
       :data-testid="`overlay-${mode}`"
       :aria-checked="view.overlay === mode"
+      :data-guide="steps.guide === `overlay-${mode}` ? 'next' : undefined"
       @click="view.toggle(mode)"
     >
       <span>{{ de.overlay[mode] }}</span>
@@ -74,6 +77,11 @@ button {
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
+}
+button[data-guide='next'] {
+  outline: 2px solid #f2c48d;
+  outline-offset: 2px;
+  border-radius: 6px;
 }
 button:focus-visible {
   outline: 2px solid #f2c48d;

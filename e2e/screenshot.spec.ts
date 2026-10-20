@@ -572,6 +572,7 @@ test('S21e: field status and care buttons in the inspector', async ({ page }) =>
   page.on('pageerror', (error) => errors.push(error.message))
 
   await page.goto('/?seed=48213')
+  await page.getByTestId('first-steps-close').click()
   const canvas = page.locator('canvas#scene')
   // Buildable lowland parcel (18, 23) of seed 48213 at the start camera.
   const position = { x: 640, y: 370 }
@@ -713,4 +714,17 @@ test('S22: wheel zoom, right-drag pan and picking after zoom', async ({ page }) 
   await canvas.click({ position: { x: 720, y: 450 } })
   await expect(inspector).toBeVisible()
   expect(errors).toEqual([])
+})
+
+test('S25: first steps tick, highlight and close', async ({ page }) => {
+  await page.goto('/?seed=48213')
+  await expect(page.getByTestId('first-steps')).toBeVisible()
+  await expect(page.locator('[data-guide="next"]')).toHaveCount(1)
+  await expect(page.getByTestId('overlay-soil')).toHaveAttribute('data-guide', 'next')
+  await page.getByTestId('overlay-soil').click()
+  await expect(page.getByTestId('first-step-overlay')).toHaveAttribute('data-done', 'true')
+  await expect(page.getByTestId('tool-parcel')).toHaveAttribute('data-guide', 'next')
+  await page.getByTestId('first-steps-close').click()
+  await expect(page.getByTestId('message-panel')).toBeVisible()
+  await expect(page.locator('[data-guide="next"]')).toHaveCount(0)
 })
