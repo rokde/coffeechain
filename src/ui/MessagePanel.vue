@@ -4,6 +4,7 @@ import { useGameStore } from '../app/store'
 import { balance } from '../sim/balance'
 import { overripeFactor } from '../sim/farm/overripe'
 import { growth } from '../sim/farm/plants'
+import { fieldNeedsCare } from '../sim/farm/status'
 import type { GameState } from '../sim/state'
 import { storageUsed } from '../sim/storage/storage'
 import de from './i18n/de.json'
@@ -12,7 +13,8 @@ const t = de.messages
 const game = useGameStore()
 const messages = computed(() => {
   // The helpers only read the state, so the cast of the readonly snapshot is safe.
-  const { farm, storage, time } = game.state as GameState
+  const state = game.state as GameState
+  const { farm, storage, time } = state
   const status = new Map<number, 'ripe' | 'overripe'>()
   for (const [index, plant] of Object.entries(farm.plants)) {
     const field = farm.parcels[Number(index)]
@@ -22,7 +24,9 @@ const messages = computed(() => {
   }
   const list = farm.fields.flatMap((f) => {
     const key = status.get(f.id)
-    return key ? [t[key].replace('{name}', f.name)] : []
+    const out = key ? [t[key].replace('{name}', f.name)] : []
+    if (fieldNeedsCare(state, f.id)) out.push(t.needsCare.replace('{name}', f.name))
+    return out
   })
   // shortcut: capacity is startCapacity, add the upgrades with S27.
   if (storageUsed(storage) >= balance().storage.startCapacity) list.push(t.storageFull)
