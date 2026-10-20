@@ -1,15 +1,16 @@
+import { createParcels, type CreateParcels } from './farm/parcels'
 import type { GameState } from './state'
 import { setSpeed, type SetSpeed } from './time/time'
 
 // Later slices add their command types to this union.
-export type Command = SetSpeed
+export type Command = SetSpeed | CreateParcels
 
 type Handlers = {
   [K in Command['type']]: (state: GameState, command: Extract<Command, { type: K }>) => GameState
 }
 
 // Later slices register one handler per command type here.
-const handlers: Handlers = { SetSpeed: setSpeed }
+const handlers: Handlers = { SetSpeed: setSpeed, CreateParcels: createParcels }
 
 export function dispatch(state: GameState, command: Command): GameState {
   const handler = handlers[command.type] as
