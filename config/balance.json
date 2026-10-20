@@ -15,7 +15,13 @@
   "world": {
     "size": { "v": 48, "src": "PRD" },
     "offZoneYieldFactor": { "v": 0.6, "src": "NEU" },
-    "startGuaranteeParcels": { "v": 6, "src": "PRD" }
+    "startGuaranteeParcels": { "v": 6, "src": "PRD" },
+    "startReach": { "v": 6, "src": "NEU" },
+    "maxAttempts": { "v": 50, "src": "NEU" },
+    "zoneMinHeight": { "v": { "tiefland": 0.1, "hochland": 0.4, "hochlandKuehl": 0.6 }, "src": "NEU" },
+    "falloffPower": { "v": 2, "src": "NEU" },
+    "noiseScale": { "v": { "height": 0.08, "fertility": 0.12, "waterRetention": 0.1 }, "src": "NEU" },
+    "volcanoSize": { "v": 12, "src": "NEU" }
   },
 
   "soil": {
@@ -25,7 +31,8 @@
     },
     "fertilityLossPerHarvest": { "v": 4, "src": "NEU" },
     "fertilityGainPerFertilize": { "v": 3, "src": "NEU" },
-    "fertilityRecoveryPerFallowDay": { "v": 0.5, "src": "NEU" }
+    "fertilityRecoveryPerFallowDay": { "v": 0.5, "src": "NEU" },
+    "classMinQuality": { "v": { "mittel": 0.35, "gut": 0.5, "sehrGut": 0.7 }, "src": "NEU" }
   },
 
   "parcels": {
