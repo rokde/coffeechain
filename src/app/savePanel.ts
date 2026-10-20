@@ -1,9 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { deserialize, serialize } from '../sim/save/save'
-import type { GameState } from '../sim/state'
+import { createState, type GameState } from '../sim/state'
 import { clock } from '../sim/time/time'
 import { errorMessage, loadSlot, pendingLoadError, readSlot, writeSlot } from './saves'
+import { pickSeed } from './seed'
 import { useGameStore } from './store'
 
 export const slots = ['slot-1', 'slot-2', 'slot-3'] as const
@@ -14,12 +15,13 @@ export type SaveMessage =
   { key: 'saveFailed' | 'loadFailed'; reason: string } | { key: 'invalidPending' }
 
 export const useSavePanelStore = defineStore('savePanel', () => {
-  // The game store reads the pending load, so it must exist before pendingLoadError is read.
   const game = useGameStore()
   const invalidPending = pendingLoadError() !== null
   const open = ref(invalidPending)
   const status = ref<Partial<Record<Slot, SlotStatus>>>({})
   const message = ref<SaveMessage | null>(invalidPending ? { key: 'invalidPending' } : null)
+  // True while the panel asks the player to confirm a new game.
+  const confirmNewGame = ref(false)
 
   async function refresh() {
     await Promise.all(
@@ -63,5 +65,18 @@ export const useSavePanelStore = defineStore('savePanel', () => {
     }
   }
 
-  return { open, status, message, refresh, save, load }
+  // The resume step at start loads the new world from the slot autosave.
+  async function newGame() {
+    message.value = null
+    confirmNewGame.value = false
+    try {
+      await writeSlot('autosave', serialize(createState(pickSeed(''))))
+    } catch (error) {
+      message.value = { key: 'saveFailed', reason: errorMessage(error) }
+      return
+    }
+    location.reload()
+  }
+
+  return { open, status, message, confirmNewGame, refresh, save, load, newGame }
 })

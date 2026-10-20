@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { slots, useSavePanelStore, type SlotStatus } from '../app/savePanel'
 import de from './i18n/de.json'
 
 const t = de.savePanel
 const panel = useSavePanelStore()
 onMounted(panel.refresh)
+// A closed panel opens again without the confirm step.
+onUnmounted(() => (panel.confirmNewGame = false))
 
 function statusText(status: SlotStatus | undefined) {
   if (status === undefined) return ''
@@ -76,6 +78,30 @@ const messageText = computed(() => {
           </button>
         </li>
       </ul>
+      <div
+        v-if="panel.confirmNewGame"
+        class="new-game"
+        role="group"
+        aria-labelledby="new-game-text"
+        data-testid="save-new-game-step"
+      >
+        <p id="new-game-text">{{ t.newGameConfirm }}</p>
+        <button type="button" data-testid="save-new-game-confirm" @click="panel.newGame()">
+          {{ t.newGame }}
+        </button>
+        <button
+          type="button"
+          data-testid="save-new-game-cancel"
+          @click="panel.confirmNewGame = false"
+        >
+          {{ t.cancel }}
+        </button>
+      </div>
+      <div v-else class="new-game">
+        <button type="button" data-testid="save-new-game" @click="panel.confirmNewGame = true">
+          {{ t.newGame }}
+        </button>
+      </div>
     </section>
   </div>
 </template>
@@ -131,6 +157,18 @@ li {
   gap: 8px;
   padding: 8px 0;
   border-top: 1px solid rgb(255 255 255 / 10%);
+}
+.new-game {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid rgb(255 255 255 / 10%);
+}
+.new-game p {
+  flex-basis: 100%;
+  margin: 0;
 }
 .name {
   font-weight: 600;

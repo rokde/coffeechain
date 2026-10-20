@@ -12,7 +12,8 @@ import { installDebugKeys } from './app/debugKeys'
 import { fpsFromFrames } from './app/fps'
 import { installHelpKeys } from './app/helpKeys'
 import { installSpeedKeys } from './app/speedKeys'
-import { useGameStore } from './app/store'
+import { startState } from './app/resume'
+import { setStartState, useGameStore } from './app/store'
 import { useViewStore } from './app/view'
 import { CAMERA, createCamera, gestureZoomDelta, startView, wheelZoomDelta } from './render/camera'
 import { createFieldMarks, FIELD_LABEL_STYLE, fieldAnchors, hoveredField } from './render/fields'
@@ -77,7 +78,9 @@ function showModelRow(scene: Scene, camera: Camera) {
   }
 }
 
-function start() {
+async function start() {
+  // The store and the terrain need the first world, so read it before the rest.
+  setStartState(await startState(location.search))
   const canvas = document.querySelector<HTMLCanvasElement>('#scene')!
   const { renderer, scene } = createScene(canvas)
   const view = createCamera(window.innerWidth / window.innerHeight, balance().world.size)
@@ -399,4 +402,4 @@ function start() {
   createApp(Hud).use(pinia).mount('#hud')
 }
 
-if (configIsValid()) start()
+if (configIsValid()) void start()
