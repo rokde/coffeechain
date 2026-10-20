@@ -22,7 +22,9 @@ export const CAMERA = {
 }
 
 // The start view keeps the start area inside this part of the screen (NDC), away from the HUD.
-export const START_FRAME = { x: 0.9, y: 0.75 }
+// At 1280 x 900 the HUD covers x 16–316 (left panels) and 934–1264 (right panel),
+// y 16–76 (top bar) and 802–884 (toolbar). That leaves NDC x [-0.51, 0.46], y [-0.78, 0.83].
+export const START_FRAME = { left: -0.45, right: 0.42, bottom: -0.7, top: 0.78 }
 
 // Turns the yaw (degrees) by 90° per step. E is +1, Q is -1. Result is in [0, 360).
 export function rotateYaw(yaw: number, steps: number): number {
@@ -88,16 +90,20 @@ export function startView(world: World, props: WorldProps, aspect: number) {
   const p = (PITCH * Math.PI) / 180
   const right = { x: Math.cos(y), z: -Math.sin(y) }
   const up = { x: -Math.sin(p) * Math.sin(y), y: Math.cos(p), z: -Math.sin(p) * Math.cos(y) }
+  // The largest zoom that keeps the screen offset s (view units at zoom 1) inside [lo, hi] (NDC).
+  const fit = (s: number, lo: number, hi: number, half: number) =>
+    s > 0 ? (hi * half) / s : s < 0 ? (lo * half) / s : Infinity
   let zoom = Infinity
   for (const q of points) {
     const dx = q.x - target.x
     const dz = q.z - target.z
-    const sx = Math.abs(dx * right.x + dz * right.z)
-    const sy = Math.abs(dx * up.x + q.y * up.y + dz * up.z)
+    const sx = dx * right.x + dz * right.z
+    const sy = dx * up.x + q.y * up.y + dz * up.z
+    const { left, right: r, bottom, top } = START_FRAME
     zoom = Math.min(
       zoom,
-      (START_FRAME.x * VIEW_HEIGHT * aspect) / 2 / sx,
-      (START_FRAME.y * VIEW_HEIGHT) / 2 / sy,
+      fit(sx, left, r, (VIEW_HEIGHT * aspect) / 2),
+      fit(sy, bottom, top, VIEW_HEIGHT / 2),
     )
   }
   return { target, zoom: clampZoom(zoom) }

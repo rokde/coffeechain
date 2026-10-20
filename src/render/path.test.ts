@@ -43,4 +43,23 @@ describe('buildPathGeometry (S40b)', () => {
       }
     }
   })
+  it('never doubles back: no two following center segments meet at an angle near 180°', () => {
+    for (const seed of [...Array.from({ length: 20 }, (_, i) => i + 1), 60]) {
+      const world = generateWorld(seed, balance())
+      const pos = buildPathGeometry(world, placeProps(world, balance()).path).getAttribute(
+        'position',
+      )
+      const centre = Array.from({ length: pos.count / 2 }, (_, i) =>
+        new Vector3()
+          .fromBufferAttribute(pos, 2 * i)
+          .add(new Vector3().fromBufferAttribute(pos, 2 * i + 1))
+          .multiplyScalar(0.5)
+          .setY(0),
+      )
+      const dirs = centre.slice(1).map((c, i) => c.clone().sub(centre[i]!).normalize())
+      for (let i = 1; i < dirs.length; i++) {
+        expect(dirs[i]!.dot(dirs[i - 1]!)).toBeGreaterThan(-0.9)
+      }
+    }
+  })
 })

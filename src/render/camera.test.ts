@@ -246,15 +246,18 @@ describe('startView (S40b)', () => {
     expect(points.length).toBe(props.path.length + 6)
     for (const { x, z } of points) {
       const q = new Vector3(x, terrainHeightAt(world, x, z), z).project(camera.camera)
-      expect(Math.abs(q.x)).toBeLessThanOrEqual(START_FRAME.x + 1e-9)
-      expect(Math.abs(q.y)).toBeLessThanOrEqual(START_FRAME.y + 1e-9)
+      expect(q.x).toBeGreaterThanOrEqual(START_FRAME.left - 1e-9)
+      expect(q.x).toBeLessThanOrEqual(START_FRAME.right + 1e-9)
+      expect(q.y).toBeGreaterThanOrEqual(START_FRAME.bottom - 1e-9)
+      expect(q.y).toBeLessThanOrEqual(START_FRAME.top + 1e-9)
     }
     return view.zoom
   }
 
   it('AC-1: frames the start area inside the frame region for seed 48213 and 20 more seeds', () => {
-    expect(START_FRAME).toEqual({ x: 0.9, y: 0.75 })
-    expect(zoomOf(48213)).toBeGreaterThanOrEqual(2)
+    expect(START_FRAME).toEqual({ left: -0.45, right: 0.42, bottom: -0.7, top: 0.78 })
+    // The start zoom was 1 before S40b. It is about 1.3 now.
+    expect(zoomOf(48213)).toBeGreaterThan(1.2)
     for (let seed = 1; seed <= 20; seed++) zoomOf(seed)
   })
 
