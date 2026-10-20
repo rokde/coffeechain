@@ -39,7 +39,7 @@ describe('createState', () => {
     const state = createState(42)
     expect(state.money).toBe(50000)
     expect(state.world).toEqual(generateWorld(42, balance()))
-    expect(state.farm).toEqual({ parcels: {}, fields: [], nextFieldId: 0 })
+    expect(state.farm).toEqual({ parcels: {}, fields: [], nextFieldId: 0, plants: {} })
   })
 })
 

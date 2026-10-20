@@ -1,11 +1,14 @@
 import { balance } from '../balance'
 import type { GameState } from '../state'
+import type { PlantState } from './plants'
 
 export interface FarmState {
   // Parcel index (y * size + x) → field id.
   parcels: Record<number, number>
   fields: { id: number; name: string }[]
   nextFieldId: number
+  // Parcel index → plant on it.
+  plants: Record<number, PlantState>
 }
 
 export interface CreateParcels {
@@ -65,5 +68,9 @@ export function createParcels(state: GameState, command: CreateParcels): GameSta
   }
 
   if (cost > state.money) throw new Error(`Not enough money: cost ${cost}, balance ${state.money}`)
-  return { ...state, money: state.money - cost, farm: { parcels: owned, fields, nextFieldId } }
+  return {
+    ...state,
+    money: state.money - cost,
+    farm: { ...state.farm, parcels: owned, fields, nextFieldId },
+  }
 }
