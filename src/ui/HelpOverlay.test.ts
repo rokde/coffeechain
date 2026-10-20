@@ -53,6 +53,11 @@ describe('HelpOverlay (S35a)', () => {
       'Hilfe schließen / Werkzeug ablegen',
       'Rechtsklick',
       'Werkzeug ablegen',
+      'Linksklick mit Auswählen',
+      'Umschalt + Linksklick mit Auswählen',
+      'Rechteck markieren',
+      'Erst markieren, dann Werkzeug',
+      'Kosten prüfen und rechts bestätigen',
     ])
       expect(controls).toContain(text)
     expect(controls.match(/<dt[^>]*>Esc/g)).toHaveLength(1)

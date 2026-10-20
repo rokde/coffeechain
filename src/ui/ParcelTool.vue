@@ -4,21 +4,18 @@ import { useSelectionStore } from '../app/selection'
 import { useGameStore } from '../app/store'
 import { quoteParcels } from '../sim/farm/parcels'
 import type { GameState } from '../sim/state'
+import { createSelected, validParcels } from './farmAction'
 import de from './i18n/de.json'
 import { formatMoney } from './money'
 
 const t = de.parcelTool
 const game = useGameStore()
 const selection = useSelectionStore()
-// quoteParcels only reads the state, so the cast of the readonly snapshot is safe.
-const cost = computed(() => quoteParcels(game.state as GameState, selection.parcels))
+// validParcels and quoteParcels only read the state, so the cast of the readonly snapshot is safe.
+const parcels = computed(() => validParcels(game.state as GameState, 'parcel'))
+const cost = computed(() => quoteParcels(game.state as GameState, parcels.value))
 const tooExpensive = computed(() => cost.value > game.state.money)
-const disabled = computed(() => selection.parcels.length === 0 || tooExpensive.value)
-
-function create() {
-  game.dispatch({ type: 'CreateParcels', parcels: selection.parcels })
-  selection.parcels = []
-}
+const disabled = computed(() => parcels.value.length === 0 || tooExpensive.value)
 </script>
 
 <template>
@@ -31,12 +28,17 @@ function create() {
     <template v-if="selection.parcels.length > 0">
       <dl>
         <dt>{{ t.count }}</dt>
-        <dd data-testid="parcel-tool-count">{{ selection.parcels.length }}</dd>
+        <dd data-testid="parcel-tool-count">{{ parcels.length }}</dd>
         <dt>{{ t.total }}</dt>
         <dd data-testid="parcel-tool-total">{{ formatMoney(cost) }}</dd>
       </dl>
       <p v-if="tooExpensive" class="short" data-testid="parcel-tool-short">{{ t.tooExpensive }}</p>
-      <button type="button" data-testid="parcel-tool-create" :disabled="disabled" @click="create">
+      <button
+        type="button"
+        data-testid="parcel-tool-create"
+        :disabled="disabled"
+        @click="createSelected"
+      >
         {{ t.create }}
       </button>
     </template>

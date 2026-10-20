@@ -4,7 +4,8 @@ import { dispatch } from '../sim/commands'
 import { isFree, quoteParcels } from '../sim/farm/parcels'
 import { quotePlant } from '../sim/farm/plants'
 import { createState, type GameState } from '../sim/state'
-import { brushParcel, isClick, strokeParcel, type BrushTool } from './brush'
+import { brushParcel, isClick, strokeParcel } from './brush'
+import type { BrushTool } from './selection'
 
 const fresh = createState(42)
 const [a, b, c] = fresh.world.parcels

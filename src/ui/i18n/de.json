@@ -110,12 +110,12 @@
     "count": "Ausgewählt",
     "total": "Kosten",
     "create": "Anlegen",
-    "hint": "Klicke Parzellen an, um sie sofort zu kaufen; halte die linke Maustaste und ziehe, um mehrere Parzellen zu kaufen. Wasser, zu steile und eigene Parzellen gehen nicht.",
+    "hint": "Klicke Parzellen an, um sie sofort zu kaufen; halte die linke Maustaste und ziehe, um mehrere Parzellen zu kaufen. Wasser, zu steile und eigene Parzellen gehen nicht. Oder markiere zuerst Parzellen mit „Auswählen“ und bestätige hier.",
     "tooExpensive": "Nicht genug CC."
   },
   "plantTool": {
     "heading": "Pflanzen",
-    "hint": "Wähle die Sorte. Klicke dann eigene, leere Parzellen an, um sie sofort zu bepflanzen; halte die linke Maustaste und ziehe, um mehrere Parzellen zu bepflanzen.",
+    "hint": "Wähle die Sorte. Klicke dann eigene, leere Parzellen an, um sie sofort zu bepflanzen; halte die linke Maustaste und ziehe, um mehrere Parzellen zu bepflanzen. Oder markiere zuerst Parzellen mit „Auswählen“ und bestätige hier.",
     "variety": "Sorte",
     "count": "Ausgewählt",
     "total": "Saatgut",
@@ -144,22 +144,22 @@
     "tooExpensive": "Nicht genug CC.",
     "fertilize": {
       "heading": "Düngen",
-      "hint": "Klicke Parzellen mit einer unreifen, ungedüngten Pflanze an, um sie sofort zu düngen; halte die linke Maustaste und ziehe, um mehrere Parzellen zu düngen. Dünger gibt mehr Ertrag.",
+      "hint": "Klicke Parzellen mit einer unreifen, ungedüngten Pflanze an, um sie sofort zu düngen; halte die linke Maustaste und ziehe, um mehrere Parzellen zu düngen. Dünger gibt mehr Ertrag. Oder markiere zuerst Parzellen mit „Auswählen“ und bestätige hier.",
       "action": "Düngen"
     },
     "irrigate": {
       "heading": "Wässern",
-      "hint": "Klicke Parzellen mit einer unreifen, ungewässerten Pflanze an, um sie sofort zu wässern; halte die linke Maustaste und ziehe, um mehrere Parzellen zu wässern.",
+      "hint": "Klicke Parzellen mit einer unreifen, ungewässerten Pflanze an, um sie sofort zu wässern; halte die linke Maustaste und ziehe, um mehrere Parzellen zu wässern. Oder markiere zuerst Parzellen mit „Auswählen“ und bestätige hier.",
       "action": "Wässern"
     },
     "protect": {
       "heading": "Schädlingsschutz",
-      "hint": "Klicke Parzellen mit einer unreifen, ungeschützten Pflanze an, um sie sofort zu schützen; halte die linke Maustaste und ziehe, um mehrere Parzellen zu schützen.",
+      "hint": "Klicke Parzellen mit einer unreifen, ungeschützten Pflanze an, um sie sofort zu schützen; halte die linke Maustaste und ziehe, um mehrere Parzellen zu schützen. Oder markiere zuerst Parzellen mit „Auswählen“ und bestätige hier.",
       "action": "Schützen"
     },
     "harvest": {
       "heading": "Ernten",
-      "hint": "Klicke Parzellen mit einer reifen Pflanze an, um sie sofort zu ernten; halte die linke Maustaste und ziehe, um mehrere Parzellen zu ernten. Was nicht ins Lager passt, bleibt an der Pflanze.",
+      "hint": "Klicke Parzellen mit einer reifen Pflanze an, um sie sofort zu ernten; halte die linke Maustaste und ziehe, um mehrere Parzellen zu ernten. Was nicht ins Lager passt, bleibt an der Pflanze. Oder markiere zuerst Parzellen mit „Auswählen“ und bestätige hier.",
       "action": "Ernten"
     }
   },
@@ -213,6 +213,13 @@
         "keys": "Linke Maustaste ziehen mit Werkzeug",
         "text": "Werkzeug auf mehrere Parzellen anwenden"
       },
+      { "keys": "Linksklick mit Auswählen", "text": "Parzelle markieren" },
+      {
+        "keys": "Umschalt + Linksklick mit Auswählen",
+        "text": "Parzelle zur Markierung hinzufügen oder entfernen"
+      },
+      { "keys": "Linke Maustaste ziehen mit Auswählen", "text": "Rechteck markieren" },
+      { "keys": "Erst markieren, dann Werkzeug", "text": "Kosten prüfen und rechts bestätigen" },
       { "keys": "Rechte Maustaste ziehen", "text": "Karte verschieben" },
       { "keys": "W A S D", "text": "Karte verschieben" },
       { "keys": "Q / E", "text": "Kamera drehen" },
