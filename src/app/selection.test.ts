@@ -2,14 +2,14 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { dispatch } from '../sim/commands'
 import { balance } from '../sim/balance'
-import { isBuildable } from '../sim/farm/parcels'
+import { isBuildable, isFree } from '../sim/farm/parcels'
 import { createState } from '../sim/state'
-import { useSelectionStore } from './selection'
+import { canSelect, useSelectionStore } from './selection'
 
 const state = createState(42)
 const { world } = state
 const find = (test: (p: (typeof world.parcels)[number]) => boolean) => world.parcels.find(test)!
-const land = find((p) => p.zone === 'tiefland' && isBuildable(world, p.x, p.y))
+const land = find((p) => p.zone === 'tiefland' && isFree(state, p.x, p.y))
 const water = find((p) => p.zone === 'wasser')
 const steep = find((p) => p.zone !== 'wasser' && !isBuildable(world, p.x, p.y))
 const at = (p: { x: number; y: number }) => ({ x: p.x, y: p.y })
@@ -49,9 +49,21 @@ describe('selection store (S12)', () => {
   })
 })
 
+describe('canSelect, parcel tool (S21b)', () => {
+  const { hut, market, path } = state.props
+  it.each([hut, market, ...path].map(at))('AC-4: is false for the prop parcel %o', (p) => {
+    expect(canSelect(state, 'parcel', p)).toBe(false)
+  })
+
+  it('AC-4: is true for a free, buildable parcel that the farm does not own', () => {
+    expect(isBuildable(world, land.x, land.y)).toBe(true)
+    expect(canSelect(state, 'parcel', at(land))).toBe(true)
+  })
+})
+
 describe('selection store, plant tool (S13)', () => {
   beforeEach(() => setActivePinia(createPinia()))
-  const other = find((p) => p.zone === 'tiefland' && isBuildable(world, p.x, p.y) && p !== land)
+  const other = find((p) => p.zone === 'tiefland' && isFree(state, p.x, p.y) && p !== land)
   const owned = dispatch(state, { type: 'CreateParcels', parcels: [at(land), at(other)] })
   const planted = dispatch(owned, { type: 'Plant', variety: 'robusta', parcels: [at(other)] })
 
@@ -75,7 +87,7 @@ describe('selection store, plant tool (S13)', () => {
 
 describe('selection store, farm tools (S18a)', () => {
   beforeEach(() => setActivePinia(createPinia()))
-  const lands = world.parcels.filter((p) => p.zone === 'tiefland' && isBuildable(world, p.x, p.y))
+  const lands = world.parcels.filter((p) => p.zone === 'tiefland' && isFree(state, p.x, p.y))
   const [empty, young, done, fresh] = lands.map(at)
   const owned = dispatch(
     { ...state, money: 100000 },

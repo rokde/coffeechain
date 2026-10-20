@@ -5,9 +5,8 @@ import { balance } from '../balance'
 import { dispatch } from '../commands'
 import { createState, type GameState } from '../state'
 import { generateWorld } from '../world/generate'
-import { placeProps } from '../world/props'
 import type { Parcel, World, Zone } from '../world/types'
-import { isBuildable, quoteParcels } from './parcels'
+import { isBuildable, isFree, quoteParcels } from './parcels'
 
 const size = 6
 
@@ -26,12 +25,18 @@ function testWorld(): World {
   return { seed: 0, size, parcels, start: { x: 2, y: 2 } }
 }
 
-// Trees at (3,3), (1,4) and (4,2). The test world has no poor soil, so placeProps sets no trees.
+// Trees at (3,3), (1,4) and (4,2). The hut, path and market are in row 5, away from the parcels that the tests buy.
 const testState = (money = 50000): GameState => ({
   ...createState(1),
   world: testWorld(),
   props: {
-    ...placeProps(testWorld(), balance()),
+    hut: { x: 2, y: 5 },
+    market: { x: 0, y: 5 },
+    path: [
+      { x: 2, y: 5 },
+      { x: 1, y: 5 },
+      { x: 0, y: 5 },
+    ],
     trees: [
       { x: 3, y: 3 },
       { x: 1, y: 4 },
@@ -292,12 +297,47 @@ describe('isBuildable (S8)', () => {
     expect(isBuildable(edge, 2, 2)).toBe(false)
   })
 
-  it('AC-3: CreateParcels rejects exactly the parcels that are not buildable', () => {
+  it('AC-3: CreateParcels rejects exactly the parcels that are not free', () => {
     const state = { ...createState(42), money: 1e9 }
     for (const { x, y } of state.world.parcels) {
       const buy1 = () => buy(state, [x, y])
-      if (isBuildable(state.world, x, y)) expect(buy1).not.toThrow()
+      if (isFree(state, x, y)) expect(buy1).not.toThrow()
       else expect(buy1).toThrow()
+    }
+  })
+})
+
+describe('isFree (S21b)', () => {
+  const state = { ...createState(42), money: 1e9 }
+  const { hut, market, path } = state.props
+  const props = [
+    ['the hut', hut],
+    ['the market', market],
+    ...path.map((p) => [`the path parcel ${p.x},${p.y}`, p] as const),
+  ] as const
+
+  it.each(props)('AC-4: CreateParcels throws for %s and keeps the money', (_, p) => {
+    expect(isFree(state, p.x, p.y)).toBe(false)
+    const before = structuredClone(state)
+    expect(() => buy(state, [p.x, p.y])).toThrow()
+    expect(state).toEqual(before)
+  })
+
+  it('AC-4: is true for a buildable parcel that has no hut, market or path', () => {
+    const free = state.world.parcels.find(
+      (p) => isBuildable(state.world, p.x, p.y) && !path.some((q) => q.x === p.x && q.y === p.y),
+    )!
+    expect(isFree(state, free.x, free.y)).toBe(true)
+    expect(buy(state, [free.x, free.y]).farm.parcels).toHaveProperty(
+      String(free.y * state.world.size + free.x),
+    )
+  })
+
+  it('AC-4: rejects the hut, market and path parcels also when the terrain is buildable', () => {
+    const s = testState()
+    for (const p of s.props.path) {
+      expect(isBuildable(s.world, p.x, p.y)).toBe(true)
+      expect(() => buy(s, [p.x, p.y])).toThrow()
     }
   })
 })
