@@ -10,6 +10,7 @@ import de from './i18n/de.json'
 import { formatMoney } from './money'
 import FarmTool from './FarmTool.vue'
 import MarketPanel from './MarketPanel.vue'
+import MessagePanel from './MessagePanel.vue'
 import ParcelInspector from './ParcelInspector.vue'
 import OverlayPanel from './OverlayPanel.vue'
 import ParcelTool from './ParcelTool.vue'
@@ -68,7 +69,7 @@ const storageText = computed(() =>
         <span class="chip money" data-testid="money">{{ formatMoney(store.state.money) }}</span>
       </div>
     </header>
-    <aside class="frame left-panel" data-testid="hud-left-panel" />
+    <aside class="frame left-panel" data-testid="hud-left-panel"><MessagePanel /></aside>
     <OverlayPanel />
     <aside class="frame right-panel" data-testid="hud-right-panel">
       <ParcelTool v-if="selection.tool === 'parcel'" />
