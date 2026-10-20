@@ -19,6 +19,8 @@ export interface GameState {
   storage: StorageState
   market: MarketState
   events: GameEvent[]
+  // Start day of each research breakthrough. Breakthroughs are permanent.
+  research: number[]
   milestones: { harvested: number; harvestProHour?: number }
 }
 
@@ -33,6 +35,7 @@ export function createState(seed: number): GameState {
     storage: { batches: [] },
     market: { volumes: [], seeds: {} },
     events: [],
+    research: [],
     milestones: { harvested: 0 },
   }
 }

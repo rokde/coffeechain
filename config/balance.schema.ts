@@ -110,6 +110,7 @@ export const balanceSchema = z.object({
     maxDurationDays: val(int),
     warningDays: val(int),
     graceDaysAtStart: val(int),
+    researchMaxCount: val(int),
     types: val(
       z.object({
         frost: timedEvent.extend({ yield: numMap, price: numMap }),

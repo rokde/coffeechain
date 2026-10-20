@@ -13,12 +13,13 @@ function limit(factor: number): number {
   return Math.min(1 + max, Math.max(1 - max, factor))
 }
 
-// Product of the yield effects of the active events on one parcel, within ±events.maxEffect.
+// Product of the yield effects of the active events and research breakthroughs on one parcel, within ±events.maxEffect.
 export function yieldEventFactor(state: GameState, parcelIndex: number, day: number): number {
   const cfg = balance()
   const types = cfg.events.types
   const zone = state.world.parcels[parcelIndex]!.zone
-  let factor = 1
+  const research = state.research.filter((start) => start <= day).length
+  let factor = 1 + types.research.yieldBonus * research
   for (const e of activeEvents(state, day)) {
     if (e.type === 'frost') factor *= 1 + (types.frost.yield[zone] ?? 0)
     if (e.type === 'pests' && zone === PEST_ZONE) {
