@@ -1,7 +1,7 @@
 import { BufferGeometry, Float32BufferAttribute, Mesh, MeshLambertMaterial } from 'three'
 import type { FarmState } from '../sim/farm/parcels'
 import type { World } from '../sim/world/types'
-import { corner } from './picking'
+import { corner, type ParcelPos } from './picking'
 import { parcelCenter } from './surface'
 
 // Render constant: the dark soil of the fields in docs/mockups/.
@@ -17,6 +17,30 @@ export function fieldAnchors(world: World, farm: FarmState) {
       centers.reduce((sum, c) => sum + c[key], 0) / centers.length
     return { id, name, position: { x: mean('x'), y: mean('y'), z: mean('z') } }
   })
+}
+
+// Render constant: a small, light label, so it covers little of the map. The layer has no pointer events.
+export const FIELD_LABEL_STYLE =
+  'position:absolute;transform:translate(-50%,calc(-100% - 6px));white-space:nowrap;' +
+  'padding:2px 8px;border-radius:999px;background:rgb(43 36 32 / 65%);color:#f5ece0;' +
+  'font:600 12px system-ui,sans-serif;transition:opacity 150ms'
+
+type Box = { left: number; top: number; right: number; bottom: number }
+
+// The field whose label must fade: a label under the pointer first, else the field of the hovered parcel.
+export function hoveredField(
+  parcel: ParcelPos | null,
+  farm: FarmState,
+  size: number,
+  pointer: { x: number; y: number },
+  labels: { id: number; box: Box }[],
+): number | null {
+  const { x, y } = pointer
+  const hit = labels.find(
+    ({ box }) => x >= box.left && x <= box.right && y >= box.top && y <= box.bottom,
+  )
+  if (hit) return hit.id
+  return parcel ? (farm.parcels[parcel.y * size + parcel.x] ?? null) : null
 }
 
 // One brown quad on each owned parcel, a little above the terrain. show rebuilds the geometry.
