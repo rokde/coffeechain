@@ -126,6 +126,19 @@ button[aria-checked='true'] .thumb {
   border-radius: 4px;
 }
 @media (max-width: 480px) {
+  .overlay-panel {
+    padding: 10px 12px;
+  }
+  button {
+    gap: 6px;
+    font-size: 13px;
+  }
+  .track {
+    width: 46px;
+  }
+  button[aria-checked='true'] .thumb {
+    transform: translateX(18px);
+  }
   .legend {
     grid-template-columns: 1fr;
   }

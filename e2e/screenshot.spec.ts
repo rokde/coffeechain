@@ -151,8 +151,12 @@ test('S7: overlay panel fits a narrow window', async ({ page }) => {
   for (const mode of ['soil', 'zone']) {
     await page.getByTestId(`overlay-${mode}`).click()
     const track = page.getByTestId(`overlay-${mode}`).locator('.track')
-    expect((await track.boundingBox())!.width).toBe(52)
     const box = (await panel.boundingBox())!
+    const t = (await track.boundingBox())!
+    expect(t.width).toBe(46)
+    // The track must end at the inner edge of the panel, in line with the other switch.
+    const padding = await panel.evaluate((el) => parseFloat(getComputedStyle(el).paddingRight))
+    expect(t.x + t.width).toBeCloseTo(box.x + box.width - padding, 0)
     for (const item of await page.getByTestId('overlay-legend').locator('li').all()) {
       const fits = await item.evaluate((el) => el.scrollWidth <= el.clientWidth)
       const b = (await item.boundingBox())!
