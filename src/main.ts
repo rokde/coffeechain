@@ -8,7 +8,7 @@ import { selectParcel } from './app/market'
 import { isFarmTool, useSelectionStore } from './app/selection'
 import { useGameStore } from './app/store'
 import { useViewStore } from './app/view'
-import { createCamera } from './render/camera'
+import { CAMERA, createCamera } from './render/camera'
 import { createFieldMarks, fieldAnchors } from './render/fields'
 import { loadModel, MODEL_IDS } from './render/models'
 import { createPlants, plantsKey } from './render/plants'
@@ -72,7 +72,7 @@ function showModelRow(scene: Scene, camera: Camera) {
 function start() {
   const canvas = document.querySelector<HTMLCanvasElement>('#scene')!
   const { renderer, scene } = createScene(canvas)
-  const view = createCamera(window.innerWidth / window.innerHeight)
+  const view = createCamera(window.innerWidth / window.innerHeight, balance().world.size)
 
   const resize = () => {
     renderer.setSize(window.innerWidth, window.innerHeight, false)
@@ -81,12 +81,58 @@ function start() {
   resize()
   window.addEventListener('resize', resize)
 
+  const held = new Set<string>()
   window.addEventListener('keydown', (event) => {
     if (event.repeat || event.metaKey || event.ctrlKey || event.altKey) return
+    const t = event.target
+    if (
+      t instanceof HTMLInputElement ||
+      t instanceof HTMLTextAreaElement ||
+      (t as HTMLElement).isContentEditable
+    )
+      return
     const key = event.key.toLowerCase()
     if (key === 'q') view.rotate(-1)
     if (key === 'e') view.rotate(1)
+    if (key.length === 1 && 'wasd'.includes(key)) held.add(key)
   })
+  window.addEventListener('keyup', (event) => held.delete(event.key.toLowerCase()))
+  // A key release outside the window never arrives.
+  window.addEventListener('blur', () => held.clear())
+
+  const ndcOf = (event: MouseEvent) =>
+    new Vector2(
+      (event.offsetX / canvas.clientWidth) * 2 - 1,
+      1 - (event.offsetY / canvas.clientHeight) * 2,
+    )
+  // A trackpad pinch sends wheel events with ctrlKey. preventDefault stops the page zoom.
+  canvas.addEventListener(
+    'wheel',
+    (event) => {
+      event.preventDefault()
+      view.zoomAt(ndcOf(event), event.deltaY)
+    },
+    { passive: false },
+  )
+  canvas.addEventListener('contextmenu', (event) => event.preventDefault())
+  let drag: { x: number; y: number } | null = null
+  canvas.addEventListener('pointerdown', (event) => {
+    if (event.button !== 2) return
+    drag = { x: event.clientX, y: event.clientY }
+    canvas.setPointerCapture(event.pointerId)
+  })
+  canvas.addEventListener('pointermove', (event) => {
+    if (!drag) return
+    view.pan(event.clientX - drag.x, event.clientY - drag.y, canvas.clientHeight)
+    drag = { x: event.clientX, y: event.clientY }
+  })
+  const endDrag = (event: PointerEvent) => {
+    if (!drag) return
+    drag = null
+    canvas.releasePointerCapture(event.pointerId)
+  }
+  canvas.addEventListener('pointerup', endDrag)
+  canvas.addEventListener('pointercancel', endDrag)
 
   const debugModels = new URLSearchParams(location.search).get('debug') === 'models'
   let placeLabels = () => {}
@@ -168,11 +214,7 @@ function start() {
     // Select tool: a click on the terrain selects its parcel, a click beside it clears the selection.
     // Parcel, plant and farm tools: a click on the terrain adds or removes its parcel.
     canvas.addEventListener('click', (event) => {
-      const ndc = new Vector2(
-        (event.offsetX / canvas.clientWidth) * 2 - 1,
-        1 - (event.offsetY / canvas.clientHeight) * 2,
-      )
-      const parcel = pickParcel(ndc, view.camera, terrain, world.size)
+      const parcel = pickParcel(ndcOf(event), view.camera, terrain, world.size)
       // toggle only reads the state, so the cast of the readonly snapshot is safe.
       const { tool } = selection
       if (tool === 'parcel' || tool === 'plant' || isFarmTool(tool)) {
@@ -187,8 +229,15 @@ function start() {
 
   // setAnimationLoop runs on requestAnimationFrame.
   renderer.setAnimationLoop((now) => {
-    const due = advance(carryMs, now - (last ?? now), store.state.time.speed, msPerTick)
+    const frameMs = now - (last ?? now)
+    const due = advance(carryMs, frameMs, store.state.time.speed, msPerTick)
     last = now
+    const right = Number(held.has('d')) - Number(held.has('a'))
+    const up = Number(held.has('w')) - Number(held.has('s'))
+    if (right || up) {
+      const dist = (CAMERA.keySpeed * frameMs) / 1000 / view.camera.zoom
+      view.panBy(right * dist, up * dist)
+    }
     carryMs = due.carryMs
     // step never changes its input, so the cast of the readonly snapshot is safe.
     let state = store.state as GameState

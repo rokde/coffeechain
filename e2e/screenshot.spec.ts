@@ -532,3 +532,46 @@ test('S18c: inspector yield forecast', async ({ page }) => {
   await page.screenshot({ path: 'docs/progress/S18c.png' })
   expect(errors).toEqual([])
 })
+
+test('S22: wheel zoom, right-drag pan and picking after zoom', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+
+  await page.goto('/?seed=48213')
+  const canvas = page.locator('canvas#scene')
+  const inspector = page.getByTestId('parcel-inspector')
+  const title = inspector.locator('.title')
+  // Pause the game, so that only the camera changes the image.
+  await page.getByTestId('speed-0').click()
+
+  await canvas.click({ position: { x: 720, y: 450 } })
+  await expect(inspector).toBeVisible()
+  const selected = await title.textContent()
+
+  const before = await canvas.screenshot()
+  await page.mouse.move(800, 400)
+  await page.mouse.wheel(0, -300)
+  await expect.poll(async () => (await canvas.screenshot()).equals(before)).toBe(false)
+
+  // A right-drag pans the view. It keeps the selection and opens no context menu.
+  const menus = page.evaluate(
+    () =>
+      new Promise<boolean>((resolve) =>
+        window.addEventListener('contextmenu', (event) => resolve(event.defaultPrevented), {
+          once: true,
+        }),
+      ),
+  )
+  await page.mouse.move(700, 500)
+  await page.mouse.down({ button: 'right' })
+  await page.mouse.move(600, 450, { steps: 5 })
+  await page.mouse.up({ button: 'right' })
+  expect(await menus).toBe(true)
+  await expect(title).toHaveText(selected!)
+
+  await page.getByRole('button', { name: 'Auswahl schließen' }).click()
+  await expect(inspector).toHaveCount(0)
+  await canvas.click({ position: { x: 720, y: 450 } })
+  await expect(inspector).toBeVisible()
+  expect(errors).toEqual([])
+})
