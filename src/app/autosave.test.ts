@@ -45,6 +45,20 @@ describe('installAutosave (S43)', () => {
     expect(writeSlot).toHaveBeenCalledOnce()
   })
 
+  it('AC-1: after a load of an earlier day, writes once at the next day', async () => {
+    const day = balance().time.ticksPerGameDay
+    const store = useGameStore()
+    installAutosave(store)
+    await setHour(store, day * 9)
+    vi.mocked(writeSlot).mockClear()
+
+    await setHour(store, day * 2 + 5)
+    expect(writeSlot).not.toHaveBeenCalled()
+    await setHour(store, day * 3)
+    expect(writeSlot).toHaveBeenCalledOnce()
+    expect(clock(deserialize(vi.mocked(writeSlot).mock.calls[0]![1]).time.hour).day).toBe(4)
+  })
+
   it('logs a failed write and continues', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.mocked(writeSlot).mockRejectedValue('disk full')
