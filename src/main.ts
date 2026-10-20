@@ -11,6 +11,7 @@ import { useViewStore } from './app/view'
 import { createCamera } from './render/camera'
 import { createFieldMarks, fieldAnchors } from './render/fields'
 import { loadModel, MODEL_IDS } from './render/models'
+import { createPlants, plantsKey } from './render/plants'
 import { createOutline, createOutlines, pickParcel } from './render/picking'
 import { createProps, syncTrees } from './render/props'
 import { applyOverlay } from './render/overlays'
@@ -104,7 +105,13 @@ function start() {
     const terrain = createTerrain(world)
     const outline = createOutline(terrain, world.size)
     const outlines = createOutlines(terrain, world.size)
-    scene.add(terrain, outline.line, outlines.line)
+    const plants = createPlants(world)
+    scene.add(terrain, outline.line, outlines.line, plants.group)
+    watch(
+      () => plantsKey(store.state.farm.plants, store.state.time.hour),
+      () => plants.show(store.state.farm.plants, store.state.time.hour),
+      { immediate: true },
+    )
     const viewStore = useViewStore(pinia)
     watch(
       () => viewStore.overlay,
