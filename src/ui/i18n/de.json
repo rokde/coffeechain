@@ -207,5 +207,19 @@
       { "keys": "H", "text": "Hilfe öffnen / schließen" },
       { "keys": "Esc", "text": "Hilfe schließen" }
     ]
+  },
+  "savePanel": {
+    "open": "Spielstand",
+    "heading": "Spielstand",
+    "close": "Spielstand schließen",
+    "slot": "Platz {n}",
+    "save": "Speichern",
+    "load": "Laden",
+    "day": "Tag {day}",
+    "empty": "leer",
+    "invalid": "ungültig",
+    "saveFailed": "Speichern fehlgeschlagen: {reason}",
+    "loadFailed": "Laden fehlgeschlagen: {reason}",
+    "invalidPending": "Der geladene Spielstand ist ungültig. Ein neues Spiel hat begonnen."
   }
 }
