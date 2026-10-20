@@ -21,6 +21,7 @@
   },
   "inspector": {
     "heading": "Parzelle",
+    "empty": "Wähle eine Parzelle.",
     "position": "{x} / {y}",
     "close": "Auswahl schließen",
     "zone": "Zone",
@@ -169,6 +170,12 @@
     "money": "Nicht genug CC."
   },
   "storage": "Lager {used} / {capacity}",
+  "phase": {
+    "name": "Phase {phase}",
+    "progress": "· {percent} %",
+    "hint": "Kapital {capital} · nächste Phase ab {next}",
+    "lastHint": "Höchste Phase erreicht"
+  },
   "farmTool": {
     "count": "Ausgewählt",
     "total": "Kosten",

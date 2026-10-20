@@ -64,6 +64,22 @@ test('S9: top bar fits a narrow window', async ({ page }) => {
   await expect(page.getByTestId('storage')).toBeInViewport({ ratio: 1 })
 })
 
+for (const width of [1100, 800, 390, 360]) {
+  test(`S47: phase chip fits the top bar at ${width} px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 })
+    await page.goto('/?seed=4294967295')
+    const bar = page.getByTestId('hud-top-bar')
+    await expect(page.getByTestId('phase')).toHaveText('Phase 1 · 25 %')
+    await page.screenshot({ path: `docs/progress/S47-${width}.png` })
+    expect(await bar.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+    await expect(page.getByTestId('phase')).toBeInViewport({ ratio: 1 })
+    const seed = (await page.getByTestId('world-seed').boundingBox())!
+    const stats = (await page.locator('.stats').boundingBox())!
+    // At 760 px or less the seed and the stats are tabs below the bar. They must not overlap.
+    expect(seed.x + seed.width <= stats.x || seed.y + seed.height <= stats.y).toBe(true)
+  })
+}
+
 test('S21c: keys change the speed', async ({ page }) => {
   await page.goto('/')
   const expectActive = async (active: number) => {
@@ -476,7 +492,10 @@ test('S20: market panel from the toolbar and the market stand', async ({ page })
   await expect(page.getByTestId('parcel-inspector')).toHaveCount(0)
   await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
   await page.screenshot({ path: 'docs/progress/S20.png' })
-  // The processing rows of S46 make the panel scroll down, but never sideways.
+  // The processing rows of S46 make the right panel scroll down at its max height, never sideways.
+  const right = page.getByTestId('hud-right-panel')
+  expect((await right.boundingBox())!.height).toBeLessThanOrEqual(480)
+  expect(await right.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true)
   expect(await panel.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
 
   // Select a land parcel first: the market click must clear it.
@@ -1223,6 +1242,7 @@ for (const [width, height, events] of [
       page.getByTestId('clock'),
       page.getByRole('group', { name: 'Spielgeschwindigkeit' }),
       page.getByTestId('storage'),
+      page.getByTestId('phase'),
       page.getByTestId('money'),
       page.getByTestId('save-button'),
       page.getByTestId('help-button'),
@@ -1300,3 +1320,34 @@ test('S46: process raw coffee and sell washed coffee in the market panel', async
   await expect(sellWashed).toBeDisabled()
   expect(errors).toEqual([])
 })
+
+for (const [width, height] of [
+  [1440, 900],
+  [800, 600],
+  [390, 844],
+] as const) {
+  test(`U1: compact right panel with a hint at ${width}x${height}`, async ({ page }) => {
+    await page.setViewportSize({ width, height })
+    await page.goto('/?seed=48213')
+    await page.getByTestId('first-steps-close').click()
+    await page.getByTestId('tool-select').click()
+    const panel = page.getByTestId('hud-right-panel')
+    await expect(panel).toBeVisible()
+    await expect(panel).toContainText('Wähle eine Parzelle.')
+    expect((await panel.boundingBox())!.height).toBeLessThanOrEqual(120)
+    await page.screenshot({ path: `docs/progress/U1-${width}.png` })
+
+    if (width === 800) return
+    // The screen centre shows parcel (35, 38) at the start view, which is land.
+    await page.locator('canvas#scene').click({ position: { x: width / 2, y: height / 2 } })
+    await expect(page.getByTestId('parcel-inspector')).toBeVisible()
+    await expect(page.getByTestId('inspector-empty')).toHaveCount(0)
+    if (width !== 390) return
+    const style = await panel.evaluate((el) => {
+      const s = getComputedStyle(el)
+      return { maxHeight: s.maxHeight, overflowY: s.overflowY }
+    })
+    expect(style).toEqual({ maxHeight: '464px', overflowY: 'auto' })
+    expect((await panel.boundingBox())!.height).toBeLessThanOrEqual(464)
+  })
+}

@@ -46,6 +46,7 @@ export const gameStateSchema = z.object({
     trees: z.array(place),
   }),
   money: num,
+  invested: num,
   farm: z.object({
     parcels: z.record(z.string(), int),
     fields: z.array(z.object({ id: int, name: z.string() })),

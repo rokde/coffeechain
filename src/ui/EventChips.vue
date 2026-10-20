@@ -34,8 +34,8 @@ const events = computed(() => activeEvents(game.state as GameState))
   line-height: 14px;
   white-space: nowrap;
 }
-/* Below 1024 px the stats are a tab too, so the events hang below the stats tab. */
-@media (max-width: 1024px) {
+/* Below 1280 px the stats are a tab too, so the events hang below the stats tab. */
+@media (max-width: 1279px) {
   .events {
     right: 0;
   }
