@@ -14,3 +14,7 @@ Values in `config/balance.json` with `src: "NEU"` that the world generation (S3)
 | `soil.classMinQuality` | mittel 0.35, gut 0.5, sehrGut 0.7 | Which `soilQuality` (0–1) starts each soil class? Lower values are `karg`. |
 
 `soilQuality` is the mean of `fertility` and `waterRetention`, divided by 100. Both have the same weight.
+
+## Other questions
+
+- **Fertilizer cost (S15):** PRD §6 says that the game buys fertilizer "at the bank price". The PRD table gives a care cost for each variety. The `Fertilize` command uses `varieties.*.careCost.fertilizer` (1 / 2 / 4 / 6 CC). `market.fertilizerPrice` stays unused. Robert must decide which price applies.

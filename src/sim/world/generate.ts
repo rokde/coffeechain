@@ -16,7 +16,7 @@ export function generateWorld(seed: number, balance: Balance): World {
   )
 }
 
-function soilClassOf(quality: number, min: Balance['soil']['classMinQuality']): SoilClass {
+export function soilClassOf(quality: number, min: Balance['soil']['classMinQuality']): SoilClass {
   if (quality >= min.sehrGut) return 'sehrGut'
   if (quality >= min.gut) return 'gut'
   if (quality >= min.mittel) return 'mittel'
