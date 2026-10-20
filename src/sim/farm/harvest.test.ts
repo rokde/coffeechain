@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { balance } from '../balance'
 import { dispatch } from '../commands'
 import { mulberry32 } from '../rng'
@@ -178,5 +178,73 @@ describe('rejected harvest', () => {
     const before = structuredClone(state)
     expect(() => harvest(state, ...parcels)).toThrow()
     expect(state).toEqual(before)
+  })
+})
+
+describe('overripe', () => {
+  const cfg = balance()
+  const day = cfg.time.ticksPerGameDay
+  const { graceDays } = cfg.farm.overripe
+  // testState() has its plants ripe at its start hour.
+  const at = (state: GameState, hour: number): GameState => ({
+    ...state,
+    time: { ...state.time, hour },
+  })
+  const late = (days: number) => {
+    const state = testState()
+    return at(state, state.time.hour + (graceDays + days) * day)
+  }
+
+  afterEach(() => {
+    cfg.farm.overripe.enabled = true
+  })
+
+  it('AC-3: enabled, one late day gives 85 % and the grace period gives the full yield', () => {
+    expect(cfg.farm.overripe.enabled).toBe(true)
+    const state = late(1)
+    const units = harvest(state, [0, 0]).storage.batches[0]!.units
+    expect(units).toBe(Math.floor(expectedYield(state, 0, false) * 0.85 + 1e-9))
+    expect(units).toBeLessThan(expectedYield(state, 0, false))
+
+    const grace = at(testState(), testState().time.hour + graceDays * day + 23)
+    expect(harvest(grace, [0, 0]).storage.batches[0]!.units).toBe(expectedYield(grace, 0, false))
+  })
+
+  it('AC-4: disabled, a harvest 5 days after ripeness gives the full yield', () => {
+    cfg.farm.overripe.enabled = false
+    const state = at(testState(), testState().time.hour + 5 * day)
+    expect(harvest(state, [0, 0]).storage.batches[0]!.units).toBe(expectedYield(state, 0, false))
+  })
+
+  it('AC-5: units that stay on the plant lose their share too', () => {
+    const state = late(1)
+    const almostFull = {
+      ...state,
+      storage: { batches: [{ variety: 'robusta' as const, units: 95, quality: 100 }] },
+    }
+    const next = harvest(almostFull, [0, 0])
+    const first = Math.floor(expectedYield(state, 0, false) * 0.85 + 1e-9)
+    const pending = first - 5
+    expect(pending).toBeGreaterThan(0)
+    expect(next.farm.plants[0]!.pendingUnits).toBe(pending)
+    expect(next.farm.plants[0]!.overripeFactor).toBeCloseTo(0.85, 9)
+
+    const emptied = at({ ...next, storage: { batches: [] } }, next.time.hour + day)
+    const last = harvest(emptied, [0, 0])
+    expect(last.storage.batches).toEqual([
+      { variety: 'robusta', units: Math.floor((pending * 0.7) / 0.85 + 1e-9), quality: 100 },
+    ])
+    expect(last.farm.plants[0]).toBeUndefined()
+
+    const rotten = at({ ...next, storage: { batches: [] } }, next.time.hour + 10 * day)
+    const gone = harvest(rotten, [0, 0])
+    expect(gone.storage.batches).toEqual([])
+    expect(gone.farm.plants[0]).toBeUndefined()
+  })
+
+  it('AC-5: a first harvest at factor 0 stores nothing and removes the plant', () => {
+    const next = harvest(late(10), [0, 0])
+    expect(next.storage.batches).toEqual([])
+    expect(next.farm.plants[0]).toBeUndefined()
   })
 })

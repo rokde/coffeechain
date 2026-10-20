@@ -17,6 +17,8 @@ export interface PlantState {
   pestProtected?: boolean
   // Harvested units that did not fit into the storage.
   pendingUnits?: number
+  // Overripe factor at the time pendingUnits was set. Missing means 1.
+  overripeFactor?: number
 }
 
 export type Stage = keyof Balance['farm']['visualStages'] | 'reif'
