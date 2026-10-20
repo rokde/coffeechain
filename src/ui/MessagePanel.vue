@@ -14,7 +14,7 @@ const game = useGameStore()
 const messages = computed(() => {
   // The helpers only read the state, so the cast of the readonly snapshot is safe.
   const state = game.state as GameState
-  const { farm, storage, time } = state
+  const { farm, storage, time, milestones } = state
   const status = new Map<number, 'ripe' | 'overripe'>()
   for (const [index, plant] of Object.entries(farm.plants)) {
     const field = farm.parcels[Number(index)]
@@ -30,6 +30,11 @@ const messages = computed(() => {
   })
   // shortcut: capacity is startCapacity, add the upgrades with S27.
   if (storageUsed(storage) >= balance().storage.startCapacity) list.push(t.storageFull)
+  const { harvestProHour } = milestones
+  const { ticksPerGameDay } = balance().time
+  const days = balance().progression.harvestProMessageDays
+  if (harvestProHour !== undefined && time.hour < harvestProHour + days * ticksPerGameDay)
+    list.push(t.harvestPro)
   return list
 })
 </script>

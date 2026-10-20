@@ -1,4 +1,5 @@
 import { balance } from './balance'
+import type { GameEvent } from './events/schedule'
 import type { FarmState } from './farm/parcels'
 import type { MarketState } from './market/market'
 import type { StorageState } from './storage/storage'
@@ -17,6 +18,8 @@ export interface GameState {
   farm: FarmState
   storage: StorageState
   market: MarketState
+  events: GameEvent[]
+  milestones: { harvested: number; harvestProHour?: number }
 }
 
 export function createState(seed: number): GameState {
@@ -29,5 +32,7 @@ export function createState(seed: number): GameState {
     farm: { parcels: {}, fields: [], nextFieldId: 0, plants: {} },
     storage: { batches: [] },
     market: { volumes: [], seeds: {} },
+    events: [],
+    milestones: { harvested: 0 },
   }
 }
