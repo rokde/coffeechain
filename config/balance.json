@@ -1,0 +1,163 @@
+{
+  "_format": "Jeder Wert ist ein Objekt {\"v\": Wert, \"src\": Quelle}. Quellen: \"GDD <Abschnitt>\", \"PRD\" (bewusste Abweichung) oder \"NEU\" (Startwert, noch nicht bestätigt). Geldbeträge in CC.",
+
+  "time": {
+    "realSecondsPerGameDay": { "v": 240, "src": "PRD" },
+    "ticksPerGameDay": { "v": 24, "src": "PRD" },
+    "speeds": { "v": [0, 1, 2, 4], "src": "PRD" },
+    "daysPerWeek": { "v": 7, "src": "GDD 11.1" }
+  },
+
+  "economy": {
+    "startCapital": { "v": 500, "src": "GDD 11.6" }
+  },
+
+  "world": {
+    "size": { "v": 48, "src": "PRD" },
+    "offZoneYieldFactor": { "v": 0.6, "src": "NEU" },
+    "startGuaranteeParcels": { "v": 6, "src": "PRD" }
+  },
+
+  "soil": {
+    "yieldFactor": {
+      "v": { "karg": 0.6, "mittel": 0.85, "gut": 1.0, "sehrGut": 1.2 },
+      "src": "NEU"
+    },
+    "fertilityLossPerHarvest": { "v": 4, "src": "NEU" },
+    "fertilityGainPerFertilize": { "v": 3, "src": "NEU" },
+    "fertilityRecoveryPerFallowDay": { "v": 0.5, "src": "NEU" }
+  },
+
+  "parcels": {
+    "firstCost": { "v": 48, "src": "GDD 11.6 (1 Feld + Robusta ~50 CC, abzüglich 2 CC Saatgut)" },
+    "baseCost": { "v": 100, "src": "GDD 11.6 (2. Feld 100 CC)" },
+    "zoneMultiplier": {
+      "v": { "tiefland": 1.0, "hochland": 1.5, "hochlandKuehl": 2.0, "vulkan": 4.0 },
+      "src": "NEU (Reihenfolge aus GDD 5.3 Landpreis)"
+    }
+  },
+
+  "varieties": {
+    "robusta": {
+      "zone": { "v": "tiefland", "src": "GDD 5.3" },
+      "cycleDays": { "v": 3, "src": "GDD 11.1" },
+      "seedCost": { "v": 2, "src": "GDD 11.2" },
+      "baseYield": { "v": 20, "src": "GDD 11.2" },
+      "referencePrice": { "v": 0.5, "src": "GDD 11.3" },
+      "careCost": { "v": { "fertilizer": 1, "irrigation": 1, "pestControl": 1 }, "src": "GDD 11.2" },
+      "unlockCapital": { "v": 0, "src": "PRD" }
+    },
+    "arabicaStandard": {
+      "zone": { "v": "hochland", "src": "GDD 5.3" },
+      "cycleDays": { "v": 5, "src": "GDD 11.1" },
+      "seedCost": { "v": 4, "src": "GDD 11.2" },
+      "baseYield": { "v": 15, "src": "GDD 11.2" },
+      "referencePrice": { "v": 1.0, "src": "GDD 11.3" },
+      "careCost": { "v": { "fertilizer": 2, "irrigation": 2, "pestControl": 2 }, "src": "GDD 11.2" },
+      "unlockCapital": { "v": 0, "src": "PRD" }
+    },
+    "arabicaPremium": {
+      "zone": { "v": "hochlandKuehl", "src": "GDD 5.3" },
+      "cycleDays": { "v": 10, "src": "GDD 11.1" },
+      "seedCost": { "v": 8, "src": "GDD 11.2" },
+      "baseYield": { "v": 8, "src": "GDD 11.2" },
+      "referencePrice": { "v": 3.0, "src": "GDD 11.3" },
+      "careCost": { "v": { "fertilizer": 4, "irrigation": 3, "pestControl": 3 }, "src": "GDD 11.2" },
+      "unlockCapital": { "v": 2000, "src": "GDD 12.1" }
+    },
+    "specialty": {
+      "zone": { "v": "vulkan", "src": "GDD 5.3" },
+      "cycleDays": { "v": 15, "src": "GDD 11.1" },
+      "seedCost": { "v": 15, "src": "GDD 11.2" },
+      "baseYield": { "v": 4, "src": "GDD 11.2" },
+      "referencePrice": { "v": 10.0, "src": "GDD 11.3" },
+      "careCost": { "v": { "fertilizer": 6, "irrigation": 5, "pestControl": 5 }, "src": "GDD 11.2" },
+      "unlockCapital": { "v": 10000, "src": "GDD 12.1" }
+    }
+  },
+
+  "farm": {
+    "fertilizerYieldBonus": { "v": 0.25, "src": "NEU" },
+    "irrigationDroughtLossReduction": { "v": 0.5, "src": "NEU" },
+    "pestControlLossReduction": { "v": 0.5, "src": "NEU" },
+    "yieldRandomRange": { "v": [0.9, 1.1], "src": "NEU (GDD 5.4 nennt Zufall ohne Wert)" },
+    "visualStages": {
+      "v": { "setzling": 0.0, "wachstum": 0.25, "bluete": 0.6, "fruchtansatz": 0.9 },
+      "src": "PRD"
+    },
+    "overripe": {
+      "enabled": { "v": true, "src": "NEU" },
+      "graceDays": { "v": 2, "src": "NEU" },
+      "lossPerDay": { "v": 0.15, "src": "NEU" }
+    }
+  },
+
+  "storage": {
+    "startCapacity": { "v": 100, "src": "NEU" },
+    "upgrades": {
+      "v": [
+        { "capacity": 250, "cost": 150, "requiresPhase": 1 },
+        { "capacity": 600, "cost": 400, "requiresPhase": 2 }
+      ],
+      "src": "NEU"
+    },
+    "costPerUnitPerDay": { "v": 0.02, "src": "NEU (GDD 6.5 nennt Lagerkosten ohne Wert)" },
+    "qualityLossPerDayRaw": { "v": 1, "src": "NEU (GDD 6.5: Rohkaffee verliert langsam)" }
+  },
+
+  "processing": {
+    "washed": {
+      "buildCost": { "v": 150, "src": "NEU (angelehnt an GDD 11.6)" },
+      "costPerUnit": { "v": 0.3, "src": "GDD 11.2" },
+      "valueMultiplier": { "v": 1.5, "src": "GDD 11.2" },
+      "durationDays": { "v": 1, "src": "NEU" },
+      "batchCapacity": { "v": 50, "src": "NEU" }
+    }
+  },
+
+  "market": {
+    "bankBuyFactor": { "v": 0.8, "src": "GDD 11.3" },
+    "bankSellFactor": { "v": 1.2, "src": "GDD 11.3" },
+    "fertilizerPrice": { "v": 1.0, "src": "GDD 11.3" },
+    "supplyFactorRange": { "v": [0.7, 1.1], "src": "GDD 11.3" },
+    "demandFactorRange": { "v": [0.9, 1.3], "src": "GDD 11.3" },
+    "priceFloor": { "v": 0.5, "src": "GDD 3.4, 11.3" },
+    "priceCeiling": { "v": 1.5, "src": "GDD 3.4, 11.3" },
+    "volumeWindowDays": { "v": 3, "src": "NEU" },
+    "supplyUnitsForMinFactor": { "v": 300, "src": "NEU" },
+    "demandUnitsForMaxFactor": { "v": 200, "src": "NEU" },
+    "historyDays": { "v": 14, "src": "PRD" }
+  },
+
+  "events": {
+    "maxConcurrent": { "v": 2, "src": "GDD 11.8" },
+    "maxEffect": { "v": 0.3, "src": "GDD 11.8" },
+    "maxDurationDays": { "v": 7, "src": "GDD 11.8" },
+    "warningDays": { "v": 1, "src": "GDD 11.8" },
+    "graceDaysAtStart": { "v": 5, "src": "NEU" },
+    "types": {
+      "v": {
+        "frost": { "yield": { "hochland": -0.3, "hochlandKuehl": -0.3 }, "price": { "arabicaStandard": 0.2, "arabicaPremium": 0.2 }, "durationDays": [3, 5], "everyDays": 14 },
+        "monsoon": { "cycleTime": { "tiefland": 0.5 }, "price": { "robusta": 0.15 }, "durationDays": [5, 7], "everyDays": 21 },
+        "boom": { "priceAll": 0.15, "durationDays": [3, 3], "everyDays": 14 },
+        "crisis": { "priceAll": -0.15, "durationDays": [3, 3], "everyDays": 21 },
+        "pests": { "yieldAffected": [-0.3, -0.2], "durationDays": [2, 4], "everyDays": 28 },
+        "research": { "yieldBonus": 0.1, "permanent": true, "everyDays": 42 }
+      },
+      "src": "GDD 11.8 (Schädlinge auf -30 % begrenzt: PRD)"
+    }
+  },
+
+  "progression": {
+    "phases": {
+      "v": [
+        { "id": 1, "fromCapital": 0 },
+        { "id": 2, "fromCapital": 2000 },
+        { "id": 3, "fromCapital": 10000 }
+      ],
+      "src": "GDD 12.1"
+    },
+    "harvestProUnits": { "v": 1000, "src": "GDD 12.3" },
+    "harvestProQualityBonus": { "v": 0.05, "src": "GDD 12.3" }
+  }
+}

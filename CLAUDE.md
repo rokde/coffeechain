@@ -1,7 +1,7 @@
 # CLAUDE.md – CoffeeChain 3D
 
 ## Kontext
-3D-Aufbausimulation (Kaffeefarm) als Mac-App. Alles Fachliche steht in `PRD.md`, alle Spielwerte in `docs/gdd.md`. Lies beide, bevor du einen Meilenstein beginnst.
+3D-Aufbausimulation (Kaffeefarm) als Mac-App. Scope und Mechanik stehen in `PRD.md`, der Hintergrund im GDD (`docs/gdd.md`), alle Zahlen in `config/balance.json`. Lies `PRD.md` vor jedem Meilenstein; das GDD bei Fragen zur Mechanik. Das GDD beschreibt ein größeres Multiplayer-Browserspiel: Was davon gilt, legt `PRD.md` fest.
 
 ## Stack
 TypeScript (strict), Three.js, Vue 3 + Pinia (HUD), Vite, Tauri 2, Vitest, Playwright.
@@ -13,10 +13,11 @@ TypeScript (strict), Three.js, Vue 3 + Pinia (HUD), Vite, Tauri 2, Vitest, Playw
 - `src/sim/` importiert nie aus `render/`, `ui/` oder `app/` und nutzt kein DOM, kein Three.js, kein Vue.
 - Spieleraktionen nur über Commands in `src/sim/commands.ts`.
 - Zufall nur über den seedbaren PRNG aus `src/sim/rng.ts`, nie `Math.random()` in `sim/`.
-- Zahlen für Balancing gehören in `config/balance.json`, nie in den Code.
+- Zahlen für Balancing gehören in `config/balance.json`, nie in den Code. Jeder Wert dort hat die Form `{"v": …, "src": …}`; das zod-Schema entpackt `v`.
+- Werte mit `src: "GDD …"` änderst du nicht eigenmächtig. Nach M4 stoppst du und wartest auf Roberts Balancing-Entscheidung.
 
 ## Wenn etwas fehlt
-- Fehlt ein Wert im GDD: Platzhalter in `config/balance.json` anlegen, in `docs/open-questions.md` eintragen, weitermachen.
+- Fehlt ein Wert: in `config/balance.json` mit `src: "NEU"` anlegen, in `docs/open-questions.md` eintragen, weitermachen.
 - Ist eine Anforderung unklar oder widersprüchlich: nicht raten. Frage stellen und den Rest des Meilensteins weiterbauen, soweit möglich.
 
 ## Visuelle Prüfung

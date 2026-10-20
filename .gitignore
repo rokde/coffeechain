@@ -1,1 +1,13 @@
 .DS_Store
+
+# >>> software factory (managed by /factory:init)
+factory/board.json
+factory/jobs/
+factory/dashboard.html
+factory/serve.py
+factory/dashboard
+factory/inbox/
+factory/agents/
+factory/audit.md
+.claude/worktrees/
+# <<< software factory
