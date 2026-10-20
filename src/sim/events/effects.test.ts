@@ -196,6 +196,20 @@ describe('event effects', () => {
     )
   })
 
+  // Non-boundary ticks only add 1 to the hour, so one step from the last hour of the day is enough.
+  const nextDay = (state: GameState) =>
+    step({ ...state, time: { ...state.time, hour: clock(state.time.hour).day * ticks - 1 } })
+
+  it('one step from the last hour of the day equals 24 single steps over 30 days', () => {
+    let slow = createState(3)
+    let fast = createState(3)
+    for (let d = 0; d < 30; d++) {
+      for (let h = 0; h < ticks; h++) slow = step(slow)
+      fast = nextDay(fast)
+    }
+    expect(fast).toEqual(slow)
+  })
+
   it('AC-5: 1,000 days on 20 seeds keep at most 2 active events and factors in [0.7, 1.3]', () => {
     for (let s = 1; s <= 20; s++) {
       let state = createState(s)
@@ -219,7 +233,7 @@ describe('event effects', () => {
           }
           for (const v of varieties) check(priceEventFactor(state, v, d))
         }
-        for (let h = 0; h < ticks; h++) state = step(state)
+        state = nextDay(state)
       }
       expect(most).toBe(2)
       expect(low).toBeGreaterThanOrEqual(0.7)
