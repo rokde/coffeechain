@@ -31,7 +31,7 @@ export function pickParcel(ndc: Vector2, camera: Camera, terrain: Mesh, size: nu
 }
 
 // Keep water parcels above the water plane at y = 0.
-const corner = (corners: BufferAttribute | InterleavedBufferAttribute, i: number) =>
+export const corner = (corners: BufferAttribute | InterleavedBufferAttribute, i: number) =>
   [corners.getX(i), Math.max(corners.getY(i), 0) + 0.05, corners.getZ(i)] as const
 
 // A white outline on the 4 corners of one parcel quad. show(null) hides it.
