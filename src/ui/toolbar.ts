@@ -14,5 +14,6 @@ export const tools: Tool[] = [
   { id: 'irrigate', label: de.tools.irrigate },
   { id: 'protect', label: de.tools.protect },
   { id: 'harvest', label: de.tools.harvest },
+  { id: 'build', label: de.tools.build },
   { id: 'market', label: de.tools.market },
 ]

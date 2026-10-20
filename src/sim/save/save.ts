@@ -4,7 +4,7 @@ import { gameStateSchema } from './schema'
 // When a slice adds a state field: increase SAVE_VERSION by one and append one migration
 // to MIGRATIONS that fills the default value. Migration i turns version i + 1 into i + 2.
 // Never edit an old migration.
-export const SAVE_VERSION = 4
+export const SAVE_VERSION = 5
 
 export type Migration = (state: Record<string, unknown>) => Record<string, unknown>
 
@@ -15,6 +15,8 @@ export const MIGRATIONS: Migration[] = [
   (state) => ({ ...state, milestones: { harvested: 0 } }),
   // 3 -> 4: S51b adds the research breakthroughs.
   (state) => ({ ...state, research: [] }),
+  // 4 -> 5: S44 adds the buildings.
+  (state) => ({ ...state, buildings: {} }),
 ]
 
 export interface SaveFormat {

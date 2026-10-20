@@ -1,5 +1,6 @@
 import { canSelect, farmTools, useSelectionStore, type FarmTool } from '../app/selection'
 import { useGameStore } from '../app/store'
+import type { BuildingKind } from '../sim/buildings/build'
 import { fieldStatus, type CareCommand } from '../sim/farm/status'
 import type { GameState } from '../sim/state'
 
@@ -32,4 +33,15 @@ export function careParcel(command: CareCommand, parcel: { x: number; y: number 
   // fieldStatus only reads the state, so the cast of the readonly snapshot is safe.
   const status = fieldStatus(game.state as GameState, parcel.x, parcel.y)
   if (status?.open.includes(command)) game.dispatch({ type: command, parcels: [parcel] })
+}
+
+// Builds on the first valid mark and drops that mark. The other marks stay for the next building.
+export function buildSelected(kind: BuildingKind) {
+  const game = useGameStore()
+  // validParcels only reads the state, so the cast of the readonly snapshot is safe.
+  const parcel = validParcels(game.state as GameState, 'build')[0]
+  if (!parcel) return
+  game.dispatch({ type: 'Build', building: kind, parcel })
+  const selection = useSelectionStore()
+  selection.parcels = selection.parcels.filter((p) => p.x !== parcel.x || p.y !== parcel.y)
 }

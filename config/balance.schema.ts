@@ -85,6 +85,7 @@ export const balanceSchema = z.object({
   processing: z.object({
     washed: z.object({
       buildCost: val(num),
+      requiresPhase: val(int),
       costPerUnit: val(num),
       valueMultiplier: val(num),
       durationDays: val(num),

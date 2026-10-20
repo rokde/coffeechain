@@ -160,7 +160,7 @@ describe('events migration', () => {
 
 describe('research migration', () => {
   it('S51b AC-5: has version 4 and loads a version 3 save with an empty research list', () => {
-    expect(SAVE_VERSION).toBe(4)
+    expect(SAVE_VERSION).toBeGreaterThanOrEqual(4)
     const old: Record<string, unknown> = { ...createState(5) }
     delete old.research
     const loaded = deserialize(JSON.stringify({ version: 3, state: old }))

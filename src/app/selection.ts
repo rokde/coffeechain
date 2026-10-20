@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import type { ParcelPos } from '../render/picking'
+import { canBuild } from '../sim/buildings/build'
 import { cares } from '../sim/farm/care'
 import { isFree } from '../sim/farm/parcels'
 import { growth } from '../sim/farm/plants'
@@ -20,8 +21,10 @@ export const isFarmTool = (tool: string): tool is FarmTool => tool in farmTools
 export type BrushTool = 'parcel' | 'plant' | FarmTool
 export const isBrushTool = (tool: string): tool is BrushTool =>
   tool === 'parcel' || tool === 'plant' || isFarmTool(tool)
+// The build tool has no brush, but it acts on the marks like a brush tool.
+const usesMarks = (tool: string) => isBrushTool(tool) || tool === 'build'
 
-// The plant tool selects only owned parcels without a plant.
+// The plant and build tools select only owned parcels without a plant and without a building.
 // The harvest tool selects only owned parcels with a ripe plant.
 // A care tool selects only owned parcels with an unripe plant that does not have this care yet.
 // The other tools select only free parcels that the farm does not own.
@@ -30,7 +33,8 @@ export function canSelect(state: GameState, tool: string, p: ParcelPos): boolean
   const owned = index in state.farm.parcels
   const plant = state.farm.plants[index]
   const ripe = plant !== undefined && growth(plant, state.time.hour).progress >= 1
-  if (tool === 'plant') return owned && !plant
+  if (tool === 'plant') return owned && !plant && !(index in state.buildings)
+  if (tool === 'build') return canBuild(state, p.x, p.y)
   if (tool === 'harvest') return owned && ripe
   if (tool === 'fertilize' || tool === 'irrigate' || tool === 'protect')
     return owned && !!plant && !ripe && !plant[cares[farmTools[tool]].flag]
@@ -48,8 +52,8 @@ export const useSelectionStore = defineStore('selection', () => {
   watch(
     tool,
     (id) => {
-      // pickTool filters the marks for a brush tool. The other tools do not use marks.
-      if (!isBrushTool(id)) parcels.value = []
+      // pickTool filters the marks for a tool that uses them. The other tools clear them.
+      if (!usesMarks(id)) parcels.value = []
       note.value = null
     },
     { flush: 'sync' },
@@ -88,7 +92,7 @@ export const addMarks = (marks: ParcelPos[], add: ParcelPos[]) => [
   ...add.filter((p) => !marks.some((q) => samePos(q, p))),
 ]
 
-// A toolbar click. A brush tool keeps only the marks that it can act on.
+// A toolbar click. A tool that uses marks keeps only the marks that it can act on.
 // When no mark stays, the note tells the player why the marks are gone.
 export function pickTool(
   selection: ReturnType<typeof useSelectionStore>,
@@ -97,7 +101,7 @@ export function pickTool(
 ) {
   const marked = selection.parcels.length > 0
   selection.tool = id
-  if (!isBrushTool(id)) return
+  if (!usesMarks(id)) return
   selection.parcels = selection.parcels.filter((p) => canSelect(state, id, p))
   if (marked && selection.parcels.length === 0) selection.note = 'invalid'
 }

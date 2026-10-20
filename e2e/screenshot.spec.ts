@@ -1,7 +1,17 @@
 import { expect, test } from '@playwright/test'
 
 const speeds = [0, 1, 2, 4, 8, 16]
-const tools = ['select', 'parcel', 'plant', 'fertilize', 'irrigate', 'protect', 'harvest', 'market']
+const tools = [
+  'select',
+  'parcel',
+  'plant',
+  'fertilize',
+  'irrigate',
+  'protect',
+  'harvest',
+  'build',
+  'market',
+]
 
 test('M0: scene and empty HUD frame', async ({ page }) => {
   const errors: string[] = []
@@ -346,6 +356,36 @@ test('S13: plant tool', async ({ page }) => {
   expect(errors).toEqual([])
 })
 
+test('S44: build tool', async ({ page }) => {
+  const errors: string[] = []
+  page.on('console', (msg) => {
+    if (msg.type() === 'error') errors.push(msg.text())
+  })
+  page.on('pageerror', (error) => errors.push(error.message))
+
+  await page.goto('/?seed=48213')
+  const money = page.getByTestId('money')
+  const canvas = page.locator('canvas#scene')
+  // Buildable lowland parcel (32, 38) of seed 48213 at the start view.
+  const position = { x: 607, y: 357 }
+  await page.getByTestId('tool-parcel').click()
+  await canvas.click({ position })
+  await expect(money).toHaveText('485 CC')
+
+  await page.getByTestId('tool-select').click()
+  await canvas.click({ position })
+  await page.getByTestId('tool-build').click()
+  await expect(page.getByTestId('build-tool')).toBeVisible()
+  await expect(page.getByTestId('build-tool-processing')).toContainText('150 CC')
+  await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
+  await page.screenshot({ path: 'docs/progress/S44.png' })
+
+  await page.getByTestId('build-tool-build-processing').click()
+  await expect(money).toHaveText('335 CC')
+  await expect(page.getByTestId('build-tool-build-processing')).toBeDisabled()
+  expect(errors).toEqual([])
+})
+
 test('S12b: owned parcel marks and field labels', async ({ page }) => {
   const errors: string[] = []
   page.on('console', (msg) => {
@@ -524,6 +564,7 @@ test('S18a: care and harvest tools, storage chip', async ({ page }) => {
     'Wässern',
     'Schutz',
     'Ernten',
+    'Bauen',
     'Markt',
   ])
 
@@ -547,7 +588,7 @@ test('S18a: care and harvest tools, storage chip', async ({ page }) => {
   expect(errors).toEqual([])
 })
 
-for (const width of [1280, 390]) {
+for (const width of [1280, 390, 360]) {
   test(`S18a: all tools fit the toolbar at ${width} px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 })
     await page.goto('/')

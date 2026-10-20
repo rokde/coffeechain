@@ -103,6 +103,7 @@
     "irrigate": "Wässern",
     "protect": "Schutz",
     "harvest": "Ernten",
+    "build": "Bauen",
     "market": "Markt"
   },
   "parcelTool": {
@@ -120,6 +121,19 @@
     "count": "Ausgewählt",
     "total": "Saatgut",
     "plant": "Pflanzen",
+    "tooExpensive": "Nicht genug CC."
+  },
+  "buildTool": {
+    "heading": "Bauen",
+    "hint": "Markiere zuerst eine eigene, leere Parzelle mit „Auswählen“. Wähle dann hier das Gebäude.",
+    "buildings": {
+      "processing": "Aufbereitung",
+      "storage": "Lager-Ausbau"
+    },
+    "locked": "ab Phase {phase}",
+    "maxed": "Schon gebaut",
+    "first": "Das Gebäude kommt auf die erste markierte Parzelle.",
+    "build": "Bauen",
     "tooExpensive": "Nicht genug CC."
   },
   "marketPanel": {
