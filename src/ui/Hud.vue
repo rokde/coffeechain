@@ -232,6 +232,7 @@ const storageText = computed(() =>
   right: 16px;
   width: min(330px, calc(50vw - 24px));
   height: 480px;
+  overflow-y: auto;
 }
 .toolbar {
   bottom: 16px;

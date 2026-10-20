@@ -10,6 +10,7 @@ import { inspectParcel } from '../sim/world/inspect'
 import type { World } from '../sim/world/types'
 import { careParcel } from './farmAction'
 import de from './i18n/de.json'
+import { formatMoney } from './money'
 
 const t = de.inspector
 const game = useGameStore()
@@ -118,6 +119,11 @@ const careCost = (command: 'Fertilize' | 'Irrigate' | 'ProtectPests') =>
           type="button"
           data-testid="inspector-care-action"
           :disabled="careCost(c) > game.state.money"
+          :title="
+            careCost(c) > game.state.money
+              ? t.careTooExpensive.replace('{cost}', formatMoney(careCost(c)))
+              : undefined
+          "
           @click="careParcel(c, selection.parcel)"
         >
           {{ t.careActions[c] }}
@@ -185,6 +191,7 @@ dt {
   margin-top: 12px;
 }
 .care-actions button {
+  flex: 1 1 auto;
   width: auto;
   min-height: 44px;
   padding: 0 14px;
@@ -196,7 +203,19 @@ dt {
   opacity: 0.5;
 }
 dd {
+  min-width: 0;
   margin: 0;
   font-weight: 600;
+  overflow-wrap: break-word;
+}
+/* The right panel is narrow on a phone, so each value goes below its label. */
+@media (max-width: 480px) {
+  dl {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+  dd {
+    margin-bottom: 8px;
+  }
 }
 </style>

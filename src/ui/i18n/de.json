@@ -36,7 +36,7 @@
       "reif": "Reif"
     },
     "overripe": "Überreif",
-    "growth": "Wachstum",
+    "growth": "Fortschritt",
     "percent": "{n} %",
     "ripeness": "Reife",
     "daysToRipe": "Reif in {n} Tagen",
@@ -45,6 +45,7 @@
     "daysToOverripeOne": "Überreif in 1 Tag",
     "care": "Pflege",
     "careNone": "keine",
+    "careTooExpensive": "Zu wenig Geld: kostet {cost}",
     "careDone": {
       "fertilized": "gedüngt",
       "irrigated": "gewässert",

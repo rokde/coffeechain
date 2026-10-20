@@ -12,6 +12,7 @@ import { fieldStatus } from '../sim/farm/status'
 import type { GameState } from '../sim/state'
 import { careParcel } from './farmAction'
 import de from './i18n/de.json'
+import { formatMoney } from './money'
 import ParcelInspector from './ParcelInspector.vue'
 
 vi.stubGlobal('location', { search: '?seed=42' })
@@ -90,6 +91,8 @@ describe('ParcelInspector field status (S21e)', () => {
     expect(text(html, 'inspector-care-hint')).toEqual(['Düngen möglich', 'Schützen möglich'])
     expect(text(html, 'inspector-care-action')).toEqual(['Düngen', 'Schützen'])
     expect(buttons(html).every((b) => !b.includes('disabled'))).toBe(true)
+    expect(buttons(html).every((b) => !b.includes('title='))).toBe(true)
+    expect(html).toMatch(/<dt[^>]*>Fortschritt<\/dt>/)
   })
 
   it('AC-3: shows no status rows for an empty parcel', async () => {
@@ -117,6 +120,7 @@ describe('ParcelInspector field status (S21e)', () => {
       (b, i) => text(html, 'inspector-care-action')[i] === 'Wässern',
     )
     expect(irrigate).toContain('disabled')
+    expect(irrigate).toContain(`title="Zu wenig Geld: kostet ${formatMoney(irrigationCost)}"`)
   })
 
   it('AC-4: careParcel on a ripe plant does not throw and keeps the money', () => {

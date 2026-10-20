@@ -603,6 +603,24 @@ test('S21e: field status and care buttons in the inspector', async ({ page }) =>
   ])
   await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
   await page.screenshot({ path: 'docs/progress/S21e.png' })
+
+  // At phone width the panel scrolls, and no value or button leaves the panel.
+  await page.setViewportSize({ width: 390, height: 844 })
+  const panel = page.getByTestId('hud-right-panel')
+  await expect(panel).toHaveCSS('overflow-y', 'auto')
+  const box = (await panel.boundingBox())!
+  const last = page.getByTestId('inspector-care-action').last()
+  await last.scrollIntoViewIfNeeded()
+  const button = (await last.boundingBox())!
+  expect(button.x + button.width).toBeLessThanOrEqual(box.x + box.width)
+  expect(button.y + button.height).toBeLessThanOrEqual(box.y + box.height)
+  const clipped = await page
+    .locator('[data-testid="parcel-inspector"] dd')
+    .evaluateAll((dds) =>
+      dds.filter((d) => d.scrollWidth > d.clientWidth).map((d) => d.textContent),
+    )
+  expect(clipped).toEqual([])
+  await page.screenshot({ path: 'docs/progress/S21e-narrow.png' })
   expect(errors).toEqual([])
 })
 
