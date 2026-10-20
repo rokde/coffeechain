@@ -168,7 +168,7 @@ test('S7: overlay panel fits a narrow window', async ({ page }) => {
 for (const [width, height] of [
   [1280, 800],
   [390, 844],
-]) {
+] as const) {
   test(`S7: overlay panel and inspector do not overlap at ${width}x${height}`, async ({ page }) => {
     await page.setViewportSize({ width, height })
     await page.goto('/?seed=48213')
