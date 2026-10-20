@@ -13,6 +13,8 @@ Values in `config/balance.json` with `src: "NEU"` that the world generation (S3)
 | `parcels.maxSlope` | 0.15 | Which height difference (0–1) to one of the 4 neighbours makes a parcel too steep to buy? About 5 % of the land is steeper than 0.15. |
 | `soil.classMinQuality` | mittel 0.35, gut 0.5, sehrGut 0.7 | Which `soilQuality` (0–1) starts each soil class? Lower values are `karg`. |
 | `storage.harvestQuality` | 100 | Which quality does a new harvest batch get? v1 has no quality formula (PRD §12 point 4). |
+| `progression.harvestProMessageDays` | 1 | How many game days does the Ernte-Profi message stay in the message panel? |
+| `progression.harvestProQualityBonus` | 0.05 | The bonus has no visible effect: `storage.harvestQuality` is 100 and the cap is 100. It needs a quality formula (PRD §12 point 4). |
 
 `soilQuality` is the mean of `fertility` and `waterRetention`, divided by 100. Both have the same weight.
 

@@ -6,7 +6,7 @@ import { createState, type GameState } from '../state'
 import { storageUsed } from '../storage/storage'
 import { soilClassOf } from '../world/generate'
 import type { Parcel, World } from '../world/types'
-import { harvestSeed } from './harvest'
+import { harvestQuality, harvestSeed } from './harvest'
 import { computeYield, yieldRandom } from './yield'
 
 const size = 4
@@ -246,5 +246,49 @@ describe('overripe', () => {
     const next = harvest(late(10), [0, 0])
     expect(next.storage.batches).toEqual([])
     expect(next.farm.plants[0]).toBeUndefined()
+  })
+})
+
+describe('Harvest milestone (S49)', () => {
+  const stored = (s: GameState) => s.storage.batches.reduce((n, b) => n + b.units, 0)
+  const withMilestones = (s: GameState, m: GameState['milestones']): GameState => ({
+    ...s,
+    milestones: m,
+  })
+
+  it('AC-1: counts stored units only', () => {
+    const state = testState()
+    expect(state.milestones).toEqual({ harvested: 0 })
+    const next = harvest(state, [0, 0], [1, 0])
+    expect(next.milestones.harvested).toBe(stored(next))
+    const full = {
+      ...state,
+      storage: { batches: [{ variety: 'robusta' as const, units: 100, quality: 1 }] },
+    }
+    expect(harvest(full, [0, 0]).milestones.harvested).toBe(0)
+  })
+
+  it('AC-2: sets harvestProHour once at the threshold', () => {
+    const limit = balance().progression.harvestProUnits
+    const state = withMilestones(testState(), { harvested: limit - 1 })
+    const next = harvest(state, [0, 0])
+    expect(next.milestones.harvestProHour).toBe(state.time.hour)
+    const later = harvest({ ...next, time: { ...next.time, hour: next.time.hour + 5 } }, [1, 0])
+    expect(later.milestones.harvestProHour).toBe(state.time.hour)
+    expect(harvest(testState(), [0, 0]).milestones.harvestProHour).toBeUndefined()
+  })
+
+  it('AC-3: applies the bonus from the next harvest, capped at 100', () => {
+    const state = testState()
+    const cfg = (q: number) => ({
+      ...balance(),
+      storage: { ...balance().storage, harvestQuality: q },
+    })
+    const pro = withMilestones(state, { harvested: 5000, harvestProHour: 1 })
+    expect(harvestQuality(state, cfg(80))).toBe(80)
+    expect(harvestQuality(pro, cfg(80))).toBeCloseTo(84)
+    expect(harvestQuality(pro, cfg(100))).toBe(100)
+    const reach = harvest(withMilestones(state, { harvested: 999 }), [0, 0])
+    expect(reach.storage.batches[0]!.quality).toBe(balance().storage.harvestQuality)
   })
 })

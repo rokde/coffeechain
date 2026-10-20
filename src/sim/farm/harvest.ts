@@ -17,6 +17,13 @@ export function harvestSeed(seed: number, hour: number, index: number): number {
   return (seed ^ Math.imul(hour + 1, 0x9e3779b1) ^ Math.imul(index + 1, 0x85ebca6b)) >>> 0
 }
 
+export function harvestQuality(state: GameState, cfg = balance()): number {
+  const { harvestProHour } = state.milestones
+  const base = cfg.storage.harvestQuality
+  if (harvestProHour === undefined) return base
+  return Math.min(100, base * (1 + cfg.progression.harvestProQualityBonus))
+}
+
 export function harvest(state: GameState, command: Harvest): GameState {
   const { size } = state.world
   const { hour } = state.time
@@ -72,12 +79,20 @@ export function harvest(state: GameState, command: Harvest): GameState {
       }
   }
 
-  const quality = cfg.storage.harvestQuality
+  const quality = harvestQuality(state, cfg)
+  const total = [...stored.values()].reduce((a, b) => a + b, 0)
+  const harvested = state.milestones.harvested + total
+  const { harvestProHour } = state.milestones
   const batches: Batch[] = [...stored].map(([variety, units]) => ({ variety, units, quality }))
   return {
     ...state,
     world: { ...state.world, parcels },
     farm: { ...state.farm, plants },
     storage: { ...state.storage, batches: [...state.storage.batches, ...batches] },
+    milestones: {
+      harvested,
+      harvestProHour:
+        harvestProHour ?? (harvested >= cfg.progression.harvestProUnits ? hour : undefined),
+    },
   }
 }

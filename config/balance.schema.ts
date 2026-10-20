@@ -125,6 +125,7 @@ export const balanceSchema = z.object({
     phases: val(z.array(z.object({ id: int, fromCapital: num }))),
     harvestProUnits: val(int),
     harvestProQualityBonus: val(num),
+    harvestProMessageDays: val(num),
   }),
   balanceSim: z.object({
     days: val(int),
