@@ -144,11 +144,18 @@ const price = computed(() => {
       </div>
     </div>
   </section>
+  <p v-else class="empty" data-testid="inspector-empty">{{ t.empty }}</p>
 </template>
 
 <style scoped>
 .inspector {
   padding: 20px;
+}
+.empty {
+  margin: 0;
+  padding: 20px;
+  font-size: 13px;
+  opacity: 0.8;
 }
 header {
   display: flex;

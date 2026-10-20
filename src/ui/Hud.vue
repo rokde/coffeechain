@@ -354,7 +354,7 @@ const storageText = computed(() =>
   top: 92px;
   right: 16px;
   width: min(330px, calc(50vw - 24px));
-  height: 480px;
+  max-height: 480px;
   overflow-y: auto;
 }
 @media (max-width: 1024px) {
@@ -365,7 +365,7 @@ const storageText = computed(() =>
   }
   .right-panel {
     top: 108px;
-    height: 464px;
+    max-height: 464px;
   }
 }
 .toolbar {

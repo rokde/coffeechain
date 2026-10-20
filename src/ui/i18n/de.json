@@ -21,6 +21,7 @@
   },
   "inspector": {
     "heading": "Parzelle",
+    "empty": "Wähle eine Parzelle.",
     "position": "{x} / {y}",
     "close": "Auswahl schließen",
     "zone": "Zone",
