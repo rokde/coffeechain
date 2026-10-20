@@ -42,7 +42,8 @@ test('S9: clock and speed buttons', async ({ page }) => {
 
 test('S9: top bar fits a narrow window', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto('/?seed=48213')
+  // The longest seed is the worst case for the width.
+  await page.goto('/?seed=4294967295')
   const bar = page.getByTestId('hud-top-bar')
   expect(await bar.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
   for (const s of [0, 1, 2, 4])

@@ -78,8 +78,9 @@ function start() {
     if (key === 'e') view.rotate(1)
   })
 
+  const debugModels = new URLSearchParams(location.search).get('debug') === 'models'
   let placeLabels = () => {}
-  if (new URLSearchParams(location.search).get('debug') === 'models') {
+  if (debugModels) {
     view.camera.zoom = 2
     view.camera.updateProjectionMatrix()
     placeLabels = showModelRow(scene, view.camera)
@@ -87,8 +88,9 @@ function start() {
 
   const pinia = createPinia()
   const store = useGameStore(pinia)
+  // The model row lies at the origin, so the debug view has no terrain.
   // createTerrain only reads the world, so the cast of the readonly snapshot is safe.
-  scene.add(createTerrain(store.state.world as GameState['world']))
+  if (!debugModels) scene.add(createTerrain(store.state.world as GameState['world']))
   const { realSecondsPerGameDay, ticksPerGameDay } = balance().time
   const msPerTick = (realSecondsPerGameDay * 1000) / ticksPerGameDay
   let carryMs = 0
