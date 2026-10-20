@@ -4,6 +4,7 @@ import { useSelectionStore } from '../app/selection'
 import { useGameStore } from '../app/store'
 import { quoteCare } from '../sim/farm/care'
 import { forecastYield } from '../sim/farm/forecast'
+import { isFree, quoteParcels } from '../sim/farm/parcels'
 import { fieldStatus } from '../sim/farm/status'
 import type { GameState } from '../sim/state'
 import { inspectParcel } from '../sim/world/inspect'
@@ -48,6 +49,14 @@ const careDone = computed(() => {
 })
 const careCost = (command: 'Fertilize' | 'Irrigate' | 'ProtectPests') =>
   quoteCare(game.state as GameState, { type: command, parcels: [selection.parcel!] })
+
+// Only for a parcel that the farm can buy.
+const price = computed(() => {
+  const p = selection.parcel
+  const state = game.state as GameState
+  const owned = p && p.y * state.world.size + p.x in state.farm.parcels
+  return p && !owned && isFree(state, p.x, p.y) ? quoteParcels(state, [p]) : null
+})
 </script>
 
 <template>
@@ -105,6 +114,10 @@ const careCost = (command: 'Fertilize' | 'Irrigate' | 'ProtectPests') =>
         </template>
         <dt>{{ t.care }}</dt>
         <dd data-testid="inspector-care">{{ careDone }}</dd>
+      </template>
+      <template v-if="price !== null">
+        <dt>{{ t.price }}</dt>
+        <dd data-testid="inspector-price">{{ formatMoney(price) }}</dd>
       </template>
     </dl>
     <!-- S21e open cares -->

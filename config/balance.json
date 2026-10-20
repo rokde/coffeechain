@@ -36,13 +36,16 @@
   },
 
   "parcels": {
-    "firstCost": { "v": 48, "src": "GDD 11.6 (1 Feld + Robusta ~50 CC, abzüglich 2 CC Saatgut)" },
-    "baseCost": { "v": 100, "src": "GDD 11.6 (2. Feld 100 CC)" },
+    "firstCost": { "v": 15, "src": "Robert 2026-10-20 (Parzellen billiger; vorher 48, GDD 11.6)" },
+    "baseCost": { "v": 25, "src": "Robert 2026-10-20 (Parzellen billiger; vorher 100, GDD 11.6)" },
     "zoneMultiplier": {
       "v": { "tiefland": 1.0, "hochland": 1.5, "hochlandKuehl": 2.0, "vulkan": 4.0 },
       "src": "NEU (Reihenfolge aus GDD 5.3 Landpreis)"
     },
-    "maxSlope": { "v": 0.15, "src": "NEU" }
+    "maxSlope": { "v": 0.15, "src": "NEU" },
+    "neighborWeight": { "v": 0.5, "src": "Robert 2026-10-20 (Preis folgt den 4 Nachbarn)" },
+    "worseGap": { "v": 0.1, "src": "Robert 2026-10-20 (deutlich schlechtere Parzelle bleibt billig)" },
+    "qualityFactor": { "v": [0.5, 1.5], "src": "Robert 2026-10-20 (Preisfaktor bei Bodenqualität 0 und 1)" }
   },
 
   "varieties": {
