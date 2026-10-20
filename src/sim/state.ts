@@ -19,6 +19,7 @@ export interface GameState {
   storage: StorageState
   market: MarketState
   events: GameEvent[]
+  milestones: { harvested: number; harvestProHour?: number }
 }
 
 export function createState(seed: number): GameState {
@@ -32,5 +33,6 @@ export function createState(seed: number): GameState {
     storage: { batches: [] },
     market: { volumes: [], seeds: {} },
     events: [],
+    milestones: { harvested: 0 },
   }
 }
