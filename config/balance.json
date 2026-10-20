@@ -120,6 +120,7 @@
   "processing": {
     "washed": {
       "buildCost": { "v": 150, "src": "NEU (angelehnt an GDD 11.6)" },
+      "requiresPhase": { "v": 1, "src": "PRD §10" },
       "costPerUnit": { "v": 0.3, "src": "GDD 11.2" },
       "valueMultiplier": { "v": 1.5, "src": "GDD 11.2" },
       "durationDays": { "v": 1, "src": "NEU" },

@@ -49,6 +49,7 @@ export const gameStateSchema = z.object({
     nextFieldId: int,
     plants: z.record(z.string(), plant),
   }),
+  buildings: z.record(z.string(), z.object({ kind: z.enum(['processing', 'storage']) })),
   storage: z.object({ batches: z.array(z.object({ variety, units: num, quality: num })) }),
   market: z.object({
     volumes: z.array(z.object({ kind: z.enum(['coffee', 'seed']), variety, day: int, units: num })),

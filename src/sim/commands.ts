@@ -1,3 +1,4 @@
+import { build, type Build } from './buildings/build'
 import { care, type Fertilize, type Irrigate, type ProtectPests } from './farm/care'
 import { harvest, type Harvest } from './farm/harvest'
 import { createParcels, type CreateParcels } from './farm/parcels'
@@ -8,7 +9,16 @@ import { setSpeed, type SetSpeed } from './time/time'
 
 // Later slices add their command types to this union.
 export type Command =
-  SetSpeed | CreateParcels | Plant | Fertilize | Irrigate | ProtectPests | Harvest | Sell | Buy
+  | SetSpeed
+  | CreateParcels
+  | Plant
+  | Fertilize
+  | Irrigate
+  | ProtectPests
+  | Harvest
+  | Sell
+  | Buy
+  | Build
 
 type Handlers = {
   [K in Command['type']]: (state: GameState, command: Extract<Command, { type: K }>) => GameState
@@ -25,6 +35,7 @@ const handlers: Handlers = {
   Harvest: harvest,
   Sell: sell,
   Buy: buy,
+  Build: build,
 }
 
 export function dispatch(state: GameState, command: Command): GameState {

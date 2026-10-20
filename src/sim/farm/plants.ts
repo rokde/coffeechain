@@ -41,6 +41,7 @@ export function plant(state: GameState, command: Plant): GameState {
     const index = y * size + x
     if (!(index in state.farm.parcels)) throw new Error(`Parcel ${x},${y} is not owned`)
     if (index in plants) throw new Error(`Parcel ${x},${y} already has a plant or is listed twice`)
+    if (index in state.buildings) throw new Error(`Parcel ${x},${y} has a building`)
     plants[index] = { variety: command.variety, plantedHour: state.time.hour }
   }
 

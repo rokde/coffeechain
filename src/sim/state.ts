@@ -1,4 +1,5 @@
 import { balance } from './balance'
+import type { BuildingKind } from './buildings/build'
 import type { GameEvent } from './events/schedule'
 import type { FarmState } from './farm/parcels'
 import type { MarketState } from './market/market'
@@ -16,6 +17,8 @@ export interface GameState {
   // Hundredths of CC.
   money: number
   farm: FarmState
+  // Parcel index → building on it.
+  buildings: Record<number, { kind: BuildingKind }>
   storage: StorageState
   market: MarketState
   events: GameEvent[]
@@ -32,6 +35,7 @@ export function createState(seed: number): GameState {
     props: placeProps(world, balance()),
     money: Math.round(balance().economy.startCapital * 100),
     farm: { parcels: {}, fields: [], nextFieldId: 0, plants: {} },
+    buildings: {},
     storage: { batches: [] },
     market: { volumes: [], seeds: {} },
     events: [],

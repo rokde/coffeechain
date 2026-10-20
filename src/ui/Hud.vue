@@ -17,6 +17,7 @@ import FpsMeter from './FpsMeter.vue'
 import HelpOverlay from './HelpOverlay.vue'
 import MarketPanel from './MarketPanel.vue'
 import MessagePanel from './MessagePanel.vue'
+import BuildTool from './BuildTool.vue'
 import ParcelInspector from './ParcelInspector.vue'
 import OverlayPanel from './OverlayPanel.vue'
 import ParcelTool from './ParcelTool.vue'
@@ -119,6 +120,7 @@ const storageText = computed(() =>
       <ParcelTool v-if="selection.tool === 'parcel'" />
       <PlantTool v-else-if="selection.tool === 'plant'" />
       <FarmTool v-else-if="isFarmTool(selection.tool)" />
+      <BuildTool v-else-if="selection.tool === 'build'" />
       <MarketPanel v-else-if="selection.tool === 'market'" />
       <ParcelInspector v-else />
     </aside>
@@ -352,7 +354,7 @@ const storageText = computed(() =>
   bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
-  width: min(730px, calc(100vw - 32px));
+  width: min(820px, calc(100vw - 32px));
   height: 82px;
   display: flex;
   gap: 8px;
@@ -384,14 +386,18 @@ const storageText = computed(() =>
   outline-offset: 2px;
 }
 @media (max-width: 480px) {
-  /* Eight tools do not fit in one row, so they use two rows of four. */
+  /* Nine tools do not fit in one row, so they use two rows of five and four. */
   .toolbar {
     height: auto;
     flex-wrap: wrap;
+    gap: 4px;
   }
+  /* "Auswählen" is the longest label. It fits at 390 px only with a smaller font and no padding. */
   .toolbar button {
-    flex-basis: calc(25% - 6px);
+    flex-basis: calc(20% - 4px);
     height: 44px;
+    padding: 0;
+    font-size: 12px;
   }
 }
 </style>
