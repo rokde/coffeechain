@@ -21,13 +21,15 @@ import { tools } from './toolbar'
   position: fixed;
   inset: 0;
   pointer-events: none;
-  color: #f5ece0;
+  --hud-bg: rgb(43 36 32 / 92%);
+  --hud-fg: #f5ece0;
+  color: var(--hud-fg);
 }
 .frame {
   position: absolute;
   box-sizing: border-box;
   pointer-events: auto;
-  background: rgb(43 36 32 / 92%);
+  background: var(--hud-bg);
   border-radius: 12px;
 }
 .top-bar {
@@ -43,20 +45,20 @@ import { tools } from './toolbar'
 .left-panel {
   top: 92px;
   left: 16px;
-  width: 300px;
+  width: min(300px, calc(50vw - 24px));
   height: 220px;
 }
 .right-panel {
   top: 92px;
   right: 16px;
-  width: 330px;
+  width: min(330px, calc(50vw - 24px));
   height: 480px;
 }
 .toolbar {
   bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
-  width: 730px;
+  width: min(730px, calc(100vw - 32px));
   height: 82px;
   display: flex;
   gap: 8px;

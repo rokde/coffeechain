@@ -33,6 +33,7 @@ function start() {
   window.addEventListener('resize', resize)
 
   window.addEventListener('keydown', (event) => {
+    if (event.repeat || event.metaKey || event.ctrlKey || event.altKey) return
     const key = event.key.toLowerCase()
     if (key === 'q') view.rotate(-1)
     if (key === 'e') view.rotate(1)
