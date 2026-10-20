@@ -19,7 +19,12 @@ const clockText = computed(() => {
 <template>
   <div class="hud">
     <header class="frame top-bar" data-testid="hud-top-bar">
-      <strong class="name">{{ de.game.name }}</strong>
+      <div class="name">
+        <strong>{{ de.game.name }}</strong>
+        <small data-testid="world-seed">{{
+          de.world.seed.replace('{seed}', String(store.state.world.seed))
+        }}</small>
+      </div>
       <div class="time">
         <span class="chip" data-testid="clock">{{ clockText }}</span>
         <div class="speeds" role="group" :aria-label="de.time.speeds">
@@ -74,6 +79,14 @@ const clockText = computed(() => {
   align-items: center;
   padding: 0 20px;
   font-size: 20px;
+}
+.name {
+  display: flex;
+  flex-direction: column;
+}
+.name small {
+  font-size: 12px;
+  opacity: 0.8;
 }
 .time {
   display: flex;

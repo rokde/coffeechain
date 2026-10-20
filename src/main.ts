@@ -8,6 +8,7 @@ import { useGameStore } from './app/store'
 import { createCamera } from './render/camera'
 import { loadModel, MODEL_IDS } from './render/models'
 import { createScene } from './render/scene'
+import { createTerrain } from './render/terrain'
 import { balance } from './sim/balance'
 import type { GameState } from './sim/state'
 import { step } from './sim/time/time'
@@ -86,6 +87,8 @@ function start() {
 
   const pinia = createPinia()
   const store = useGameStore(pinia)
+  // createTerrain only reads the world, so the cast of the readonly snapshot is safe.
+  scene.add(createTerrain(store.state.world as GameState['world']))
   const { realSecondsPerGameDay, ticksPerGameDay } = balance().time
   const msPerTick = (realSecondsPerGameDay * 1000) / ticksPerGameDay
   let carryMs = 0
