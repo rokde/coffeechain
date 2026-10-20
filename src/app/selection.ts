@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import type { ParcelPos } from '../render/picking'
 import { cares } from '../sim/farm/care'
-import { isBuildable } from '../sim/farm/parcels'
+import { isFree } from '../sim/farm/parcels'
 import { growth } from '../sim/farm/plants'
 import type { Variety } from '../sim/farm/yield'
 import type { GameState } from '../sim/state'
@@ -20,7 +20,7 @@ export const isFarmTool = (tool: string): tool is FarmTool => tool in farmTools
 // The plant tool selects only owned parcels without a plant.
 // The harvest tool selects only owned parcels with a ripe plant.
 // A care tool selects only owned parcels with an unripe plant that does not have this care yet.
-// The other tools select only buildable parcels that the farm does not own.
+// The other tools select only free parcels that the farm does not own.
 export function canSelect(state: GameState, tool: string, p: ParcelPos): boolean {
   const index = p.y * state.world.size + p.x
   const owned = index in state.farm.parcels
@@ -30,7 +30,7 @@ export function canSelect(state: GameState, tool: string, p: ParcelPos): boolean
   if (tool === 'harvest') return owned && ripe
   if (tool === 'fertilize' || tool === 'irrigate' || tool === 'protect')
     return owned && !!plant && !ripe && !plant[cares[farmTools[tool]].flag]
-  return !owned && isBuildable(state.world, p.x, p.y)
+  return !owned && isFree(state, p.x, p.y)
 }
 
 // UI state, not sim state: the active tool, the inspector parcel, the tool selection and the plant variety.

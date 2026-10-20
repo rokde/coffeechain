@@ -43,6 +43,13 @@ export function isBuildable(world: World, x: number, y: number): boolean {
   )
 }
 
+// The farm can buy the parcel: it is buildable, and it is not the hut, the market or on the path.
+export function isFree(state: GameState, x: number, y: number): boolean {
+  const { hut, market, path } = state.props
+  const at = (p: { x: number; y: number }) => p.x === x && p.y === y
+  return isBuildable(state.world, x, y) && !at(hut) && !at(market) && !path.some(at)
+}
+
 // Cost in hundredths of CC. It does not validate the list.
 // The caller must give only buildable parcels that the farm does not own, each one time.
 export function quoteParcels(state: GameState, list: { x: number; y: number }[]): number {
@@ -68,8 +75,8 @@ export function createParcels(state: GameState, command: CreateParcels): GameSta
     if (!inside) throw new Error(`Parcel ${x},${y} is outside the map`)
     const index = y * size + x
     if (index in owned) throw new Error(`Parcel ${x},${y} is already owned or listed twice`)
-    if (!isBuildable(state.world, x, y)) {
-      throw new Error(`Parcel ${x},${y} is water or too steep`)
+    if (!isFree(state, x, y)) {
+      throw new Error(`Parcel ${x},${y} is water, too steep, or has the hut, market or path`)
     }
 
     const touched = [

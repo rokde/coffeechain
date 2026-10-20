@@ -3,7 +3,7 @@ import { pathToFileURL } from 'node:url'
 import type { Balance } from '../config/balance.schema'
 import { balance } from '../src/sim/balance'
 import { dispatch, type Command } from '../src/sim/commands'
-import { isBuildable, quoteParcels } from '../src/sim/farm/parcels'
+import { isFree, quoteParcels } from '../src/sim/farm/parcels'
 import { growth, quotePlant } from '../src/sim/farm/plants'
 import type { Variety } from '../src/sim/farm/yield'
 import { bankBuyPrice, bankSellPrice } from '../src/sim/market/market'
@@ -77,7 +77,7 @@ export function runBot(seed: number, days: number): BotResult {
   const zones = new Set<string>([cfg.varieties.robusta.zone, cfg.varieties.arabicaStandard.zone])
   const candidates = state.world.parcels
     .map((p, index) => ({ p, index }))
-    .filter(({ p }) => zones.has(p.zone) && isBuildable(state.world, p.x, p.y))
+    .filter(({ p }) => zones.has(p.zone) && isFree(state, p.x, p.y))
     .sort((a, b) => b.p.soilQuality - a.p.soilQuality || a.index - b.index)
     .map(({ index }) => index)
   let next = 0

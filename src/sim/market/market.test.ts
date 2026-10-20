@@ -36,7 +36,8 @@ describe('market', () => {
     const state = testState()
     expect(bankBuyPrice(state, 'robusta')).toBeCloseTo(0.4)
     const next = dispatch(state, { type: 'Sell', variety: 'robusta', units: 10 })
-    expect(next.money).toBe(state.money + 400)
+    // The 10 units sell at the mid volume of 5 units: 0.4 × (1 − 0.3 × 5 / 300) = 0.398 CC.
+    expect(next.money).toBe(state.money + 398)
     expect(next.storage.batches).toEqual([
       { variety: 'arabicaStandard', units: 5, quality: 100 },
       { variety: 'robusta', units: 496, quality: 100 },
@@ -48,8 +49,49 @@ describe('market', () => {
     const seedCost = cfg.varieties.robusta.seedCost
     expect(bankSellPrice(state, 'robusta')).toBeCloseTo(seedCost)
     const next = dispatch(state, { type: 'Buy', variety: 'robusta', units: 5 })
-    expect(next.money).toBe(state.money - Math.round(5 * seedCost * 100))
+    // The 5 units cost the price at the mid volume of 2.5 units.
+    const factor = 1 + (m.demandFactorRange[1]! - 1) * (2.5 / m.demandUnitsForMaxFactor)
+    expect(next.money).toBe(state.money - Math.round(5 * seedCost * factor * 100))
     expect(next.market.seeds.robusta).toBe(5)
+  })
+
+  it.each([
+    ['Sell', 2],
+    ['Sell', 100],
+    ['Sell', 240],
+    ['Buy', 2],
+    ['Buy', 100],
+    ['Buy', 160],
+  ] as const)('AC-2 (S21b): one %s of %i units equals two trades of half the units', (type, n) => {
+    const state: GameState = {
+      ...testState(),
+      money: 1e9,
+      // Earlier trades today, so the trade does not start at a neutral market.
+      market: {
+        seeds: {},
+        volumes: [
+          { kind: 'coffee', variety: 'robusta', day: 1, units: 30 },
+          { kind: 'seed', variety: 'robusta', day: 1, units: 20 },
+        ],
+      },
+    }
+    const trade = (s: GameState, units: number) =>
+      dispatch(s, { type, variety: 'robusta', units } as never)
+    const delta = (s: GameState) => Math.abs(s.money - state.money)
+    const one = trade(state, n)
+    const two = trade(trade(state, n / 2), n / 2)
+    expect(Math.abs(delta(one) - delta(two))).toBeLessThanOrEqual(2)
+    expect(one.market).toEqual(two.market)
+
+    // The unit price of the trade is below (Sell) or above (Buy) the price before the trade.
+    // The income or cost rounds to whole cents, so compare it only for large trades.
+    const price = type === 'Sell' ? bankBuyPrice : bankSellPrice
+    const before = price(state, 'robusta')
+    const after = price(state, 'robusta', n)
+    if (type === 'Sell') expect(after).toBeLessThan(before)
+    else expect(after).toBeGreaterThan(before)
+    if (n >= 100 && type === 'Sell') expect(delta(one)).toBeLessThan(n * before * 100)
+    if (n >= 100 && type === 'Buy') expect(delta(one)).toBeGreaterThan(n * before * 100)
   })
 
   it('AC-2: rejects bad trades and keeps the state', () => {

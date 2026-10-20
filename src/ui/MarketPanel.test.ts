@@ -93,8 +93,9 @@ describe('MarketPanel (S20)', () => {
   it('AC-5: the sell action sells all Robusta units at the bank price', () => {
     const { game } = setup()
     const before = game.state.money
-    const income = Math.round(10 * bankBuyPrice(game.state as GameState, 'robusta') * 100)
-    expect(income).toBe(400)
+    // The 10 units sell at the price of the mid volume of 5 units.
+    const income = Math.round(10 * bankBuyPrice(game.state as GameState, 'robusta', 10) * 100)
+    expect(income).toBe(398)
     sellAll(game, 'robusta')
     expect(game.state.storage.batches.filter((b) => b.variety === 'robusta')).toEqual([])
     expect(game.state.money).toBe(before + income)
