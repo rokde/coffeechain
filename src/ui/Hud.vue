@@ -6,7 +6,7 @@ import { useSavePanelStore } from '../app/savePanel'
 import { useGameStore } from '../app/store'
 import { useViewStore } from '../app/view'
 import { balance } from '../sim/balance'
-import { phase, phaseProgress } from '../sim/progression/capital'
+import { capital, phase, phaseProgress } from '../sim/progression/capital'
 import type { GameState } from '../sim/state'
 import { storageUsed } from '../sim/storage/storage'
 import { clock } from '../sim/time/time'
@@ -50,12 +50,18 @@ const storageText = computed(() =>
 const phaseText = computed(() => {
   const state = store.state as GameState
   const { next, share } = phaseProgress(state)
-  return {
-    name: de.phase.name.replace('{phase}', String(phase(state))),
-    // Round down, so the chip never shows 100 % before the next phase.
-    progress:
-      next === null ? '' : de.phase.progress.replace('{percent}', String(Math.floor(share * 100))),
-  }
+  const name = de.phase.name.replace('{phase}', String(phase(state)))
+  // Round down, so the chip never shows 100 % before the next phase.
+  const progress =
+    next === null ? '' : de.phase.progress.replace('{percent}', String(Math.floor(share * 100)))
+  // Also the only progress at 480 px or less, where the percent is hidden.
+  const hint =
+    next === null
+      ? de.phase.lastHint
+      : de.phase.hint
+          .replace('{capital}', formatMoney(capital(state)))
+          .replace('{next}', formatMoney(next * 100))
+  return { name, progress, hint, label: `${[name, progress].filter(Boolean).join(' ')} · ${hint}` }
 })
 </script>
 
@@ -95,7 +101,7 @@ const phaseText = computed(() => {
       <div class="stats">
         <EventChips />
         <span class="chip" data-testid="storage">{{ storageText }}</span>
-        <span class="chip" data-testid="phase"
+        <span class="chip" data-testid="phase" :title="phaseText.hint" :aria-label="phaseText.label"
           >{{ phaseText.name }}
           <span v-if="phaseText.progress" class="phase-progress">{{
             phaseText.progress
