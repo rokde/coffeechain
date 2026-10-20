@@ -147,6 +147,7 @@
     "maxDurationDays": { "v": 7, "src": "GDD 11.8" },
     "warningDays": { "v": 1, "src": "GDD 11.8" },
     "graceDaysAtStart": { "v": 5, "src": "NEU" },
+    "researchMaxCount": { "v": 1, "src": "NEU" },
     "types": {
       "v": {
         "frost": { "yield": { "hochland": -0.3, "hochlandKuehl": -0.3 }, "price": { "arabicaStandard": 0.2, "arabicaPremium": 0.2 }, "durationDays": [3, 5], "everyDays": 14 },

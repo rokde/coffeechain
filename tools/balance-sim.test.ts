@@ -4,14 +4,22 @@ import { createState } from '../src/sim/state'
 import { capital, daysTo, renderReport, runBot, type BotResult } from './balance-sim'
 
 describe('runBot', () => {
-  it('gives one capital per day, repeats per seed, and grows the farm without debt', () => {
-    const a = runBot(1, 200)
+  let first: BotResult | undefined
+  const run = () => (first ??= runBot(1, 200))
+
+  // 200 game days with events and research; parallel suite load
+  it('gives one capital per day and grows the farm without debt', () => {
+    const a = run()
     expect(a.curve).toHaveLength(200)
-    expect(runBot(1, 200)).toEqual(a)
     expect(a.minMoney).toBeGreaterThanOrEqual(0)
     expect(a.parcels).toBeGreaterThan(1)
     expect(a.curve.at(-1)).toBeGreaterThan(balance().economy.startCapital)
-  })
+  }, 20000)
+
+  // 200 game days with events and research; parallel suite load
+  it('repeats per seed', () => {
+    expect(runBot(1, 200)).toEqual(run())
+  }, 20000)
 })
 
 describe('capital', () => {

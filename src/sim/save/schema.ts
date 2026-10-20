@@ -62,5 +62,6 @@ export const gameStateSchema = z.object({
       endDay: int,
     }),
   ),
+  research: z.array(int),
   milestones: z.object({ harvested: num, harvestProHour: num.optional() }),
 }) satisfies z.ZodType<GameState>

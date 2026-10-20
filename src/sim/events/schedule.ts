@@ -14,8 +14,11 @@ export interface GameEvent {
   endDay: number
 }
 
-// "research" is permanent, so the scheduler skips it (S51).
+// "research" is permanent, so it goes into state.research and not into state.events.
 const TIMED: EventType[] = ['frost', 'monsoon', 'boom', 'crisis', 'pests']
+
+// Harvest seeds use parcel indexes >= 0, so -1 gives the research roll its own stream.
+const RESEARCH_STREAM = -1
 
 export const activeEvents = (state: GameState, day = clock(state.time.hour).day): GameEvent[] =>
   state.events.filter((e) => e.startDay <= day && day < e.endDay)
@@ -29,6 +32,7 @@ export function dailyEvents(state: GameState): GameState {
   const day = clock(state.time.hour).day
   const events = state.events.filter((e) => day < e.endDay)
   const startDay = day + cfg.warningDays
+  let research = state.research
   if (startDay > cfg.graceDaysAtStart) {
     const random = mulberry32(harvestSeed(state.world.seed, day, 0))
     for (const type of TIMED) {
@@ -41,6 +45,12 @@ export function dailyEvents(state: GameState): GameState {
         events.push({ type, announcedDay: day, startDay, endDay: startDay + length })
       }
     }
+    const { yieldBonus, everyDays } = cfg.types.research
+    const roll = mulberry32(harvestSeed(state.world.seed, day, RESEARCH_STREAM))()
+    const n = research.length + 1
+    // The epsilon keeps 3 × 0.1 within a maxEffect of 0.3.
+    const room = n <= cfg.researchMaxCount && yieldBonus * n <= cfg.maxEffect + 1e-9
+    if (room && roll < 1 / everyDays) research = [...research, startDay]
   }
-  return { ...state, events }
+  return { ...state, events, research }
 }

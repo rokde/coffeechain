@@ -775,6 +775,85 @@ test('S25: help keys work while the checklist is open', async ({ page }) => {
   await expect(page.getByTestId('first-steps')).toBeVisible()
 })
 
+test('S42b: save panel saves and loads a slot', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+  await page.goto('/?seed=48213')
+  const panel = page.getByTestId('save-panel')
+  await expect(panel).toHaveCount(0)
+  await page.getByTestId('save-button').click()
+  await expect(panel).toBeVisible()
+  const row = page.getByTestId('save-slot-2')
+  for (const slot of [1, 2, 3]) {
+    const r = page.getByTestId(`save-slot-${slot}`)
+    await expect(r.getByTestId('save-slot-status')).toHaveText('leer')
+    await expect(r.getByTestId('save-slot-load')).toBeDisabled()
+  }
+
+  const money = page.getByTestId('money')
+  await expect(money).toHaveText('500 CC')
+  await row.getByTestId('save-slot-save').click()
+  await expect(row.getByTestId('save-slot-status')).toHaveText(/^Tag \d+$/)
+  await expect(row.getByTestId('save-slot-load')).toBeEnabled()
+  await page.screenshot({ path: 'docs/progress/save-panel.png' })
+  await page.getByTestId('save-panel-close').click()
+  await expect(panel).toHaveCount(0)
+
+  // Buildable lowland parcel (18, 23) of seed 48213 at the start camera.
+  await page.getByTestId('tool-parcel').click()
+  await page.locator('canvas#scene').click({ position: { x: 640, y: 370 } })
+  await expect(money).not.toHaveText('500 CC')
+
+  await page.getByTestId('save-button').click()
+  await row.getByTestId('save-slot-load').click()
+  await expect(money).toHaveText('500 CC')
+  await expect(panel).toHaveCount(0)
+  expect(errors).toEqual([])
+})
+
+for (const width of [360, 390]) {
+  test(`S42b: save button fits the top bar at ${width} px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 800 })
+    await page.goto('/?seed=4294967295')
+    const bar = page.getByTestId('hud-top-bar')
+    expect(await bar.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+    const box = (await bar.boundingBox())!
+    for (const id of ['save-button', 'help-button']) {
+      const button = (await page.getByTestId(id).boundingBox())!
+      expect(button.x).toBeGreaterThanOrEqual(box.x)
+      expect(button.x + button.width).toBeLessThanOrEqual(box.x + box.width)
+    }
+    await page.getByTestId('save-button').click()
+    const panel = (await page.getByTestId('save-panel').boundingBox())!
+    expect(panel.x).toBeGreaterThanOrEqual(0)
+    expect(panel.x + panel.width).toBeLessThanOrEqual(width)
+    await page.screenshot({ path: `docs/progress/save-panel-${width}.png` })
+  })
+}
+
+test('S42b: top bar fits a narrow window at day 9999', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 640 })
+  await page.goto('/?seed=4294967295')
+  await page.getByTestId('save-button').click()
+  await page.getByTestId('save-slot-1').getByTestId('save-slot-save').click()
+  await expect(page.getByTestId('save-slot-1').getByTestId('save-slot-load')).toBeEnabled()
+  await page.evaluate(() => {
+    const key = 'coffeechain.save.slot-1'
+    const save = JSON.parse(localStorage.getItem(key)!)
+    save.state.time = { ...save.state.time, hour: 9998 * 24 + 23, speed: 0 }
+    localStorage.setItem(key, JSON.stringify(save))
+  })
+  await page.getByTestId('save-panel-close').click()
+  await page.getByTestId('save-button').click()
+  await page.getByTestId('save-slot-1').getByTestId('save-slot-load').click()
+  await expect(page.getByTestId('clock')).toHaveText('Tag 9999 · 23:00')
+  const bar = page.getByTestId('hud-top-bar')
+  expect(await bar.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+  for (const id of ['clock', 'speed-0', 'speed-16', 'save-button', 'help-button'])
+    await expect(page.getByTestId(id)).toBeInViewport({ ratio: 1 })
+  await page.screenshot({ path: 'docs/progress/save-panel-day-9999.png' })
+})
+
 test('S40: tool brush paints, notes and disarms', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))

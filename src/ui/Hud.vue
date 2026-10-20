@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useFirstStepsStore } from '../app/firstSteps'
 import { isFarmTool, pickTool, useSelectionStore } from '../app/selection'
+import { useSavePanelStore } from '../app/savePanel'
 import { useGameStore } from '../app/store'
 import { useViewStore } from '../app/view'
 import { balance } from '../sim/balance'
@@ -19,18 +20,21 @@ import ParcelInspector from './ParcelInspector.vue'
 import OverlayPanel from './OverlayPanel.vue'
 import ParcelTool from './ParcelTool.vue'
 import PlantTool from './PlantTool.vue'
+import SavePanel from './SavePanel.vue'
 import { tools } from './toolbar'
 
 const store = useGameStore()
 const selection = useSelectionStore()
 const steps = useFirstStepsStore()
 const view = useViewStore()
+const savePanel = useSavePanelStore()
 const speeds = balance().time.speeds
 const clockText = computed(() => {
   const { day, hourOfDay } = clock(store.state.time.hour)
-  return de.time.clock
-    .replace('{day}', String(day))
-    .replace('{hour}', String(hourOfDay).padStart(2, '0'))
+  return {
+    day: de.time.day.replace('{day}', String(day)),
+    hour: de.time.hour.replace('{hour}', String(hourOfDay).padStart(2, '0')),
+  }
 })
 // storageUsed only reads the state, so the cast of the readonly snapshot is safe.
 // shortcut: capacity is startCapacity, add the upgrades with S27.
@@ -51,7 +55,11 @@ const storageText = computed(() =>
         }}</small>
       </div>
       <div class="time">
-        <span class="chip" data-testid="clock">{{ clockText }}</span>
+        <span class="chip clock" data-testid="clock"
+          ><span>{{ clockText.day }}</span
+          ><span class="clock-separator">{{ de.time.separator }}</span
+          ><span>{{ clockText.hour }}</span></span
+        >
         <div class="speeds" role="group" :aria-label="de.time.speeds">
           <button
             v-for="speed in speeds"
@@ -74,6 +82,24 @@ const storageText = computed(() =>
         <span class="chip" data-testid="storage">{{ storageText }}</span>
         <span class="chip money" data-testid="money">{{ formatMoney(store.state.money) }}</span>
       </div>
+      <button
+        type="button"
+        class="save-button"
+        data-testid="save-button"
+        :aria-label="de.savePanel.open"
+        @click="savePanel.open = true"
+      >
+        <svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true">
+          <path
+            d="M2 2h9l3 3v9H2z M4.5 2v4h6V2 M4.5 14V9.5h7V14"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linejoin="round"
+          />
+        </svg>
+        <span>{{ de.savePanel.open }}</span>
+      </button>
       <button
         type="button"
         class="help-button"
@@ -109,6 +135,7 @@ const storageText = computed(() =>
       </button>
     </nav>
     <HelpOverlay v-if="view.helpOpen" />
+    <SavePanel v-if="savePanel.open" />
   </div>
 </template>
 
@@ -166,6 +193,27 @@ const storageText = computed(() =>
   font-size: 15px;
   font-weight: 600;
 }
+.save-button {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  margin-left: 12px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 8%);
+  color: inherit;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.save-button:focus-visible {
+  outline: 2px solid #f2c48d;
+  outline-offset: 2px;
+}
 .help-button {
   flex: none;
   width: 44px;
@@ -211,7 +259,7 @@ const storageText = computed(() =>
 }
 @media (max-width: 480px) {
   .top-bar {
-    padding: 0 8px;
+    padding: 0 4px;
   }
   .name strong {
     display: none;
@@ -250,16 +298,39 @@ const storageText = computed(() =>
     padding: 8px 4px;
     font-size: 14px;
   }
+  /* Day and hour in two lines, so a long day number still fits. */
+  .clock {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 4px 6px;
+    font-size: 12px;
+    line-height: 15px;
+  }
+  .clock-separator {
+    display: none;
+  }
   .speeds {
     gap: 0;
   }
-  /* Six speed buttons and the help button must fit beside the clock. */
+  /* Six speed buttons, the save and the help button must fit beside the clock. */
   .speeds button {
-    min-width: 26px;
+    min-width: 22px;
     padding: 0 1px;
   }
   .help-button {
-    margin-left: 4px;
+    width: 36px;
+    margin-left: 2px;
+  }
+  /* Only the icon fits, the aria-label keeps the name. */
+  .save-button {
+    width: 36px;
+    margin-left: 2px;
+    padding: 0;
+    justify-content: center;
+  }
+  .save-button span {
+    display: none;
   }
 }
 .left-panel {

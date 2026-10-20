@@ -32,8 +32,14 @@ export async function loadSlot(slot: string): Promise<void> {
   location.reload()
 }
 
+let pendingError: string | null = null
+
+// The reason why the last pending load was invalid, or null.
+export const pendingLoadError = () => pendingError
+
 // The state from loadSlot before the reload, or null. Removes the key.
 export function takePendingLoad(): GameState | null {
+  pendingError = null
   const text = sessionStorage.getItem(PENDING)
   sessionStorage.removeItem(PENDING)
   if (text === null) return null
@@ -41,6 +47,11 @@ export function takePendingLoad(): GameState | null {
     return deserialize(text)
   } catch (error) {
     console.error('Pending load is invalid', error)
+    pendingError = errorMessage(error)
     return null
   }
 }
+
+// Tauri invoke rejects with a plain string, not an Error.
+export const errorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : String(error)
