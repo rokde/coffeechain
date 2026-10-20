@@ -157,3 +157,22 @@ describe('events migration', () => {
     expect(loaded).toEqual(createState(5))
   })
 })
+
+describe('research migration', () => {
+  it('S51b AC-5: has version 4 and loads a version 3 save with an empty research list', () => {
+    expect(SAVE_VERSION).toBe(4)
+    const old: Record<string, unknown> = { ...createState(5) }
+    delete old.research
+    const loaded = deserialize(JSON.stringify({ version: 3, state: old }))
+    expect(loaded.research).toEqual([])
+    expect(loaded).toEqual(createState(5))
+  })
+
+  it('S51b AC-5: round-trips research days and rejects bad ones', () => {
+    const text = serialize({ ...createState(5), research: [12, 40] })
+    expect(deserialize(text).research).toEqual([12, 40])
+    expect(serialize(deserialize(text))).toBe(text)
+    const bad = JSON.stringify({ version: 4, state: { ...createState(5), research: ['x'] } })
+    expect(() => deserialize(bad)).toThrow(/research/)
+  })
+})

@@ -25,16 +25,21 @@ function create() {
   <section class="tool" data-testid="parcel-tool">
     <h2>{{ t.heading }}</h2>
     <p class="hint">{{ t.hint }}</p>
-    <dl>
-      <dt>{{ t.count }}</dt>
-      <dd data-testid="parcel-tool-count">{{ selection.parcels.length }}</dd>
-      <dt>{{ t.total }}</dt>
-      <dd data-testid="parcel-tool-total">{{ formatMoney(cost) }}</dd>
-    </dl>
-    <p v-if="tooExpensive" class="short" data-testid="parcel-tool-short">{{ t.tooExpensive }}</p>
-    <button type="button" data-testid="parcel-tool-create" :disabled="disabled" @click="create">
-      {{ t.create }}
-    </button>
+    <p v-if="selection.note" class="short" data-testid="tool-note">
+      {{ de.toolNote[selection.note] }}
+    </p>
+    <template v-if="selection.parcels.length > 0">
+      <dl>
+        <dt>{{ t.count }}</dt>
+        <dd data-testid="parcel-tool-count">{{ selection.parcels.length }}</dd>
+        <dt>{{ t.total }}</dt>
+        <dd data-testid="parcel-tool-total">{{ formatMoney(cost) }}</dd>
+      </dl>
+      <p v-if="tooExpensive" class="short" data-testid="parcel-tool-short">{{ t.tooExpensive }}</p>
+      <button type="button" data-testid="parcel-tool-create" :disabled="disabled" @click="create">
+        {{ t.create }}
+      </button>
+    </template>
   </section>
 </template>
 

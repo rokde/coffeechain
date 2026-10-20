@@ -35,22 +35,27 @@ const disabled = computed(() => selection.parcels.length === 0 || tooExpensive.v
         {{ de.inspector.varieties[v] }}
       </button>
     </div>
-    <dl>
-      <dt>{{ t.count }}</dt>
-      <dd data-testid="plant-tool-count">{{ selection.parcels.length }}</dd>
-      <dt>{{ t.total }}</dt>
-      <dd data-testid="plant-tool-total">{{ formatMoney(cost) }}</dd>
-    </dl>
-    <p v-if="tooExpensive" class="short" data-testid="plant-tool-short">{{ t.tooExpensive }}</p>
-    <button
-      type="button"
-      class="main"
-      data-testid="plant-tool-plant"
-      :disabled="disabled"
-      @click="plantSelected"
-    >
-      {{ t.plant }}
-    </button>
+    <p v-if="selection.note" class="short" data-testid="tool-note">
+      {{ de.toolNote[selection.note] }}
+    </p>
+    <template v-if="selection.parcels.length > 0">
+      <dl>
+        <dt>{{ t.count }}</dt>
+        <dd data-testid="plant-tool-count">{{ selection.parcels.length }}</dd>
+        <dt>{{ t.total }}</dt>
+        <dd data-testid="plant-tool-total">{{ formatMoney(cost) }}</dd>
+      </dl>
+      <p v-if="tooExpensive" class="short" data-testid="plant-tool-short">{{ t.tooExpensive }}</p>
+      <button
+        type="button"
+        class="main"
+        data-testid="plant-tool-plant"
+        :disabled="disabled"
+        @click="plantSelected"
+      >
+        {{ t.plant }}
+      </button>
+    </template>
   </section>
 </template>
 
