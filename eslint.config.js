@@ -3,7 +3,15 @@ import tseslint from 'typescript-eslint'
 import pluginVue from 'eslint-plugin-vue'
 
 export default defineConfig(
-  globalIgnores(['dist', 'test-results', 'playwright-report', 'factory', '.claude']),
+  globalIgnores([
+    'dist',
+    'test-results',
+    'playwright-report',
+    'factory',
+    '.claude',
+    'src-tauri/target',
+    'src-tauri/gen',
+  ]),
   tseslint.configs.recommended,
   pluginVue.configs['flat/essential'],
   {
