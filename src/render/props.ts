@@ -1,6 +1,5 @@
 import { Box3, Group, Vector3, type Object3D } from 'three'
-import { balance } from '../sim/balance'
-import { placeProps, type Place } from '../sim/world/props'
+import type { Place, WorldProps } from '../sim/world/props'
 import type { World } from '../sim/world/types'
 import type { ModelId } from './models'
 import { parcelCenter } from './surface'
@@ -41,9 +40,9 @@ export function pathPieces(path: Place[]): PathPiece[] {
 
 export async function createProps(
   world: World,
+  props: WorldProps,
   load: (id: ModelId) => Promise<Object3D>,
 ): Promise<Group> {
-  const props = placeProps(world, balance())
   const items: { id: ModelId; x: number; y: number; quarterTurns: number }[] = [
     { id: 'hut', ...props.hut, quarterTurns: 0 },
     { id: 'market-stand', ...props.market, quarterTurns: 0 },
@@ -69,4 +68,14 @@ export async function createProps(
     group.add(model)
   })
   return group
+}
+
+// Removes each tree child without a place in trees. Nothing adds trees yet, so this only removes.
+export function syncTrees(group: Group, trees: readonly Place[]): void {
+  const keep = new Set(trees.map((t) => `${t.x},${t.y}`))
+  const gone = group.children.filter((c) => {
+    const { prop, x, y } = c.userData as { prop: string; x: number; y: number }
+    return prop.startsWith('tree') && !keep.has(`${x},${y}`)
+  })
+  group.remove(...gone)
 }
