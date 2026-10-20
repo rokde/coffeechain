@@ -15,6 +15,8 @@ export interface PlantState {
   fertilized?: boolean
   irrigated?: boolean
   pestProtected?: boolean
+  // Harvested units that did not fit into the storage.
+  pendingUnits?: number
 }
 
 export type Stage = keyof Balance['farm']['visualStages'] | 'reif'
