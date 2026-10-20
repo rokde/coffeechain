@@ -7,6 +7,7 @@ import { overripeFactor } from '../sim/farm/overripe'
 import { growth } from '../sim/farm/plants'
 import { fieldNeedsCare } from '../sim/farm/status'
 import type { GameState } from '../sim/state'
+import { storageCapacity } from '../sim/storage/capacity'
 import { storageUsed } from '../sim/storage/storage'
 import { clock } from '../sim/time/time'
 import de from './i18n/de.json'
@@ -40,8 +41,7 @@ const messages = computed(() => {
     if (fieldNeedsCare(state, f.id)) out.push(t.needsCare.replace('{name}', f.name))
     return out
   })
-  // shortcut: capacity is startCapacity, add the upgrades with S27.
-  if (storageUsed(storage) >= balance().storage.startCapacity) list.push(t.storageFull)
+  if (storageUsed(storage) >= storageCapacity(state)) list.push(t.storageFull)
   const { harvestProHour } = milestones
   const { ticksPerGameDay } = balance().time
   const days = balance().progression.harvestProMessageDays

@@ -13,6 +13,7 @@ Values in `config/balance.json` with `src: "NEU"` that the world generation (S3)
 | `parcels.maxSlope` | 0.15 | Which height difference (0–1) to one of the 4 neighbours makes a parcel too steep to buy? About 5 % of the land is steeper than 0.15. |
 | `soil.classMinQuality` | mittel 0.35, gut 0.5, sehrGut 0.7 | Which `soilQuality` (0–1) starts each soil class? Lower values are `karg`. |
 | `storage.harvestQuality` | 100 | Which quality does a new harvest batch get? v1 has no quality formula (PRD §12 point 4). |
+| `storage.upgrades` | 250 units / 150 CC / phase 1, 600 units / 400 CC / phase 2 | Are the capacity, the cost and the phase of each Lager-Ausbau stage correct? The capacity is the total after the stage. |
 | `progression.harvestProMessageDays` | 1 | How many game days does the Ernte-Profi message stay in the message panel? |
 | `events.researchMaxCount` | 1 | How many research breakthroughs can the game give? See "Research stacking" below. |
 | `progression.harvestProQualityBonus` | 0.05 | The bonus has no visible effect: `storage.harvestQuality` is 100 and the cap is 100. It needs a quality formula (PRD §12 point 4). |
