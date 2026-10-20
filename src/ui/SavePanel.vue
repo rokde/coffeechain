@@ -61,6 +61,20 @@ const messageText = computed(() => {
             {{ t.load }}
           </button>
         </li>
+        <li data-testid="save-autosave">
+          <span class="name">{{ t.autosave }}</span>
+          <span class="status" data-testid="save-slot-status">{{
+            statusText(panel.status.autosave)
+          }}</span>
+          <button
+            type="button"
+            data-testid="save-slot-load"
+            :disabled="typeof panel.status.autosave !== 'object'"
+            @click="panel.load('autosave')"
+          >
+            {{ t.load }}
+          </button>
+        </li>
       </ul>
     </section>
   </div>

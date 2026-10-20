@@ -7,7 +7,7 @@ import { errorMessage, loadSlot, pendingLoadError, readSlot, writeSlot } from '.
 import { useGameStore } from './store'
 
 export const slots = ['slot-1', 'slot-2', 'slot-3'] as const
-export type Slot = (typeof slots)[number]
+export type Slot = (typeof slots)[number] | 'autosave'
 export type SlotStatus = { day: number } | 'empty' | 'invalid'
 // key: the text key in de.json savePanel.
 export type SaveMessage =
@@ -23,7 +23,7 @@ export const useSavePanelStore = defineStore('savePanel', () => {
 
   async function refresh() {
     await Promise.all(
-      slots.map(async (slot) => {
+      [...slots, 'autosave' as const].map(async (slot) => {
         let text: string | null
         try {
           text = await readSlot(slot)

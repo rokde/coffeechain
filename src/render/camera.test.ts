@@ -2,6 +2,7 @@ import { Plane, Raycaster, Vector2, Vector3, type Camera } from 'three'
 import { describe, expect, it } from 'vitest'
 import { balance } from '../sim/balance'
 import { generateWorld } from '../sim/world/generate'
+import { placeProps } from '../sim/world/props'
 import {
   CAMERA,
   clampTarget,
@@ -10,10 +11,14 @@ import {
   gestureZoomDelta,
   nextZoom,
   rotateYaw,
+  START_FRAME,
+  START_REACH,
   START_YAW,
+  startView,
   wheelZoomDelta,
 } from './camera'
 import { parcelAt, pickParcel } from './picking'
+import { terrainHeightAt } from './surface'
 import { createTerrain } from './terrain'
 
 describe('rotateYaw', () => {
@@ -210,5 +215,58 @@ describe('picking after zoom and pan (S22)', () => {
       view.zoomAt(cursor, -400)
       expect(pickParcel(cursor, view.camera, terrain, world.size)).toEqual(before)
     }
+  })
+})
+
+describe('startView (S40b)', () => {
+  const aspect = 1280 / 900
+  const zoomOf = (seed: number) => {
+    const world = generateWorld(seed, balance())
+    const props = placeProps(world, balance())
+    const view = startView(world, props, aspect)
+    expect(view.zoom).toBeGreaterThanOrEqual(CAMERA.minZoom)
+    expect(view.zoom).toBeLessThanOrEqual(CAMERA.maxZoom)
+
+    const camera = createCamera(aspect, world.size)
+    camera.frame(view.target, view.zoom)
+    expect(camera.camera.zoom).toBe(view.zoom)
+    const n = world.size
+    const land = world.parcels.filter(
+      (q) =>
+        q.zone !== 'wasser' &&
+        Math.max(Math.abs(q.x - world.start.x), Math.abs(q.y - world.start.y)) <= START_REACH,
+    )
+    // The start parcel is good lowland, so the land is never empty.
+    expect(land.length).toBeGreaterThan(0)
+    const corners = land.flatMap((q) =>
+      [0, 1].flatMap((dx) => [0, 1].map((dz) => ({ x: q.x + dx - n / 2, z: q.y + dz - n / 2 }))),
+    )
+    const centre = (p: { x: number; y: number }) => ({
+      x: p.x + 0.5 - n / 2,
+      z: p.y + 0.5 - n / 2,
+    })
+    const points = [props.hut, props.market, ...props.path].map(centre).concat(corners)
+    for (const { x, z } of points) {
+      const q = new Vector3(x, terrainHeightAt(world, x, z), z).project(camera.camera)
+      expect(q.x).toBeGreaterThanOrEqual(START_FRAME.left - 1e-9)
+      expect(q.x).toBeLessThanOrEqual(START_FRAME.right + 1e-9)
+      expect(q.y).toBeGreaterThanOrEqual(START_FRAME.bottom - 1e-9)
+      expect(q.y).toBeLessThanOrEqual(START_FRAME.top + 1e-9)
+    }
+    return view.zoom
+  }
+
+  it('AC-1: frames the start area inside the frame region for seed 48213 and 20 more seeds', () => {
+    expect(START_FRAME).toEqual({ left: -0.45, right: 0.42, bottom: -0.7, top: 0.78 })
+    expect(START_REACH).toBe(4)
+    expect(zoomOf(48213)).toBeGreaterThanOrEqual(2)
+    for (let seed = 1; seed <= 20; seed++) zoomOf(seed)
+  })
+
+  it('AC-1: frame keeps the target inside the world and the zoom inside the limits', () => {
+    const view = createCamera(aspect, SIZE)
+    view.frame({ x: 100, z: -3 }, 50)
+    expect([view.target.x, view.target.z]).toEqual([SIZE / 2, -3])
+    expect(view.camera.zoom).toBe(CAMERA.maxZoom)
   })
 })

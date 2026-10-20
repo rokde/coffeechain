@@ -1,4 +1,8 @@
-use std::{fs, io::ErrorKind, path::PathBuf};
+use std::{
+  fs,
+  io::{ErrorKind, Write},
+  path::{Path, PathBuf},
+};
 use tauri::{AppHandle, Manager};
 
 // The real guard against path traversal: only [a-z0-9-]{1,32} can become a file name.
@@ -17,15 +21,22 @@ fn slot_path(app: &AppHandle, slot: &str) -> Result<PathBuf, String> {
   Ok(dir.join("CoffeeChain").join("saves").join(format!("{slot}.json")))
 }
 
+// Write a temp file first, so that a crash cannot leave a half-written save.
+// sync_all puts the bytes on the disk before the rename, so a power loss cannot leave an empty file.
+fn write_atomic(path: &Path, text: &str) -> std::io::Result<()> {
+  let temp = path.with_extension("json.tmp");
+  let mut file = fs::File::create(&temp)?;
+  file.write_all(text.as_bytes())?;
+  file.sync_all()?;
+  fs::rename(&temp, path)
+}
+
 #[tauri::command]
 fn save_write(app: AppHandle, slot: String, text: String) -> Result<(), String> {
   let path = slot_path(&app, &slot)?;
   let dir = path.parent().ok_or("Save path has no folder")?;
   fs::create_dir_all(dir).map_err(|e| e.to_string())?;
-  // Write a temp file first, so that a crash cannot leave a half-written save.
-  let temp = path.with_extension("json.tmp");
-  fs::write(&temp, text).map_err(|e| e.to_string())?;
-  fs::rename(&temp, &path).map_err(|e| e.to_string())
+  write_atomic(&path, &text).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -57,7 +68,26 @@ pub fn run() {
 
 #[cfg(test)]
 mod tests {
-  use super::valid_slot;
+  use super::{valid_slot, write_atomic};
+  use std::fs;
+
+  #[test]
+  fn write_atomic_writes_and_replaces_the_file_without_a_temp_file() {
+    let dir = std::env::temp_dir().join(format!("coffeechain-test-{}", std::process::id()));
+    fs::create_dir_all(&dir).unwrap();
+    let path = dir.join("autosave.json");
+    write_atomic(&path, "first").unwrap();
+    assert_eq!(fs::read_to_string(&path).unwrap(), "first");
+    let long = "x".repeat(100_000);
+    write_atomic(&path, &long).unwrap();
+    assert_eq!(fs::read_to_string(&path).unwrap(), long);
+    let names: Vec<_> = fs::read_dir(&dir)
+      .unwrap()
+      .map(|e| e.unwrap().file_name().into_string().unwrap())
+      .collect();
+    assert_eq!(names, ["autosave.json"]);
+    fs::remove_dir_all(&dir).unwrap();
+  }
 
   #[test]
   fn accepts_valid_slot_names() {
