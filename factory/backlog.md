@@ -23,7 +23,7 @@ Example: `- [ ] PROJ-1 a hello CLI command that greets a name passed as an argum
 - [ ] S11 Planting and growth: `Plant` buys seed and starts a cycle; growth follows game time with the visual stages from config; test: Robusta is ripe after exactly 3 game days at 1× and at 4×. Needs S9, S10.
 - [ ] S12 Parcel tool: the toolbar "Parzelle" tool selects one or many parcels, shows the total cost, creates them, and marks owned parcels and field names on the terrain; the top bar shows CC. Needs S8, S10.
 - [ ] S13 Plant tool and plant meshes: the "Pflanzen" tool plants Robusta or Arabica Standard on selected parcels, and a code-made InstancedMesh shows each growth stage per variety. Needs S11, S12.
-- [ ] S14 Yield formula: pure `src/sim/farm/yield.ts` with table tests for all varieties and soil classes, including "Robusta, Gut, matching zone, no fertilizer, random 1.0 gives 20". Needs S1.
+- [x] S14 Yield formula: pure `src/sim/farm/yield.ts` with table tests for all varieties and soil classes, including "Robusta, Gut, matching zone, no fertilizer, random 1.0 gives 20". Needs S1. → 006-yield-formula
 - [ ] S15 Care commands: `Fertilize`, `Irrigate`, `ProtectPests` charge the care cost once per cycle and parcel before ripeness; fertilizer adds the yield bonus and fertility. Needs S11.
 - [ ] S16 Harvest and storage: `Harvest` uses the yield formula, lowers fertility, and stores up to capacity (the rest stays on the plant); daily storage cost and quality loss; fallow parcels recover fertility; tests cover the capacity limit. Needs S11, S14.
 - [ ] S17 Overripe: ripe plants keep full yield for the grace days, then lose the daily share; the config switch turns it off; tests cover both modes. Needs S16.
