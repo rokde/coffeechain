@@ -5,7 +5,8 @@ import raw from '../config/balance.json'
 import { loadBalance } from '../config/balance.schema'
 import { advance } from './app/loop'
 import { selectParcel } from './app/market'
-import { isFarmTool, useSelectionStore } from './app/selection'
+import { isBrushTool, isClick, strokeParcel } from './app/brush'
+import { useSelectionStore } from './app/selection'
 import { installHelpKeys } from './app/helpKeys'
 import { installSpeedKeys } from './app/speedKeys'
 import { useGameStore } from './app/store'
@@ -26,6 +27,7 @@ import type { GameState } from './sim/state'
 import { step } from './sim/time/time'
 import Hud from './ui/Hud.vue'
 import de from './ui/i18n/de.json'
+import { toolCursor } from './ui/toolCursor'
 
 function configIsValid(): boolean {
   try {
@@ -169,7 +171,7 @@ function start() {
   const pinia = createPinia()
   const store = useGameStore(pinia)
   installSpeedKeys(store)
-  installHelpKeys(useViewStore(pinia))
+  installHelpKeys(useViewStore(pinia), useSelectionStore(pinia))
   // The model row lies at the origin, so the debug view has no terrain.
   // createTerrain only reads the world, so the cast of the readonly snapshot is safe.
   if (!debugModels) {
@@ -267,16 +269,65 @@ function start() {
     const selection = useSelectionStore(pinia)
     watch(() => (selection.tool === 'select' ? selection.parcel : null), outline.show)
     watch(() => selection.parcels, outlines.show)
+    watch(
+      () => selection.tool,
+      (tool) => (canvas.style.cursor = toolCursor(tool)),
+      { immediate: true },
+    )
     // Select tool: a click on the terrain selects its parcel, a click beside it clears the selection.
-    // Parcel, plant and farm tools: a click on the terrain adds or removes its parcel.
     canvas.addEventListener('click', (event) => {
-      const parcel = pickParcel(ndcOf(event), view.camera, terrain, world.size)
-      // toggle only reads the state, so the cast of the readonly snapshot is safe.
-      const { tool } = selection
-      if (tool === 'parcel' || tool === 'plant' || isFarmTool(tool)) {
-        if (parcel) selection.toggle(store.state as GameState, parcel)
-      } else selectParcel(selection, store.state as GameState, parcel)
+      if (isBrushTool(selection.tool)) return
+      // selectParcel only reads the state, so the cast of the readonly snapshot is safe.
+      selectParcel(
+        selection,
+        store.state as GameState,
+        pickParcel(ndcOf(event), view.camera, terrain, world.size),
+      )
     })
+    // Brush tools: a left press acts on the parcel under the pointer, a left drag paints over more parcels.
+    let stroke: Set<number> | null = null
+    let rightDown: { x: number; y: number } | null = null
+    const brush = (event: PointerEvent) => {
+      const { tool } = selection
+      if (!stroke || !isBrushTool(tool)) return
+      const parcel = pickParcel(ndcOf(event), view.camera, terrain, world.size)
+      if (!parcel) return
+      // strokeParcel only reads the state, so the cast of the readonly snapshot is safe.
+      const result = strokeParcel(stroke, store.state as GameState, tool, selection.variety, parcel)
+      if (result === undefined) return
+      if (typeof result === 'string') selection.note = result
+      else {
+        store.dispatch(result)
+        selection.note = null
+      }
+    }
+    canvas.addEventListener('pointerdown', (event) => {
+      if (event.button === 2) rightDown = { x: event.clientX, y: event.clientY }
+      if (event.button !== 0 || !isBrushTool(selection.tool)) return
+      stroke = new Set()
+      // The capture sends the release to the canvas, also over the HUD, so no old stroke stays.
+      canvas.setPointerCapture(event.pointerId)
+      brush(event)
+    })
+    canvas.addEventListener('pointermove', (event) => {
+      if (event.buttons & 1) brush(event)
+    })
+    canvas.addEventListener('pointerup', (event) => {
+      stroke = null
+      if (event.button !== 2 || !rightDown) return
+      // A right-click puts down the tool. The end of a right-drag pan does not.
+      if (
+        isClick(event.clientX - rightDown.x, event.clientY - rightDown.y) &&
+        isBrushTool(selection.tool)
+      )
+        selection.tool = 'select'
+      rightDown = null
+    })
+    canvas.addEventListener('pointercancel', () => {
+      stroke = null
+      rightDown = null
+    })
+    canvas.addEventListener('lostpointercapture', () => (stroke = null))
   }
   const { realSecondsPerGameDay, ticksPerGameDay } = balance().time
   const msPerTick = (realSecondsPerGameDay * 1000) / ticksPerGameDay

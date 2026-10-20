@@ -12,6 +12,7 @@ import type { GameState } from '../sim/state'
 import Hud from './Hud.vue'
 
 vi.stubGlobal('location', { search: '?seed=42' })
+vi.stubGlobal('sessionStorage', { getItem: () => null, removeItem: () => {} })
 
 const fresh = () => {
   const pinia = createPinia()

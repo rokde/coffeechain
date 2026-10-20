@@ -85,12 +85,49 @@ describe('save format', () => {
   })
 
   it('AC-5: runs migrations in order', () => {
-    const text = JSON.stringify({ version: 1, state: { a: 1 } })
+    // The migrations set the money of a valid state from the fields a and b.
+    const state = createState(1)
+    const text = JSON.stringify({ version: 1, state: { ...state, a: 1 } })
     const m1 = (s: Record<string, unknown>) => ({ ...s, b: 2 })
-    const m2 = (s: Record<string, unknown>) => ({ ...s, c: s.b })
-    expect(deserialize(text, { version: 3, migrations: [m1, m2] })).toEqual({ a: 1, b: 2, c: 2 })
-    const v2 = JSON.stringify({ version: 2, state: { a: 1, b: 5 } })
-    expect(deserialize(v2, { version: 3, migrations: [m1, m2] })).toEqual({ a: 1, b: 5, c: 5 })
+    const m2 = (s: Record<string, unknown>) => ({ ...s, money: Number(s.a) * 10 + Number(s.b) })
+    const format = { version: 3, migrations: [m1, m2] }
+    expect(deserialize(text, format).money).toBe(12)
+    const v2 = JSON.stringify({ version: 2, state: { ...state, a: 1, b: 5 } })
+    expect(deserialize(v2, format).money).toBe(15)
+  })
+
+  describe('S42 schema check', () => {
+    const save = (change: (state: Record<string, unknown>) => void) => {
+      const state = structuredClone(createState(1)) as unknown as Record<string, unknown>
+      change(state)
+      return JSON.stringify({ version: SAVE_VERSION, state })
+    }
+
+    it('AC-1: names the bad field', () => {
+      expect(() => deserialize(save((s) => (s.money = 'a lot')))).toThrow(/money/)
+      expect(() =>
+        deserialize(save((s) => ((s.world as Record<string, unknown>).parcels = 3))),
+      ).toThrow(/world\.parcels/)
+      expect(() => deserialize(save((s) => delete s.farm))).toThrow(/farm/)
+    })
+
+    it('AC-1: checks the events and milestones', () => {
+      expect(() => deserialize(save((s) => (s.events = [{ type: 'flood' }])))).toThrow(
+        /events\.0\.type/,
+      )
+      expect(() => deserialize(save((s) => (s.milestones = { harvested: '1' })))).toThrow(
+        /milestones\.harvested/,
+      )
+    })
+
+    it('AC-1: checks nested fields and unknown varieties', () => {
+      const plant = (variety: unknown) =>
+        save((s) => {
+          ;(s.farm as { plants: Record<number, unknown> }).plants[0] = { variety, plantedHour: 0 }
+        })
+      expect(deserialize(plant('robusta')).farm.plants[0]?.variety).toBe('robusta')
+      expect(() => deserialize(plant('tea'))).toThrow(/farm\.plants\.0\.variety/)
+    })
   })
 
   it('loads a version 1 save with the events and milestones defaults', () => {
@@ -118,5 +155,24 @@ describe('events migration', () => {
     const loaded = deserialize(JSON.stringify({ version: 1, state: old }))
     expect(loaded.events).toEqual([])
     expect(loaded).toEqual(createState(5))
+  })
+})
+
+describe('research migration', () => {
+  it('S51b AC-5: has version 4 and loads a version 3 save with an empty research list', () => {
+    expect(SAVE_VERSION).toBe(4)
+    const old: Record<string, unknown> = { ...createState(5) }
+    delete old.research
+    const loaded = deserialize(JSON.stringify({ version: 3, state: old }))
+    expect(loaded.research).toEqual([])
+    expect(loaded).toEqual(createState(5))
+  })
+
+  it('S51b AC-5: round-trips research days and rejects bad ones', () => {
+    const text = serialize({ ...createState(5), research: [12, 40] })
+    expect(deserialize(text).research).toEqual([12, 40])
+    expect(serialize(deserialize(text))).toBe(text)
+    const bad = JSON.stringify({ version: 4, state: { ...createState(5), research: ['x'] } })
+    expect(() => deserialize(bad)).toThrow(/research/)
   })
 })

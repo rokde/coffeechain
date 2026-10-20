@@ -6,6 +6,7 @@ import { useViewStore } from '../app/view'
 import Hud from './Hud.vue'
 
 vi.stubGlobal('location', { search: '?seed=42' })
+vi.stubGlobal('sessionStorage', { getItem: () => null, removeItem: () => {} })
 
 async function render(open: boolean) {
   const pinia = createPinia()
@@ -47,8 +48,14 @@ describe('HelpOverlay (S35a)', () => {
       'Leertaste',
       'Hilfe öffnen / schließen',
       'Esc',
+      'Linksklick mit Werkzeug',
+      'Linke Maustaste ziehen mit Werkzeug',
+      'Hilfe schließen / Werkzeug ablegen',
+      'Rechtsklick',
+      'Werkzeug ablegen',
     ])
       expect(controls).toContain(text)
+    expect(controls.match(/<dt[^>]*>Esc/g)).toHaveLength(1)
     expect(html).toContain('data-testid="help-close"')
   })
 })

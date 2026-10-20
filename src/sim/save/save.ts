@@ -1,9 +1,10 @@
 import type { GameState } from '../state'
+import { gameStateSchema } from './schema'
 
 // When a slice adds a state field: increase SAVE_VERSION by one and append one migration
 // to MIGRATIONS that fills the default value. Migration i turns version i + 1 into i + 2.
 // Never edit an old migration.
-export const SAVE_VERSION = 3
+export const SAVE_VERSION = 4
 
 export type Migration = (state: Record<string, unknown>) => Record<string, unknown>
 
@@ -12,6 +13,8 @@ export const MIGRATIONS: Migration[] = [
   (state) => ({ ...state, events: [] }),
   // 2 -> 3: S49 adds the milestones.
   (state) => ({ ...state, milestones: { harvested: 0 } }),
+  // 3 -> 4: S51b adds the research breakthroughs.
+  (state) => ({ ...state, research: [] }),
 ]
 
 export interface SaveFormat {
@@ -26,7 +29,6 @@ export function serialize(state: GameState): string {
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 
-// shortcut: no schema check of the state, add one when users can import save files.
 export function deserialize(
   text: string,
   format: SaveFormat = { version: SAVE_VERSION, migrations: MIGRATIONS },
@@ -50,5 +52,10 @@ export function deserialize(
   for (const migrate of format.migrations.slice(version - 1, format.version - 1)) {
     state = migrate(state)
   }
-  return state as unknown as GameState
+  const result = gameStateSchema.safeParse(state)
+  if (!result.success) {
+    const issues = result.error.issues.map((i) => `${i.path.join('.') || 'state'}: ${i.message}`)
+    throw new Error(`Save state is invalid: ${issues.join('; ')}`)
+  }
+  return result.data
 }

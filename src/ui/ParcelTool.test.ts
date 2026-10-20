@@ -10,6 +10,7 @@ import { formatMoney } from './money'
 import ParcelTool from './ParcelTool.vue'
 
 vi.stubGlobal('location', { search: '?seed=42' })
+vi.stubGlobal('sessionStorage', { getItem: () => null, removeItem: () => {} })
 
 // Renders the panel with one selected lowland parcel and the balance cost + delta.
 async function render(delta: number) {
@@ -40,6 +41,18 @@ describe('ParcelTool (S12)', () => {
     expect(button(html)).not.toContain('disabled')
     expect(html).not.toContain('parcel-tool-short')
     expect(html).toContain(formatMoney(cost))
+  })
+
+  it('S40: a note shows in the panel, and a change of tool removes it', async () => {
+    const pinia = createPinia()
+    const selection = useSelectionStore(pinia)
+    selection.tool = 'parcel'
+    selection.note = 'money'
+    const html = await renderToString(createSSRApp(ParcelTool).use(pinia))
+    expect(html).toMatch(/data-testid="tool-note"[^>]*>Nicht genug CC.</)
+    expect(html).not.toContain('parcel-tool-create')
+    selection.tool = 'plant'
+    expect(selection.note).toBeNull()
   })
 
   it('formats hundredths of CC with at most 2 decimals', () => {
