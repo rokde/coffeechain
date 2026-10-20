@@ -49,14 +49,23 @@ describe('OrdersPanel (S56)', () => {
     expect(row).toContain('<span>Café Hafen</span><span>30 Arabica Standard</span>')
     expect(row).toContain('bis Tag</dt><dd>15')
     expect(row).toContain('mind. Qualität</dt><dd>80')
-    expect(row).toContain('je Einheit</dt><dd>1,2 CC')
+    // A neutral market: the bank pays 0.8 × 1 CC for Arabica Standard.
+    expect(row.replace(/<[^>]*>/g, '')).toContain('je Einheit1,2 CC (Bank 0,8 CC)')
+    expect(row).not.toContain('order-stock')
     expect(html).not.toContain('Keine Aufträge')
     expect(button(html)).not.toContain('disabled')
   })
 
-  it('AC-5: disables "Liefern" when the stock does not qualify', async () => {
-    expect(button(await render([order], 79))).toContain('disabled')
-    expect(button(await render([{ ...order, units: 41 }], 90))).toContain('disabled')
+  it('AC-5: disables "Liefern" and shows the qualifying stock when the stock does not qualify', async () => {
+    const low = await render([order], 79)
+    expect(button(low)).toContain('disabled')
+    expect(button(low)).toContain('title="Passend im Lager: 0 / 30"')
+    expect(low).toMatch(/data-testid="order-stock"[^>]*>Passend im Lager: 0 \/ 30</)
+    const few = await render([{ ...order, units: 41 }], 90)
+    expect(button(few)).toContain('disabled')
+    expect(few).toMatch(/data-testid="order-stock"[^>]*>Passend im Lager: 40 \/ 41</)
+    // Quality at the minimum counts, as in deliverableUnits.
+    expect(button(await render([order], 80))).not.toContain('disabled')
   })
 
   it('AC-5: the market panel shows the orders before the bank blocks', async () => {

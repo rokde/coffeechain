@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useGameStore } from '../app/store'
+import { bankBuyPrice } from '../sim/market/market'
 import { deliverableUnits } from '../sim/market/orders'
 import type { GameState } from '../sim/state'
 import de from './i18n/de.json'
@@ -10,13 +11,19 @@ const t = de.orders
 const game = useGameStore()
 
 const rows = computed(() => {
-  // deliverableUnits only reads the state, so the cast of the readonly snapshot is safe.
+  // The sim functions only read the state, so the cast of the readonly snapshot is safe.
   const state = game.state as GameState
-  return state.orders.open.map((order) => ({
-    ...order,
-    buyer: t.buyers[order.id % t.buyers.length],
-    ready: deliverableUnits(state, order) >= order.units,
-  }))
+  return state.orders.open.map((order) => {
+    const have = deliverableUnits(state, order)
+    const bank = formatMoney(Math.round(bankBuyPrice(state, order.variety) * 100))
+    return {
+      ...order,
+      buyer: t.buyers[order.id % t.buyers.length],
+      ready: have >= order.units,
+      bank: t.bank.replace('{price}', bank),
+      stock: t.stock.replace('{have}', String(have)).replace('{units}', String(order.units)),
+    }
+  })
 })
 </script>
 
@@ -35,12 +42,16 @@ const rows = computed(() => {
         <dt>{{ t.deadline }}</dt>
         <dd>{{ o.deadlineDay }}</dd>
         <dt>{{ t.price }}</dt>
-        <dd>{{ formatMoney(o.price) }}</dd>
+        <dd class="price" data-testid="order-price">
+          <span>{{ formatMoney(o.price) }}</span> <span>{{ o.bank }}</span>
+        </dd>
       </dl>
+      <p v-if="!o.ready" class="stock" data-testid="order-stock">{{ o.stock }}</p>
       <button
         type="button"
         data-testid="order-deliver"
         :disabled="!o.ready"
+        :title="o.ready ? undefined : o.stock"
         @click="game.dispatch({ type: 'DeliverOrder', id: o.id })"
       >
         {{ t.deliver }}
@@ -53,6 +64,22 @@ const rows = computed(() => {
 h3 {
   margin: 10px 0 0;
   font-size: 14px;
+}
+/* The bank price wraps to its own line in a narrow panel. */
+.price {
+  white-space: normal;
+}
+.price span {
+  white-space: nowrap;
+}
+@media (max-width: 480px) {
+  .price {
+    grid-column: 1 / -1;
+  }
+}
+.stock {
+  margin: 0 0 6px;
+  font-size: 12px;
 }
 .none {
   margin: 4px 0 0;
@@ -75,14 +102,13 @@ h4 {
 }
 dl {
   display: grid;
-  grid-template-columns: auto 1fr auto 1fr;
+  grid-template-columns: auto 1fr;
   gap: 4px 8px;
   margin: 0 0 6px;
   font-size: 12px;
 }
 dt {
   opacity: 0.8;
-  white-space: nowrap;
 }
 dd {
   margin: 0;
@@ -92,7 +118,7 @@ dd {
 }
 button {
   width: 100%;
-  height: 30px;
+  height: 34px;
   border: 0;
   border-radius: 8px;
   background: #f2c48d;
@@ -110,10 +136,5 @@ button:disabled {
 button:focus-visible {
   outline: 2px solid #f2c48d;
   outline-offset: 2px;
-}
-@media (max-width: 480px) {
-  dl {
-    grid-template-columns: auto 1fr;
-  }
 }
 </style>

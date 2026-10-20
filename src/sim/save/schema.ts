@@ -61,9 +61,16 @@ export const gameStateSchema = z.object({
   }),
   orders: z.object({
     open: z.array(
-      z.object({ id: int, variety, units: int, minQuality: num, price: int, deadlineDay: int }),
+      z.object({
+        id: int.nonnegative(),
+        variety,
+        units: int.positive(),
+        minQuality: int,
+        price: int.nonnegative(),
+        deadlineDay: int,
+      }),
     ),
-    nextId: int,
+    nextId: int.nonnegative(),
   }),
   events: z.array(
     z.object({
