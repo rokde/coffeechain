@@ -102,6 +102,8 @@ describe('FirstSteps (S25)', () => {
     game.replace(s.owned)
     expect(guides(await html(pinia))).toEqual(['tool-plant'])
     game.replace(s.fertilized)
+    expect(guides(await html(pinia))).toEqual([])
+    game.replace({ ...s.fertilized, time: { ...s.fertilized.time, hour: s.harvested.time.hour } })
     h = await html(pinia)
     expect(guides(h)).toEqual(['tool-harvest'])
     expect(h).toContain('Ernten')

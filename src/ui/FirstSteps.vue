@@ -5,12 +5,7 @@ import de from './i18n/de.json'
 
 const t = de.firstSteps
 const store = useFirstStepsStore()
-const hint = computed(() => {
-  const { next, target } = store.current
-  if (next === null) return null
-  if (next === 'sell') return target === 'tool-market' ? t.hints.sellMarket : t.hints.sellHarvest
-  return t.hints[next]
-})
+const hint = computed(() => (store.current.hint ? t.hints[store.current.hint] : null))
 </script>
 
 <template>
@@ -26,6 +21,7 @@ const hint = computed(() => {
         ×
       </button>
     </header>
+    <p v-if="hint" class="hint" data-testid="first-steps-hint">{{ hint }}</p>
     <ol>
       <li
         v-for="step in store.current.steps"
@@ -37,7 +33,6 @@ const hint = computed(() => {
         <span class="text">{{ t.steps[step.id] }}</span>
       </li>
     </ol>
-    <p v-if="hint" class="hint" data-testid="first-steps-hint">{{ hint }}</p>
   </section>
 </template>
 
@@ -109,9 +104,16 @@ li[data-done='true'] .text {
   opacity: 0.6;
 }
 .hint {
-  margin: 8px 0 0;
+  margin: 4px 0 8px;
   font-size: 12px;
   line-height: 1.4;
   color: #f2c48d;
+}
+@media (max-width: 480px) {
+  h2 {
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
 }
 </style>
