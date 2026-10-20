@@ -15,14 +15,16 @@ vi.stubGlobal('location', { search: '?seed=42' })
 const day = balance().time.ticksPerGameDay
 const ripeHour = balance().varieties.robusta.cycleDays * day
 const lateHour = ripeHour + (balance().farm.overripe.graceDays + 1) * day
-const robusta: PlantState = { variety: 'robusta', plantedHour: 0 }
+// The plant has all cares, so an unripe plant gives no "braucht Pflege" message.
+const cared = { fertilized: true, irrigated: true, pestProtected: true }
+const robusta: PlantState = { variety: 'robusta', plantedHour: 0, ...cared }
 
 // Field A has a plant on parcel 0, field B on parcel 5. The B plant is planted at hourB.
-function render(hour: number, hourB?: number, used = 0) {
+function render(hour: number, hourB?: number, used = 0, plantA = robusta) {
   const pinia = createPinia()
   const game = useGameStore(pinia)
   const state = game.state as GameState
-  const plants: Record<number, PlantState> = { 0: robusta }
+  const plants: Record<number, PlantState> = { 0: plantA }
   if (hourB !== undefined) plants[5] = { ...robusta, plantedHour: hourB }
   game.replace({
     ...state,
@@ -78,5 +80,14 @@ describe('MessagePanel (S18b)', () => {
     const capacity = balance().storage.startCapacity
     expect(items(await render(0, undefined, capacity))).toEqual(['Lager voll'])
     expect(await render(0, undefined, capacity - 1)).not.toContain('Lager voll')
+  })
+
+  it('AC-5 (S21e): an unripe plant that misses a care gives "Feld A braucht Pflege"', async () => {
+    const bare: PlantState = { variety: 'robusta', plantedHour: 0 }
+    expect(items(await render(0, undefined, 0, bare))).toEqual(['Feld A braucht Pflege'])
+    const twoCares = { ...bare, fertilized: true, irrigated: true }
+    expect(items(await render(0, undefined, 0, twoCares))).toEqual(['Feld A braucht Pflege'])
+    expect(items(await render(0))).toEqual([])
+    expect(items(await render(ripeHour, undefined, 0, bare))).toEqual(['Feld A ist erntereif'])
   })
 })

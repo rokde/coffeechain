@@ -567,6 +567,45 @@ test('S18c: inspector yield forecast', async ({ page }) => {
   expect(errors).toEqual([])
 })
 
+test('S21e: field status and care buttons in the inspector', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+
+  await page.goto('/?seed=48213')
+  const canvas = page.locator('canvas#scene')
+  // Buildable lowland parcel (18, 23) of seed 48213 at the start camera.
+  const position = { x: 640, y: 370 }
+  await page.getByTestId('tool-parcel').click()
+  await canvas.click({ position })
+  await page.getByTestId('parcel-tool-create').click()
+  await page.getByTestId('tool-plant').click()
+  await canvas.click({ position })
+  await page.getByTestId('plant-tool-plant').click()
+  await page.getByTestId('tool-select').click()
+  await canvas.click({ position })
+
+  await expect(page.getByTestId('inspector-stage')).toHaveText('Setzling')
+  await expect(page.getByTestId('inspector-growth')).toHaveText(/^\d+ %$/)
+  await expect(page.getByTestId('inspector-days')).toHaveText(/^Reif in (\d+ Tagen|1 Tag)$/)
+  await expect(page.getByTestId('inspector-care')).toHaveText('keine')
+  await expect(page.getByTestId('inspector-care-action')).toHaveText([
+    'Düngen',
+    'Wässern',
+    'Schützen',
+  ])
+  await expect(page.getByTestId('message')).toContainText(['Feld A braucht Pflege'])
+
+  await page.getByTestId('inspector-care-action').filter({ hasText: 'Wässern' }).click()
+  await expect(page.getByTestId('inspector-care')).toHaveText('gewässert')
+  await expect(page.getByTestId('inspector-care-hint')).toHaveText([
+    'Düngen möglich',
+    'Schützen möglich',
+  ])
+  await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
+  await page.screenshot({ path: 'docs/progress/S21e.png' })
+  expect(errors).toEqual([])
+})
+
 test('S23: field labels fade on hover', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))

@@ -2,10 +2,13 @@
 import { computed } from 'vue'
 import { useSelectionStore } from '../app/selection'
 import { useGameStore } from '../app/store'
+import { quoteCare } from '../sim/farm/care'
 import { forecastYield } from '../sim/farm/forecast'
+import { fieldStatus } from '../sim/farm/status'
 import type { GameState } from '../sim/state'
 import { inspectParcel } from '../sim/world/inspect'
 import type { World } from '../sim/world/types'
+import { careParcel } from './farmAction'
 import de from './i18n/de.json'
 
 const t = de.inspector
@@ -20,6 +23,30 @@ const forecast = computed(() => {
   const p = selection.parcel
   return p ? forecastYield(game.state as GameState, p.x, p.y) : null
 })
+
+// S21e field status: growth, ripe days and open cares of a planted parcel.
+const status = computed(() => {
+  const p = selection.parcel
+  return p ? fieldStatus(game.state as GameState, p.x, p.y) : null
+})
+const days = computed(() => {
+  const s = status.value
+  if (!s) return null
+  const [n, many, one] =
+    s.daysToRipe !== null
+      ? [s.daysToRipe, t.daysToRipe, t.daysToRipeOne]
+      : [s.daysToOverripe, t.daysToOverripe, t.daysToOverripeOne]
+  if (n === null) return null
+  return n === 1 ? one : many.replace('{n}', String(n))
+})
+const careDone = computed(() => {
+  const s = status.value
+  if (!s) return ''
+  const done = (Object.keys(t.careDone) as (keyof typeof t.careDone)[]).filter((c) => s.cares[c])
+  return done.length ? done.map((c) => t.careDone[c]).join(', ') : t.careNone
+})
+const careCost = (command: 'Fertilize' | 'Irrigate' | 'ProtectPests') =>
+  quoteCare(game.state as GameState, { type: command, parcels: [selection.parcel!] })
 </script>
 
 <template>
@@ -61,7 +88,42 @@ const forecast = computed(() => {
         <dt>{{ t.yield }}</dt>
         <dd data-testid="inspector-yield">{{ t.yieldUnits.replace('{n}', String(forecast)) }}</dd>
       </template>
+      <!-- S21e field status -->
+      <template v-if="status">
+        <dt>{{ t.stage }}</dt>
+        <dd data-testid="inspector-stage">
+          {{ status.overripe ? t.overripe : t.stages[status.stage] }}
+        </dd>
+        <dt>{{ t.growth }}</dt>
+        <dd data-testid="inspector-growth">
+          {{ t.percent.replace('{n}', String(status.percent)) }}
+        </dd>
+        <template v-if="days">
+          <dt>{{ t.ripeness }}</dt>
+          <dd data-testid="inspector-days">{{ days }}</dd>
+        </template>
+        <dt>{{ t.care }}</dt>
+        <dd data-testid="inspector-care">{{ careDone }}</dd>
+      </template>
     </dl>
+    <!-- S21e open cares -->
+    <div v-if="status && status.open.length" class="care">
+      <p v-for="c in status.open" :key="c" data-testid="inspector-care-hint">
+        {{ t.careHints[c] }}
+      </p>
+      <div class="care-actions">
+        <button
+          v-for="c in status.open"
+          :key="c"
+          type="button"
+          data-testid="inspector-care-action"
+          :disabled="careCost(c) > game.state.money"
+          @click="careParcel(c, selection.parcel)"
+        >
+          {{ t.careActions[c] }}
+        </button>
+      </div>
+    </div>
   </section>
 </template>
 
@@ -110,6 +172,28 @@ dl {
 }
 dt {
   opacity: 0.8;
+}
+.care p {
+  margin: 12px 0 0;
+  font-size: 13px;
+  opacity: 0.8;
+}
+.care-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.care-actions button {
+  width: auto;
+  min-height: 44px;
+  padding: 0 14px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.care-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 dd {
   margin: 0;
