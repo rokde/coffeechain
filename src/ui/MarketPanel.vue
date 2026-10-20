@@ -5,6 +5,7 @@ import { useGameStore } from '../app/store'
 import { balance } from '../sim/balance'
 import type { Variety } from '../sim/farm/yield'
 import { bankBuyPrice, bankSellPrice, priceHistory } from '../sim/market/market'
+import { isVarietyUnlocked } from '../sim/progression/capital'
 import type { GameState } from '../sim/state'
 import de from './i18n/de.json'
 import { formatMoney } from './money'
@@ -12,8 +13,12 @@ import { formatMoney } from './money'
 const t = de.marketPanel
 const game = useGameStore()
 const cfg = balance()
-const varieties = (Object.keys(cfg.varieties) as Variety[]).filter(
-  (v) => cfg.varieties[v].unlockCapital === 0,
+// The sim functions only read the state, so the cast of the readonly snapshot is safe.
+const varieties = computed(() =>
+  (Object.keys(cfg.varieties) as Variety[]).filter(
+    (v) =>
+      isVarietyUnlocked(game.state as GameState, v) || storedUnits(game.state as GameState, v) > 0,
+  ),
 )
 const price = (cc: number) => formatMoney(Math.round(cc * 100))
 const lineLabel = (text: string) => text.replace('{days}', String(cfg.market.historyDays))
@@ -35,7 +40,7 @@ function points(prices: number[]) {
 const blocks = computed(() => {
   // The sim functions only read the state, so the cast of the readonly snapshot is safe.
   const state = game.state as GameState
-  return varieties.map((variety) => ({
+  return varieties.value.map((variety) => ({
     variety,
     stock: storedUnits(state, variety),
     seeds: state.market.seeds[variety] ?? 0,
