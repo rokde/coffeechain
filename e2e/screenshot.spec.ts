@@ -505,3 +505,30 @@ for (const width of [1280, 390]) {
     }
   })
 }
+
+test('S18c: inspector yield forecast', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+
+  await page.goto('/?seed=48213')
+  const canvas = page.locator('canvas#scene')
+  // Buildable lowland parcel (18, 23) of seed 48213 at the start camera.
+  const position = { x: 640, y: 370 }
+  await page.getByTestId('tool-parcel').click()
+  await canvas.click({ position })
+  await page.getByTestId('parcel-tool-create').click()
+  await page.getByTestId('tool-select').click()
+  await canvas.click({ position })
+  await expect(page.getByTestId('parcel-inspector')).toBeVisible()
+  await expect(page.getByTestId('inspector-yield')).toHaveCount(0)
+
+  await page.getByTestId('tool-plant').click()
+  await canvas.click({ position })
+  await page.getByTestId('plant-tool-plant').click()
+  await page.getByTestId('tool-select').click()
+  await canvas.click({ position })
+  await expect(page.getByTestId('inspector-yield')).toHaveText(/^\d+ Einheiten$/)
+  await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
+  await page.screenshot({ path: 'docs/progress/S18c.png' })
+  expect(errors).toEqual([])
+})
