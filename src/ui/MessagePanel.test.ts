@@ -2,6 +2,7 @@ import { createPinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { createSSRApp } from 'vue'
 import { renderToString } from 'vue/server-renderer'
+import { useFirstStepsStore } from '../app/firstSteps'
 import { useGameStore } from '../app/store'
 import { balance } from '../sim/balance'
 import { overripeFactor } from '../sim/farm/overripe'
@@ -48,7 +49,9 @@ const items = (html: string) =>
 
 describe('MessagePanel (S18b)', () => {
   it('AC-1: a new game shows the panel in the left panel with the empty text', async () => {
-    const html = await renderToString(createSSRApp(Hud).use(createPinia()))
+    const pinia = createPinia()
+    useFirstStepsStore(pinia).open = false
+    const html = await renderToString(createSSRApp(Hud).use(pinia))
     const left = html.split('data-testid="hud-left-panel"')[1]!.split('</aside>')[0]!
     expect(left).toContain('data-testid="message-panel"')
     expect(left).toContain('Keine Meldungen')

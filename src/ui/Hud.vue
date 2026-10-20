@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useFirstStepsStore } from '../app/firstSteps'
 import { isFarmTool, useSelectionStore } from '../app/selection'
 import { useGameStore } from '../app/store'
 import { useViewStore } from '../app/view'
@@ -9,6 +10,7 @@ import { storageUsed } from '../sim/storage/storage'
 import { clock } from '../sim/time/time'
 import de from './i18n/de.json'
 import { formatMoney } from './money'
+import FirstSteps from './FirstSteps.vue'
 import FarmTool from './FarmTool.vue'
 import HelpOverlay from './HelpOverlay.vue'
 import MarketPanel from './MarketPanel.vue'
@@ -21,6 +23,7 @@ import { tools } from './toolbar'
 
 const store = useGameStore()
 const selection = useSelectionStore()
+const steps = useFirstStepsStore()
 const view = useViewStore()
 const speeds = balance().time.speeds
 const clockText = computed(() => {
@@ -81,7 +84,9 @@ const storageText = computed(() =>
         ?
       </button>
     </header>
-    <aside class="frame left-panel" data-testid="hud-left-panel"><MessagePanel /></aside>
+    <aside class="frame left-panel" data-testid="hud-left-panel">
+      <FirstSteps v-if="steps.open" /><MessagePanel v-else />
+    </aside>
     <OverlayPanel />
     <aside class="frame right-panel" data-testid="hud-right-panel">
       <ParcelTool v-if="selection.tool === 'parcel'" />
@@ -97,6 +102,7 @@ const storageText = computed(() =>
         type="button"
         :data-testid="`tool-${tool.id}`"
         :aria-pressed="selection.tool === tool.id"
+        :data-guide="steps.guide === `tool-${tool.id}` ? 'next' : undefined"
         @click="selection.tool = tool.id"
       >
         {{ tool.label }}
@@ -295,6 +301,10 @@ const storageText = computed(() =>
 .toolbar button[aria-pressed='true'] {
   background: #f2c48d;
   color: #2b2420;
+}
+.toolbar button[data-guide='next'] {
+  outline: 2px solid #f2c48d;
+  outline-offset: 2px;
 }
 .toolbar button:focus-visible {
   outline: 2px solid #f2c48d;

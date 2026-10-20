@@ -154,6 +154,26 @@
       "action": "Ernten"
     }
   },
+  "firstSteps": {
+    "heading": "Erste Schritte",
+    "close": "Erste Schritte schließen",
+    "steps": {
+      "overlay": "Boden-Overlay einschalten und eine gute Tiefland-Parzelle wählen",
+      "parcel": "Erste Parzelle anlegen",
+      "plant": "Robusta pflanzen",
+      "fertilize": "Düngen",
+      "sell": "Ernten und an die Bank verkaufen"
+    },
+    "hints": {
+      "overlay": "Schalte links das Boden-Overlay ein. Dunkelbraun ist guter Boden.",
+      "parcel": "Wähle „Parzelle“, dann eine Tiefland-Parzelle auf der Karte.",
+      "plant": "Wähle „Pflanzen“ und setze Robusta auf dein Feld.",
+      "fertilize": "Wähle „Düngen“ und dünge dein Feld.",
+      "sellWait": "Lass die Zeit laufen (Tasten 1–5), bis die Pflanzen reif sind.",
+      "sellHarvest": "Die Pflanzen sind reif. Wähle „Ernten“.",
+      "sellMarket": "Wähle „Markt“ und verkaufe den Kaffee an die Bank."
+    }
+  },
   "messages": {
     "heading": "Meldungen",
     "ripe": "Feld {name} ist erntereif",
