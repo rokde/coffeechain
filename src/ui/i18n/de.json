@@ -116,5 +116,12 @@
       "hint": "Klicke eigene Parzellen mit einer reifen Pflanze an. Ein zweiter Klick entfernt sie. Was nicht ins Lager passt, bleibt an der Pflanze.",
       "action": "Ernten"
     }
+  },
+  "messages": {
+    "heading": "Meldungen",
+    "ripe": "Feld {name} ist erntereif",
+    "overripe": "Feld {name} ist überreif",
+    "storageFull": "Lager voll",
+    "none": "Keine Meldungen"
   }
 }
