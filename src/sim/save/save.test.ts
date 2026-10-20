@@ -93,3 +93,13 @@ describe('save format', () => {
     expect(deserialize(v2, { version: 3, migrations: [m1, m2] })).toEqual({ a: 1, b: 5, c: 5 })
   })
 })
+
+describe('events migration', () => {
+  it('loads a version 1 save with an empty event list', () => {
+    const old: Record<string, unknown> = { ...createState(5) }
+    delete old.events
+    const loaded = deserialize(JSON.stringify({ version: 1, state: old }))
+    expect(loaded.events).toEqual([])
+    expect(loaded).toEqual(createState(5))
+  })
+})

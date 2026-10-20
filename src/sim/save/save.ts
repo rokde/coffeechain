@@ -3,11 +3,14 @@ import type { GameState } from '../state'
 // When a slice adds a state field: increase SAVE_VERSION by one and append one migration
 // to MIGRATIONS that fills the default value. Migration i turns version i + 1 into i + 2.
 // Never edit an old migration.
-export const SAVE_VERSION = 1
+export const SAVE_VERSION = 2
 
 export type Migration = (state: Record<string, unknown>) => Record<string, unknown>
 
-export const MIGRATIONS: Migration[] = []
+export const MIGRATIONS: Migration[] = [
+  // 1 -> 2: S50 adds the event list.
+  (state) => ({ ...state, events: [] }),
+]
 
 export interface SaveFormat {
   version: number
