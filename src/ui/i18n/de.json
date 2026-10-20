@@ -214,7 +214,7 @@
       { "keys": "Leertaste", "text": "Pause an / aus" },
       { "keys": "H", "text": "Hilfe öffnen / schließen" },
       { "keys": "Esc", "text": "Hilfe schließen / Werkzeug ablegen" },
-      { "keys": "Esc / Rechtsklick", "text": "Werkzeug ablegen" }
+      { "keys": "Rechtsklick", "text": "Werkzeug ablegen" }
     ]
   }
 }

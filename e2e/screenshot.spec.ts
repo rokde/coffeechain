@@ -824,6 +824,28 @@ test('S40: tool brush paints, notes and disarms', async ({ page }) => {
   expect(errors).toEqual([])
 })
 
+test('S40: a release over the HUD ends the stroke', async ({ page }) => {
+  await page.goto('/?seed=48213')
+  await page.getByTestId('first-steps-close').click()
+  const money = page.getByTestId('money')
+  await page.getByTestId('tool-parcel').click()
+  // The first stroke ends with a release over the right panel.
+  const panel = (await page.getByTestId('hud-right-panel').boundingBox())!
+  const inPanel = { x: panel.x + panel.width / 2, y: panel.y + panel.height / 2 }
+  await page.mouse.move(200, 880)
+  await page.mouse.down()
+  await page.mouse.move(inPanel.x, inPanel.y, { steps: 5 })
+  await page.mouse.up()
+  await page.waitForTimeout(100)
+  const after = (await money.textContent())!
+  // A press on the panel and a drag onto lowland must not paint with the old stroke.
+  await page.mouse.down()
+  await page.mouse.move(640, 370, { steps: 10 })
+  await page.mouse.move(690, 400, { steps: 5 })
+  await page.mouse.up()
+  await expect(money).toHaveText(after)
+})
+
 for (const [width, height] of [
   [1280, 800],
   [390, 844],

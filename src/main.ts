@@ -295,13 +295,15 @@ function start() {
       if (event.button === 2) rightDown = { x: event.clientX, y: event.clientY }
       if (event.button !== 0 || !isBrushTool(selection.tool)) return
       stroke = new Set()
+      // The capture sends the release to the canvas, also over the HUD, so no old stroke stays.
+      canvas.setPointerCapture(event.pointerId)
       brush(event)
     })
     canvas.addEventListener('pointermove', (event) => {
       if (event.buttons & 1) brush(event)
     })
     canvas.addEventListener('pointerup', (event) => {
-      if (event.button === 0) stroke = null
+      stroke = null
       if (event.button !== 2 || !rightDown) return
       // A right-click puts down the tool. The end of a right-drag pan does not.
       if (
@@ -315,6 +317,7 @@ function start() {
       stroke = null
       rightDown = null
     })
+    canvas.addEventListener('lostpointercapture', () => (stroke = null))
   }
   const { realSecondsPerGameDay, ticksPerGameDay } = balance().time
   const msPerTick = (realSecondsPerGameDay * 1000) / ticksPerGameDay
