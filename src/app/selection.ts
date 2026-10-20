@@ -33,13 +33,22 @@ export function canSelect(state: GameState, tool: string, p: ParcelPos): boolean
   return !owned && isFree(state, p.x, p.y)
 }
 
-// UI state, not sim state: the active tool, the inspector parcel, the tool selection and the plant variety.
+// UI state, not sim state: the active tool, the inspector parcel, the tool selection, the plant variety
+// and the note of the last skipped brush parcel.
 export const useSelectionStore = defineStore('selection', () => {
   const tool = ref('select')
   const parcel = ref<ParcelPos | null>(null)
   const parcels = ref<ParcelPos[]>([])
   const variety = ref<Variety>('robusta')
-  watch(tool, () => (parcels.value = []), { flush: 'sync' })
+  const note = ref<'invalid' | 'money' | null>(null)
+  watch(
+    tool,
+    () => {
+      parcels.value = []
+      note.value = null
+    },
+    { flush: 'sync' },
+  )
 
   // Removes a selected parcel, or adds it when canSelect allows it.
   function toggle(state: GameState, p: ParcelPos) {
@@ -48,5 +57,5 @@ export const useSelectionStore = defineStore('selection', () => {
     else if (canSelect(state, tool.value, p)) parcels.value = [...parcels.value, p]
   }
 
-  return { tool, parcel, parcels, variety, toggle }
+  return { tool, parcel, parcels, variety, note, toggle }
 })

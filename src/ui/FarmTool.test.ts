@@ -80,12 +80,25 @@ describe('FarmTool (S18a)', () => {
     expect(applyButton(html)).not.toContain('disabled')
   })
 
-  it('AC-3: disables the button when no parcel is selected', async () => {
+  it('S40: hides the count, total and button when no parcel is selected', async () => {
     const { pinia, selection } = setup('fertilize', 50000)
     selection.parcels = []
     const html = await renderToString(createSSRApp(FarmToolPanel).use(pinia))
-    expect(applyButton(html)).toContain('disabled')
-    expect(html).not.toContain('farm-tool-short')
+    for (const id of ['farm-tool-count', 'farm-tool-total', 'farm-tool-apply', 'farm-tool-short'])
+      expect(html).not.toContain(id)
+    expect(html).toContain('Klicke Parzellen')
+  })
+
+  it.each([
+    ['invalid', 'Hier nicht möglich.'],
+    ['money', 'Nicht genug CC.'],
+  ] as const)('S40 AC-5: the note %s shows "%s"', async (note, text) => {
+    const { pinia, selection } = setup('fertilize', 50000)
+    selection.note = note
+    const html = await renderToString(createSSRApp(FarmToolPanel).use(pinia))
+    expect(html).toMatch(new RegExp(`data-testid="tool-note"[^>]*>${text}<`))
+    selection.note = null
+    expect(await renderToString(createSSRApp(FarmToolPanel).use(pinia))).not.toContain('tool-note')
   })
 
   it('AC-3: disables the button with "Nicht genug CC." when the total is more than the balance', async () => {

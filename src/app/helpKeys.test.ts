@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { helpKeyAction } from './helpKeys'
+import { disarmKey, helpKeyAction } from './helpKeys'
 
 describe('helpKeyAction (S35a)', () => {
   it('AC-1: h and H open, h, H and Escape close', () => {
@@ -14,5 +14,15 @@ describe('helpKeyAction (S35a)', () => {
       for (const open of [false, true]) expect(helpKeyAction(key, open, false)).toBeUndefined()
     for (const key of ['h', 'H', 'Escape'])
       for (const open of [false, true]) expect(helpKeyAction(key, open, true)).toBeUndefined()
+  })
+})
+
+describe('disarmKey (S40)', () => {
+  it('AC-4: Escape puts down the tool only when the help is closed and the player does not type', () => {
+    expect(disarmKey('Escape', false, false)).toBe(true)
+    expect(disarmKey('Escape', true, false)).toBe(false)
+    expect(helpKeyAction('Escape', true, false)).toBe('close')
+    expect(disarmKey('Escape', false, true)).toBe(false)
+    for (const key of ['h', 'q', ' ', '1']) expect(disarmKey(key, false, false)).toBe(false)
   })
 })
