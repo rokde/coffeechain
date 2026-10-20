@@ -1,10 +1,13 @@
 import { Box3, BoxGeometry, Mesh, Vector3, type Object3D } from 'three'
 import { describe, expect, it } from 'vitest'
 import { balance } from '../sim/balance'
+import { dispatch } from '../sim/commands'
+import { isBuildable } from '../sim/farm/parcels'
+import { createState } from '../sim/state'
 import { generateWorld } from '../sim/world/generate'
-import { placeProps } from '../sim/world/props'
+import { placeProps, type Place } from '../sim/world/props'
 import type { ModelId } from './models'
-import { createProps, pathPieces } from './props'
+import { createProps, pathPieces, syncTrees } from './props'
 import { parcelCenter } from './surface'
 
 const world = generateWorld(42, balance())
@@ -87,9 +90,26 @@ describe('pathPieces', () => {
   })
 })
 
+const placesOf = (group: { children: Object3D[] }, pred: (id: string) => boolean) =>
+  group.children
+    .map((c) => c.userData as { prop: string; x: number; y: number })
+    .filter((d) => pred(d.prop))
+    .map(({ x, y }) => ({ x, y }))
+const isTree = (id: string) => id.startsWith('tree')
+
 describe('createProps', () => {
+  it('S10c AC-1 and AC-2: draws exactly the trees of the given props', async () => {
+    const extra = { ...places, trees: [...places.trees.slice(1), { x: 0, y: 0 }] }
+    const group = await createProps(world, extra, fakeLoad)
+    expect(placesOf(group, isTree)).toEqual(extra.trees)
+    expect(placesOf(group, isTree)).not.toContainEqual(places.trees[0])
+    expect(placesOf(group, (id) => id === 'hut')).toEqual([places.hut])
+    expect(placesOf(group, (id) => id === 'market-stand')).toEqual([places.market])
+    expect(placesOf(group, (id) => id.startsWith('path'))).toEqual(places.path.slice(1, -1))
+  })
+
   it('AC-3: puts hut, market, path pieces and trees at the places for seed 42', async () => {
-    const group = await createProps(world, fakeLoad)
+    const group = await createProps(world, places, fakeLoad)
     const data = group.children.map((c) => c.userData)
     const of = (pred: (id: string) => boolean) =>
       data.filter((d) => pred(d.prop as string)).map(({ x, y }) => ({ x, y }))
@@ -101,12 +121,12 @@ describe('createProps', () => {
     for (const d of data.filter((d) => (d.prop as string).startsWith('tree'))) {
       expect(['tree-a', 'tree-b', 'tree-c']).toContain(d.prop)
     }
-    const again = await createProps(world, fakeLoad)
+    const again = await createProps(world, places, fakeLoad)
     expect(again.children.map((c) => c.userData)).toEqual(data)
   })
 
   it('AC-4 and AC-5: scales each model to its width and sets it on the parcel surface', async () => {
-    const group = await createProps(world, fakeLoad)
+    const group = await createProps(world, places, fakeLoad)
     group.updateMatrixWorld(true)
     for (const child of group.children) {
       const { prop, x, y } = child.userData as { prop: string; x: number; y: number }
@@ -119,5 +139,33 @@ describe('createProps', () => {
       expect(center.x).toBeCloseTo(surface.x, 3)
       expect(center.z).toBeCloseTo(surface.z, 3)
     }
+  })
+})
+
+describe('syncTrees', () => {
+  it('S10c AC-3: removes only the tree that left the list', async () => {
+    const group = await createProps(world, places, fakeLoad)
+    const [gone, ...rest] = places.trees as [Place, ...Place[]]
+    const kept = group.children.filter((c) => {
+      const { prop, x, y } = c.userData as { prop: string; x: number; y: number }
+      return !(isTree(prop) && x === gone.x && y === gone.y)
+    })
+    syncTrees(group, rest)
+    expect(group.children).toHaveLength(kept.length)
+    expect(group.children.every((c, i) => c === kept[i])).toBe(true)
+    expect(placesOf(group, isTree)).not.toContainEqual(gone)
+    expect(placesOf(group, isTree)).toEqual(rest)
+  })
+
+  it('S10c AC-4: drops the tree of a parcel bought with CreateParcels', async () => {
+    const state = createState(42)
+    const tree = state.props.trees.find((t) => isBuildable(state.world, t.x, t.y))!
+    expect(tree).toBeDefined()
+    const group = await createProps(state.world, state.props, fakeLoad)
+    expect(placesOf(group, isTree)).toContainEqual(tree)
+    const next = dispatch(state, { type: 'CreateParcels', parcels: [tree] })
+    syncTrees(group, next.props.trees)
+    expect(placesOf(group, isTree)).not.toContainEqual(tree)
+    expect(placesOf(group, isTree)).toEqual(next.props.trees)
   })
 })

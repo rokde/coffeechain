@@ -10,7 +10,7 @@ import { useViewStore } from './app/view'
 import { createCamera } from './render/camera'
 import { loadModel, MODEL_IDS } from './render/models'
 import { createOutline, pickParcel } from './render/picking'
-import { createProps } from './render/props'
+import { createProps, syncTrees } from './render/props'
 import { applyOverlay } from './render/overlays'
 import { createScene } from './render/scene'
 import { createTerrain } from './render/terrain'
@@ -105,9 +105,15 @@ function start() {
       () => viewStore.overlay,
       (mode) => applyOverlay(terrain, world, mode),
     )
-    createProps(world, loadModel)
+    createProps(world, store.state.props as GameState['props'], loadModel)
       .then((props) => {
         scene.add(props)
+        watch(
+          () => store.state.props.trees,
+          (trees) => syncTrees(props, trees),
+          // A buy can happen while the models load.
+          { immediate: true },
+        )
         canvas.dataset.props = 'ready'
       })
       .catch((error: unknown) => console.error('Props did not load:', error))
