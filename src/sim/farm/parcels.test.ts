@@ -5,6 +5,7 @@ import { balance } from '../balance'
 import { dispatch } from '../commands'
 import { createState, type GameState } from '../state'
 import { generateWorld } from '../world/generate'
+import { isBuildable } from './parcels'
 import type { Parcel, World, Zone } from '../world/types'
 
 const size = 6
@@ -178,5 +179,34 @@ describe('balance config', () => {
     expect(raw.parcels.maxSlope.src).toBe('NEU')
     expect(balance().parcels.maxSlope).toBe(raw.parcels.maxSlope.v)
     expect(questions).toContain('`parcels.maxSlope`')
+  })
+})
+
+describe('isBuildable (S8)', () => {
+  const world = testWorld()
+
+  it('AC-3: is false for water and for steep parcels, true for all others', () => {
+    const blocked = ['0,0', '5,0', '4,0', '5,1']
+    for (const { x, y } of world.parcels) {
+      expect(isBuildable(world, x, y), `${x},${y}`).toBe(!blocked.includes(`${x},${y}`))
+    }
+  })
+
+  it('AC-3: uses parcels.maxSlope as the limit', () => {
+    const { maxSlope } = balance().parcels
+    const edge = testWorld()
+    edge.parcels[2 * size + 2]!.height = 0.2 + maxSlope
+    expect(isBuildable(edge, 2, 2)).toBe(true)
+    edge.parcels[2 * size + 2]!.height = 0.2 + maxSlope * 1.01
+    expect(isBuildable(edge, 2, 2)).toBe(false)
+  })
+
+  it('AC-3: CreateParcels rejects exactly the parcels that are not buildable', () => {
+    const state = { ...createState(42), money: 1e9 }
+    for (const { x, y } of state.world.parcels) {
+      const buy1 = () => buy(state, [x, y])
+      if (isBuildable(state.world, x, y)) expect(buy1).not.toThrow()
+      else expect(buy1).toThrow()
+    }
   })
 })

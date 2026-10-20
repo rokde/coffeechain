@@ -10,5 +10,36 @@
     "speeds": "Spielgeschwindigkeit",
     "pause": "Pause",
     "speed": "{speed}×"
+  },
+  "inspector": {
+    "heading": "Parzelle",
+    "position": "{x} / {y}",
+    "close": "Auswahl schließen",
+    "zone": "Zone",
+    "soilClass": "Boden",
+    "variety": "Passende Sorte",
+    "terrain": "Gelände",
+    "noVariety": "keine",
+    "buildable": "bebaubar",
+    "notBuildable": "nicht bebaubar",
+    "zones": {
+      "wasser": "Wasser",
+      "tiefland": "Tiefland",
+      "hochland": "Hochland",
+      "hochlandKuehl": "Kühles Hochland",
+      "vulkan": "Vulkan"
+    },
+    "soilClasses": {
+      "karg": "Karg",
+      "mittel": "Mittel",
+      "gut": "Gut",
+      "sehrGut": "Sehr gut"
+    },
+    "varieties": {
+      "robusta": "Robusta",
+      "arabicaStandard": "Arabica Standard",
+      "arabicaPremium": "Arabica Premium",
+      "specialty": "Specialty"
+    }
   }
 }

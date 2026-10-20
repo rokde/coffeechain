@@ -1,12 +1,14 @@
 import { createPinia } from 'pinia'
-import { Vector3, type Camera, type Scene } from 'three'
-import { createApp } from 'vue'
+import { Vector2, Vector3, type Camera, type Scene } from 'three'
+import { createApp, watch } from 'vue'
 import raw from '../config/balance.json'
 import { loadBalance } from '../config/balance.schema'
 import { advance } from './app/loop'
+import { useSelectionStore } from './app/selection'
 import { useGameStore } from './app/store'
 import { createCamera } from './render/camera'
 import { loadModel, MODEL_IDS } from './render/models'
+import { createOutline, pickParcel } from './render/picking'
 import { createScene } from './render/scene'
 import { createTerrain } from './render/terrain'
 import { balance } from './sim/balance'
@@ -90,7 +92,22 @@ function start() {
   const store = useGameStore(pinia)
   // The model row lies at the origin, so the debug view has no terrain.
   // createTerrain only reads the world, so the cast of the readonly snapshot is safe.
-  if (!debugModels) scene.add(createTerrain(store.state.world as GameState['world']))
+  if (!debugModels) {
+    const world = store.state.world as GameState['world']
+    const terrain = createTerrain(world)
+    const outline = createOutline(terrain, world.size)
+    scene.add(terrain, outline.line)
+    const selection = useSelectionStore(pinia)
+    watch(() => selection.parcel, outline.show)
+    // A click on the terrain selects its parcel. A click beside the terrain clears the selection.
+    canvas.addEventListener('click', (event) => {
+      const ndc = new Vector2(
+        (event.offsetX / canvas.clientWidth) * 2 - 1,
+        1 - (event.offsetY / canvas.clientHeight) * 2,
+      )
+      selection.parcel = pickParcel(ndc, view.camera, terrain, world.size)
+    })
+  }
   const { realSecondsPerGameDay, ticksPerGameDay } = balance().time
   const msPerTick = (realSecondsPerGameDay * 1000) / ticksPerGameDay
   let carryMs = 0

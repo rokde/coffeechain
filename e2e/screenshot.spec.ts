@@ -64,3 +64,36 @@ test('S5: terrain and world seed', async ({ page }) => {
   await page.screenshot({ path: 'docs/progress/S5.png' })
   expect(errors).toEqual([])
 })
+
+test('S8: parcel inspector', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+
+  await page.goto('/?seed=48213')
+  const inspector = page.getByTestId('parcel-inspector')
+  await expect(inspector).toHaveCount(0)
+
+  // The screen centre shows the island centre, which is land.
+  await page.locator('canvas#scene').click({ position: { x: 720, y: 450 } })
+  await expect(inspector).toBeVisible()
+  await expect(page.getByTestId('hud-right-panel')).toContainText('Parzelle')
+  await expect(page.getByTestId('inspector-zone')).toHaveText(
+    /^(Tiefland|Hochland|Kühles Hochland|Vulkan)$/,
+  )
+  await expect(page.getByTestId('inspector-soil')).toHaveText(/^(Karg|Mittel|Gut|Sehr gut)$/)
+  await expect(page.getByTestId('inspector-variety')).toHaveText(
+    /^(Robusta|Arabica Standard|Arabica Premium|Specialty)$/,
+  )
+  await expect(page.getByTestId('inspector-buildable')).toHaveText(/^(nicht )?bebaubar$/)
+  await page.screenshot({ path: 'docs/progress/S8.png' })
+
+  await page.getByRole('button', { name: 'Auswahl schließen' }).click()
+  await expect(inspector).toHaveCount(0)
+
+  // A click on the open sea misses the terrain and clears the selection.
+  await page.locator('canvas#scene').click({ position: { x: 720, y: 450 } })
+  await expect(inspector).toBeVisible()
+  await page.locator('canvas#scene').click({ position: { x: 200, y: 880 } })
+  await expect(inspector).toHaveCount(0)
+  expect(errors).toEqual([])
+})
