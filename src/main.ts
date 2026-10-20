@@ -136,6 +136,11 @@ function start() {
     fieldLayer.style.cssText = 'position:fixed;inset:0;pointer-events:none;overflow:hidden'
     document.querySelector('#hud')!.before(fieldLayer)
     let fieldLabels: { id: number; label: HTMLElement; at: Vector3 }[] = []
+    // The field whose label is faded. It survives a rebuild of the labels under a still mouse.
+    let fadedField: number | null = null
+    const fadeLabels = () => {
+      for (const { id, label } of fieldLabels) label.style.opacity = id === fadedField ? '0' : '1'
+    }
     watch(
       () => store.state.farm,
       (farm) => {
@@ -148,6 +153,7 @@ function start() {
           label.style.cssText = FIELD_LABEL_STYLE
           return { id, label, at: new Vector3(position.x, position.y, position.z) }
         })
+        fadeLabels()
         fieldLayer.replaceChildren(...fieldLabels.map(({ label }) => label))
       },
       { immediate: true },
@@ -168,11 +174,12 @@ function start() {
       const parcel = pickParcel(ndc, view.camera, terrain, world.size)
       const boxes = fieldLabels.map(({ id, label }) => ({ id, box: label.getBoundingClientRect() }))
       const pointer = { x: event.clientX, y: event.clientY }
-      const faded = hoveredField(parcel, store.state.farm as FarmState, world.size, pointer, boxes)
-      for (const { id, label } of fieldLabels) label.style.opacity = id === faded ? '0' : '1'
+      fadedField = hoveredField(parcel, store.state.farm as FarmState, world.size, pointer, boxes)
+      fadeLabels()
     })
     canvas.addEventListener('pointerleave', () => {
-      for (const { label } of fieldLabels) label.style.opacity = '1'
+      fadedField = null
+      fadeLabels()
     })
     const selection = useSelectionStore(pinia)
     watch(() => (selection.tool === 'select' ? selection.parcel : null), outline.show)

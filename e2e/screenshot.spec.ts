@@ -557,6 +557,17 @@ test('S23: field labels fade on hover', async ({ page }) => {
   await expect.poll(() => opacity(labelA)).toBe('0')
   expect(await opacity(labelB)).toBe('1')
 
+  // A new field under the still mouse rebuilds the labels. Label A stays faded.
+  await page.getByTestId('tool-parcel').click()
+  await canvas.click({ position: { x: 720, y: 450 } })
+  await canvas.hover({ position: { x: 640, y: 370 } })
+  await expect.poll(() => opacity(labelA)).toBe('0')
+  await page.getByTestId('parcel-tool-create').focus()
+  await page.keyboard.press('Enter')
+  await expect(page.getByTestId('field-label-C')).toBeAttached()
+  expect(await opacity(labelA)).toBe('0')
+  await page.getByTestId('tool-select').click()
+
   // The island centre is land with no field.
   await canvas.hover({ position: { x: 720, y: 450 } })
   await expect.poll(() => opacity(labelA)).toBe('1')
