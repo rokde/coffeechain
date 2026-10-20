@@ -29,24 +29,29 @@ const disabled = computed(() => parcels.value.length === 0 || tooExpensive.value
   <section class="tool" data-testid="farm-tool">
     <h2>{{ t[tool].heading }}</h2>
     <p class="hint">{{ t[tool].hint }}</p>
-    <dl>
-      <dt>{{ t.count }}</dt>
-      <dd data-testid="farm-tool-count">{{ parcels.length }}</dd>
-      <template v-if="tool !== 'harvest'">
-        <dt>{{ t.total }}</dt>
-        <dd data-testid="farm-tool-total">{{ formatMoney(cost) }}</dd>
-      </template>
-    </dl>
-    <p v-if="tooExpensive" class="short" data-testid="farm-tool-short">{{ t.tooExpensive }}</p>
-    <button
-      type="button"
-      class="main"
-      data-testid="farm-tool-apply"
-      :disabled="disabled"
-      @click="farmSelected(tool)"
-    >
-      {{ t[tool].action }}
-    </button>
+    <p v-if="selection.note" class="short" data-testid="tool-note">
+      {{ de.toolNote[selection.note] }}
+    </p>
+    <template v-if="selection.parcels.length > 0">
+      <dl>
+        <dt>{{ t.count }}</dt>
+        <dd data-testid="farm-tool-count">{{ parcels.length }}</dd>
+        <template v-if="tool !== 'harvest'">
+          <dt>{{ t.total }}</dt>
+          <dd data-testid="farm-tool-total">{{ formatMoney(cost) }}</dd>
+        </template>
+      </dl>
+      <p v-if="tooExpensive" class="short" data-testid="farm-tool-short">{{ t.tooExpensive }}</p>
+      <button
+        type="button"
+        class="main"
+        data-testid="farm-tool-apply"
+        :disabled="disabled"
+        @click="farmSelected(tool)"
+      >
+        {{ t[tool].action }}
+      </button>
+    </template>
   </section>
 </template>
 

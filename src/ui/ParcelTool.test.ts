@@ -42,6 +42,18 @@ describe('ParcelTool (S12)', () => {
     expect(html).toContain(formatMoney(cost))
   })
 
+  it('S40: a note shows in the panel, and a change of tool removes it', async () => {
+    const pinia = createPinia()
+    const selection = useSelectionStore(pinia)
+    selection.tool = 'parcel'
+    selection.note = 'money'
+    const html = await renderToString(createSSRApp(ParcelTool).use(pinia))
+    expect(html).toMatch(/data-testid="tool-note"[^>]*>Nicht genug CC.</)
+    expect(html).not.toContain('parcel-tool-create')
+    selection.tool = 'plant'
+    expect(selection.note).toBeNull()
+  })
+
   it('formats hundredths of CC with at most 2 decimals', () => {
     expect(formatMoney(50000)).toBe('500 CC')
     expect(formatMoney(123456789)).toBe('1.234.567,89 CC')

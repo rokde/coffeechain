@@ -1,3 +1,4 @@
+import { isBrushTool } from './brush'
 import { isTyping } from './speedKeys'
 import type { useViewStore } from './view'
 
@@ -13,9 +14,21 @@ export function helpKeyAction(
   return undefined
 }
 
-export function installHelpKeys(view: ReturnType<typeof useViewStore>) {
+// Esc puts down an armed tool, but only when the help is closed. With the help open, Esc only closes it.
+export function disarmKey(key: string, helpOpen: boolean, typing: boolean): boolean {
+  return key === 'Escape' && !helpOpen && !typing
+}
+
+export function installHelpKeys(
+  view: ReturnType<typeof useViewStore>,
+  selection: { tool: string },
+) {
   window.addEventListener('keydown', (event) => {
     if (event.repeat || event.metaKey || event.ctrlKey || event.altKey) return
-    if (helpKeyAction(event.key, view.helpOpen, isTyping(event.target))) view.toggleHelp()
+    const typing = isTyping(event.target)
+    // Read helpOpen before the help closes, so that one Esc does not also put down the tool.
+    if (disarmKey(event.key, view.helpOpen, typing) && isBrushTool(selection.tool))
+      selection.tool = 'select'
+    else if (helpKeyAction(event.key, view.helpOpen, typing)) view.toggleHelp()
   })
 }

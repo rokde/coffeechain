@@ -72,12 +72,20 @@ describe('PlantTool (S13)', () => {
     expect(await render(50000, 'arabicaStandard')).toMatch(/plant-tool-total"[^>]*>8,01 CC</)
   })
 
-  it('AC-4: disables "Pflanzen" when no parcel is selected', async () => {
+  it('S40: keeps the varieties and hides the count, total and button when no parcel is selected', async () => {
     const { pinia, selection } = setup(50000)
     selection.parcels = []
+    selection.note = 'invalid'
     const html = await renderToString(createSSRApp(PlantTool).use(pinia))
-    expect(plantButton(html)).toContain('disabled')
-    expect(html).not.toContain('plant-tool-short')
+    expect(html).toContain('plant-tool-variety-arabicaStandard')
+    for (const id of [
+      'plant-tool-count',
+      'plant-tool-total',
+      'plant-tool-plant',
+      'plant-tool-short',
+    ])
+      expect(html).not.toContain(id)
+    expect(html).toMatch(/data-testid="tool-note"[^>]*>Hier nicht möglich.</)
   })
 
   it('AC-4: disables "Pflanzen" when the total is more than the balance', async () => {

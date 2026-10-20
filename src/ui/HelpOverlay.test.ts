@@ -47,6 +47,11 @@ describe('HelpOverlay (S35a)', () => {
       'Leertaste',
       'Hilfe öffnen / schließen',
       'Esc',
+      'Linksklick mit Werkzeug',
+      'Linke Maustaste ziehen mit Werkzeug',
+      'Hilfe schließen / Werkzeug ablegen',
+      'Esc / Rechtsklick',
+      'Werkzeug ablegen',
     ])
       expect(controls).toContain(text)
     expect(html).toContain('data-testid="help-close"')
