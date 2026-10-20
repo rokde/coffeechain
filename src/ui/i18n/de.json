@@ -258,6 +258,10 @@
     "invalid": "ungültig",
     "saveFailed": "Speichern fehlgeschlagen: {reason}",
     "loadFailed": "Laden fehlgeschlagen: {reason}",
-    "invalidPending": "Der geladene Spielstand ist ungültig. Ein neues Spiel hat begonnen."
+    "invalidPending": "Der geladene Spielstand ist ungültig.",
+    "newGame": "Neues Spiel",
+    "newGameYes": "Ja, neues Spiel",
+    "newGameConfirm": "Das laufende Spiel geht verloren. Neues Spiel beginnen?",
+    "cancel": "Abbrechen"
   }
 }

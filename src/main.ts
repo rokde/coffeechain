@@ -12,7 +12,8 @@ import { installDebugKeys } from './app/debugKeys'
 import { fpsFromFrames } from './app/fps'
 import { installHelpKeys } from './app/helpKeys'
 import { installSpeedKeys } from './app/speedKeys'
-import { useGameStore } from './app/store'
+import { skipResume, startState } from './app/resume'
+import { setStartState, useGameStore } from './app/store'
 import { useViewStore } from './app/view'
 import { CAMERA, createCamera, gestureZoomDelta, startView, wheelZoomDelta } from './render/camera'
 import { createFieldMarks, FIELD_LABEL_STYLE, fieldAnchors, hoveredField } from './render/fields'
@@ -411,4 +412,18 @@ function start() {
   createApp(Hud).use(pinia).mount('#hud')
 }
 
-if (configIsValid()) start()
+// The store and the terrain need the first world, so read it before the rest.
+async function boot() {
+  const state = await startState(location.search)
+  setStartState(state)
+  try {
+    start()
+  } catch (error) {
+    // shortcut: a reload, not a clean restart in the same page; upgrade if start gets a teardown.
+    if (state === null) throw error
+    console.error('Start with the loaded game failed, a new game starts', error)
+    skipResume()
+  }
+}
+
+if (configIsValid()) void boot()
