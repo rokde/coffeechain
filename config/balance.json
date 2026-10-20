@@ -168,5 +168,11 @@
     },
     "harvestProUnits": { "v": 1000, "src": "GDD 12.3" },
     "harvestProQualityBonus": { "v": 0.05, "src": "GDD 12.3" }
+  },
+
+  "balanceSim": {
+    "days": { "v": 200, "src": "PRD 13 M4" },
+    "seeds": { "v": 20, "src": "PRD 13 M4" },
+    "phase1TargetDays": { "v": 28, "src": "PRD 12" }
   }
 }

@@ -123,6 +123,11 @@ export const balanceSchema = z.object({
     harvestProUnits: val(int),
     harvestProQualityBonus: val(num),
   }),
+  balanceSim: z.object({
+    days: val(int),
+    seeds: val(int),
+    phase1TargetDays: val(num),
+  }),
 })
 
 export type Balance = z.infer<typeof balanceSchema>
