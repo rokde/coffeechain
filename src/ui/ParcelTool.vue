@@ -12,7 +12,8 @@ const game = useGameStore()
 const selection = useSelectionStore()
 // quoteParcels only reads the state, so the cast of the readonly snapshot is safe.
 const cost = computed(() => quoteParcels(game.state as GameState, selection.parcels))
-const disabled = computed(() => selection.parcels.length === 0 || cost.value > game.state.money)
+const tooExpensive = computed(() => cost.value > game.state.money)
+const disabled = computed(() => selection.parcels.length === 0 || tooExpensive.value)
 
 function create() {
   game.dispatch({ type: 'CreateParcels', parcels: selection.parcels })
@@ -30,6 +31,7 @@ function create() {
       <dt>{{ t.total }}</dt>
       <dd data-testid="parcel-tool-total">{{ formatMoney(cost) }}</dd>
     </dl>
+    <p v-if="tooExpensive" class="short" data-testid="parcel-tool-short">{{ t.tooExpensive }}</p>
     <button type="button" data-testid="parcel-tool-create" :disabled="disabled" @click="create">
       {{ t.create }}
     </button>
@@ -58,6 +60,12 @@ dl {
   gap: 10px 16px;
   margin: 0 0 20px;
   font-size: 14px;
+}
+.short {
+  margin: -8px 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #f29b8d;
 }
 dt {
   opacity: 0.8;

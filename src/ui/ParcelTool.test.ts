@@ -28,12 +28,16 @@ const button = (html: string) => html.match(/<button[^>]*>/)![0]
 
 describe('ParcelTool (S12)', () => {
   it('AC-5: disables "Anlegen" when the cost is more than the balance', async () => {
-    expect(button(await render(4799))).toContain('disabled')
+    const html = await render(4799)
+    expect(button(html)).toContain('disabled')
+    expect(html).toContain('data-testid="parcel-tool-short"')
+    expect(html).toContain('Nicht genug CC.')
   })
 
   it('AC-5: enables "Anlegen" when the balance pays the cost', async () => {
     const html = await render(4800)
     expect(button(html)).not.toContain('disabled')
+    expect(html).not.toContain('parcel-tool-short')
     expect(html).toContain('48 CC')
   })
 

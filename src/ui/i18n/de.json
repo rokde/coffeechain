@@ -59,6 +59,7 @@
     "count": "Ausgewählt",
     "total": "Kosten",
     "create": "Anlegen",
-    "hint": "Klicke bebaubare Parzellen an, um sie auszuwählen."
+    "hint": "Klicke bebaubare Parzellen an, um sie auszuwählen. Ein zweiter Klick entfernt sie. Wasser, zu steile und eigene Parzellen sind nicht wählbar.",
+    "tooExpensive": "Nicht genug CC."
   }
 }

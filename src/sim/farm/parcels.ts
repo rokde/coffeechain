@@ -43,7 +43,8 @@ export function isBuildable(world: World, x: number, y: number): boolean {
   )
 }
 
-// Cost in hundredths of CC. The caller gives only buildable parcels that the farm does not own.
+// Cost in hundredths of CC. It does not validate the list.
+// The caller must give only buildable parcels that the farm does not own, each one time.
 export function quoteParcels(state: GameState, list: { x: number; y: number }[]): number {
   const { size, parcels } = state.world
   const { firstCost, baseCost, zoneMultiplier } = balance().parcels
