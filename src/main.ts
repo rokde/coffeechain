@@ -9,7 +9,7 @@ import { useGameStore } from './app/store'
 import { useViewStore } from './app/view'
 import { createCamera } from './render/camera'
 import { loadModel, MODEL_IDS } from './render/models'
-import { createOutline, pickParcel } from './render/picking'
+import { createOutline, createOutlines, pickParcel } from './render/picking'
 import { createProps, syncTrees } from './render/props'
 import { applyOverlay } from './render/overlays'
 import { createScene } from './render/scene'
@@ -99,7 +99,8 @@ function start() {
     const world = store.state.world as GameState['world']
     const terrain = createTerrain(world)
     const outline = createOutline(terrain, world.size)
-    scene.add(terrain, outline.line)
+    const outlines = createOutlines(terrain, world.size)
+    scene.add(terrain, outline.line, outlines.line)
     const viewStore = useViewStore(pinia)
     watch(
       () => viewStore.overlay,
@@ -118,14 +119,20 @@ function start() {
       })
       .catch((error: unknown) => console.error('Props did not load:', error))
     const selection = useSelectionStore(pinia)
-    watch(() => selection.parcel, outline.show)
-    // A click on the terrain selects its parcel. A click beside the terrain clears the selection.
+    watch(() => (selection.tool === 'select' ? selection.parcel : null), outline.show)
+    watch(() => selection.parcels, outlines.show)
+    // Select tool: a click on the terrain selects its parcel, a click beside it clears the selection.
+    // Parcel tool: a click on the terrain adds or removes its parcel.
     canvas.addEventListener('click', (event) => {
       const ndc = new Vector2(
         (event.offsetX / canvas.clientWidth) * 2 - 1,
         1 - (event.offsetY / canvas.clientHeight) * 2,
       )
-      selection.parcel = pickParcel(ndc, view.camera, terrain, world.size)
+      const parcel = pickParcel(ndc, view.camera, terrain, world.size)
+      // toggle only reads the state, so the cast of the readonly snapshot is safe.
+      if (selection.tool === 'parcel') {
+        if (parcel) selection.toggle(store.state as GameState, parcel)
+      } else selection.parcel = parcel
     })
   }
   const { realSecondsPerGameDay, ticksPerGameDay } = balance().time

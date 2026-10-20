@@ -1,14 +1,18 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useSelectionStore } from '../app/selection'
 import { useGameStore } from '../app/store'
 import { balance } from '../sim/balance'
 import { clock } from '../sim/time/time'
 import de from './i18n/de.json'
+import { formatMoney } from './money'
 import ParcelInspector from './ParcelInspector.vue'
 import OverlayPanel from './OverlayPanel.vue'
+import ParcelTool from './ParcelTool.vue'
 import { tools } from './toolbar'
 
 const store = useGameStore()
+const selection = useSelectionStore()
 const speeds = balance().time.speeds
 const clockText = computed(() => {
   const { day, hourOfDay } = clock(store.state.time.hour)
@@ -47,12 +51,25 @@ const clockText = computed(() => {
           </button>
         </div>
       </div>
+      <span class="chip money" data-testid="money">{{ formatMoney(store.state.money) }}</span>
     </header>
     <aside class="frame left-panel" data-testid="hud-left-panel" />
     <OverlayPanel />
-    <aside class="frame right-panel" data-testid="hud-right-panel"><ParcelInspector /></aside>
-    <nav class="frame toolbar" data-testid="hud-toolbar">
-      <button v-for="tool in tools" :key="tool.id" type="button">{{ tool.label }}</button>
+    <aside class="frame right-panel" data-testid="hud-right-panel">
+      <ParcelTool v-if="selection.tool === 'parcel'" />
+      <ParcelInspector v-else />
+    </aside>
+    <nav class="frame toolbar" data-testid="hud-toolbar" :aria-label="de.tools.label">
+      <button
+        v-for="tool in tools"
+        :key="tool.id"
+        type="button"
+        :data-testid="`tool-${tool.id}`"
+        :aria-pressed="selection.tool === tool.id"
+        @click="selection.tool = tool.id"
+      >
+        {{ tool.label }}
+      </button>
     </nav>
   </div>
 </template>
@@ -105,6 +122,10 @@ const clockText = computed(() => {
   background: rgb(255 255 255 / 8%);
   white-space: nowrap;
 }
+.money {
+  font-size: 15px;
+  font-weight: 600;
+}
 .speeds {
   display: flex;
   gap: 4px;
@@ -149,6 +170,17 @@ const clockText = computed(() => {
     line-height: 13px;
     white-space: nowrap;
   }
+  /* Same tab as the seed, on the right. */
+  .chip.money {
+    position: absolute;
+    top: 100%;
+    right: 12px;
+    padding: 1px 8px;
+    border-radius: 0 0 6px 6px;
+    background: var(--hud-bg);
+    font-size: 11px;
+    line-height: 13px;
+  }
   .time {
     gap: 8px;
   }
@@ -180,5 +212,24 @@ const clockText = computed(() => {
   display: flex;
   gap: 8px;
   padding: 8px;
+}
+.toolbar button {
+  min-width: 96px;
+  border: 0;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 8%);
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.toolbar button[aria-pressed='true'] {
+  background: #f2c48d;
+  color: #2b2420;
+}
+.toolbar button:focus-visible {
+  outline: 2px solid #f2c48d;
+  outline-offset: 2px;
 }
 </style>

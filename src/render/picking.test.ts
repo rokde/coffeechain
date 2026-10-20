@@ -2,7 +2,7 @@ import { Raycaster, Vector3 } from 'three'
 import { describe, expect, it } from 'vitest'
 import { balance } from '../sim/balance'
 import { generateWorld } from '../sim/world/generate'
-import { parcelAt } from './picking'
+import { createOutlines, parcelAt } from './picking'
 import { createTerrain } from './terrain'
 
 describe('parcelAt', () => {
@@ -42,5 +42,19 @@ describe('parcelAt', () => {
       checked++
     }
     expect(checked).toBeGreaterThan(400)
+  })
+})
+
+describe('createOutlines (S12)', () => {
+  it('draws 4 edges per parcel and nothing for an empty list', () => {
+    const world = generateWorld(42, balance())
+    const { line, show } = createOutlines(createTerrain(world), world.size)
+    show([
+      { x: 20, y: 20 },
+      { x: 21, y: 20 },
+    ])
+    expect(line.geometry.getAttribute('position').count).toBe(16)
+    show([])
+    expect(line.geometry.getAttribute('position').count).toBe(0)
   })
 })

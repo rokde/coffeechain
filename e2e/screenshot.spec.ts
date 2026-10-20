@@ -49,6 +49,7 @@ test('S9: top bar fits a narrow window', async ({ page }) => {
   for (const s of [0, 1, 2, 4])
     await expect(page.getByTestId(`speed-${s}`)).toBeInViewport({ ratio: 1 })
   await expect(page.getByTestId('world-seed')).toBeInViewport({ ratio: 1 })
+  await expect(page.getByTestId('money')).toBeInViewport({ ratio: 1 })
 })
 
 test('S5: terrain and world seed', async ({ page }) => {
@@ -185,6 +186,80 @@ for (const [width, height] of [
         a.y + a.height <= b.y ||
         b.y + b.height <= a.y
       expect(apart).toBe(true)
+    }
+  })
+}
+
+test('S12: parcel tool and money', async ({ page }) => {
+  const errors: string[] = []
+  page.on('console', (msg) => {
+    if (msg.type() === 'error') errors.push(msg.text())
+  })
+  page.on('pageerror', (error) => errors.push(error.message))
+
+  await page.goto('/?seed=48213')
+  const money = page.getByTestId('money')
+  await expect(money).toHaveText('500 CC')
+  await expect(page.getByTestId('tool-select')).toHaveAttribute('aria-pressed', 'true')
+
+  await page.getByTestId('tool-parcel').click()
+  await expect(page.getByTestId('tool-parcel')).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByTestId('tool-select')).toHaveAttribute('aria-pressed', 'false')
+  await expect(page.getByTestId('parcel-tool')).toBeVisible()
+  await expect(page.getByTestId('parcel-inspector')).toHaveCount(0)
+
+  // Buildable lowland parcels (18, 23) and (21, 23) of seed 48213 at the start camera.
+  const canvas = page.locator('canvas#scene')
+  await canvas.click({ position: { x: 640, y: 370 } })
+  await canvas.click({ position: { x: 690, y: 400 } })
+  await expect(page.getByTestId('parcel-tool-count')).toHaveText('2')
+  await expect(page.getByTestId('parcel-tool-total')).toHaveText('148 CC')
+  await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
+  await page.screenshot({ path: 'docs/progress/S12.png' })
+
+  await page.getByTestId('parcel-tool-create').click()
+  await expect(money).toHaveText('352 CC')
+  await expect(page.getByTestId('parcel-tool-count')).toHaveText('0')
+  await expect(page.getByTestId('parcel-tool-create')).toBeDisabled()
+
+  // An owned parcel cannot be selected again.
+  await canvas.click({ position: { x: 640, y: 370 } })
+  await expect(page.getByTestId('parcel-tool-count')).toHaveText('0')
+
+  await page.getByTestId('tool-select').click()
+  await expect(page.getByTestId('parcel-tool')).toHaveCount(0)
+  expect(errors).toEqual([])
+})
+
+for (const [width, height] of [
+  [1280, 800],
+  [390, 844],
+] as const) {
+  test(`S12: parcel tool and money do not overlap other panels at ${width}x${height}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height })
+    await page.goto('/?seed=48213')
+    await page.getByTestId('overlay-soil').click()
+    await page.getByTestId('tool-parcel').click()
+    await expect(page.getByTestId('parcel-tool')).toBeVisible()
+    const box = async (id: string) => (await page.getByTestId(id).boundingBox())!
+    const pairs = [
+      ['hud-overlay-panel', 'parcel-tool'],
+      ['hud-overlay-panel', 'hud-right-panel'],
+      ['hud-overlay-panel', 'money'],
+      ['hud-right-panel', 'money'],
+      ['hud-left-panel', 'money'],
+    ]
+    for (const [first, second] of pairs) {
+      const a = await box(first!)
+      const b = await box(second!)
+      const apart =
+        a.x + a.width <= b.x ||
+        b.x + b.width <= a.x ||
+        a.y + a.height <= b.y ||
+        b.y + b.height <= a.y
+      expect(apart, `${first} and ${second}`).toBe(true)
     }
   })
 }
