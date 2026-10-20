@@ -5,13 +5,13 @@ const SEED = 48213
 type Point = { x: number; y: number }
 
 // Screen points of free parcels, found from the parcel grid and the start camera, not from fixed pixels.
-// The page builds the same camera and terrain as the app, so a new start camera does not break the test.
+// The page builds the same camera, start framing and terrain as the app, so a new start camera does not break the test.
 // block: the corners of a free 2 × 2 block and one more free parcel beside it.
 // wide: the corners of a grid square whose free parcels cost more than the start money.
 async function findParcels(page: Page) {
   return page.evaluate(async (seed) => {
     const load = (path: string) => import(/* @vite-ignore */ path)
-    const { createCamera } = await load('/src/render/camera.ts')
+    const { createCamera, startView } = await load('/src/render/camera.ts')
     const { createTerrain } = await load('/src/render/terrain.ts')
     const { pickParcel } = await load('/src/render/picking.ts')
     const { createState } = await load('/src/sim/state.ts')
@@ -21,6 +21,9 @@ async function findParcels(page: Page) {
     const size: number = state.world.size
     const view = createCamera(innerWidth / innerHeight, size)
     const terrain = createTerrain(state.world)
+    // The app frames the start view after it builds the scene.
+    const start = startView(state.world, state.props, innerWidth / innerHeight)
+    view.frame(start.target, start.zoom)
     // The centre of the screen points that hit each parcel, between the HUD panels.
     const hits = new Map<number, { x: number; y: number; n: number }>()
     for (let sy = 120; sy < 780; sy += 8)
