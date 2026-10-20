@@ -37,7 +37,13 @@ describe('CI workflow', () => {
 
   it('checks the web build on Ubuntu', () => {
     const web = job('ubuntu-latest')
-    const steps = ['npm ci', 'npm run lint', 'npm run typecheck', 'npm test', 'npm run build']
+    const steps = [
+      'npm ci',
+      'npm run lint',
+      'npm run typecheck',
+      'npm run test:ci',
+      'npm run build',
+    ]
     for (const step of steps) expect(web).toContain(`- run: ${step}\n`)
     expect(web).toContain('node-version: 24')
   })
