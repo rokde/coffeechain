@@ -10,6 +10,7 @@ import { formatMoney } from './money'
 import ParcelTool from './ParcelTool.vue'
 
 vi.stubGlobal('location', { search: '?seed=42' })
+vi.stubGlobal('sessionStorage', { getItem: () => null, removeItem: () => {} })
 
 // Renders the panel with one selected lowland parcel and the balance cost + delta.
 async function render(delta: number) {

@@ -15,6 +15,7 @@ import Hud from './Hud.vue'
 import { tools } from './toolbar'
 
 vi.stubGlobal('location', { search: '?seed=42' })
+vi.stubGlobal('sessionStorage', { getItem: () => null, removeItem: () => {} })
 
 // Owns 2 lowland parcels with Robusta, selects them for the tool and sets the balance.
 // With ripe, the plants are ripe. used fills the storage before the harvest.

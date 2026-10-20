@@ -16,6 +16,7 @@ import { formatMoney } from './money'
 import ParcelInspector from './ParcelInspector.vue'
 
 vi.stubGlobal('location', { search: '?seed=42' })
+vi.stubGlobal('sessionStorage', { getItem: () => null, removeItem: () => {} })
 
 // Plants Robusta on one owned lowland parcel. With planted false, the parcel stays empty.
 async function render(planted: boolean) {

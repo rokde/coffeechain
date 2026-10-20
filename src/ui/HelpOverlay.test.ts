@@ -6,6 +6,7 @@ import { useViewStore } from '../app/view'
 import Hud from './Hud.vue'
 
 vi.stubGlobal('location', { search: '?seed=42' })
+vi.stubGlobal('sessionStorage', { getItem: () => null, removeItem: () => {} })
 
 async function render(open: boolean) {
   const pinia = createPinia()
