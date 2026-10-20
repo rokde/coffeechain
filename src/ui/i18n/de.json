@@ -41,5 +41,11 @@
       "arabicaPremium": "Arabica Premium",
       "specialty": "Specialty"
     }
+  },
+  "overlay": {
+    "label": "Karten-Overlays",
+    "soil": "Bodenqualität",
+    "zone": "Lagen",
+    "soilHint": "Jede Welt wird zufällig erzeugt. Dunkler Boden bringt mehr Ertrag pro Pflanze."
   }
 }

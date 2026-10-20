@@ -111,3 +111,35 @@ test('S6: props on the island', async ({ page }) => {
   await page.screenshot({ path: 'docs/progress/S6.png' })
   expect(errors).toEqual([])
 })
+
+test('S7: soil and zone overlay switches', async ({ page }) => {
+  const errors: string[] = []
+  page.on('console', (msg) => {
+    if (msg.type() === 'error') errors.push(msg.text())
+  })
+  page.on('pageerror', (error) => errors.push(error.message))
+
+  await page.goto('/?seed=48213')
+  const soil = page.getByTestId('overlay-soil')
+  const zone = page.getByTestId('overlay-zone')
+  await expect(soil).toHaveAttribute('aria-checked', 'false')
+  await expect(zone).toHaveAttribute('aria-checked', 'false')
+
+  await zone.click()
+  await expect(zone).toHaveAttribute('aria-checked', 'true')
+  await expect(soil).toHaveAttribute('aria-checked', 'false')
+
+  await soil.click()
+  await expect(soil).toHaveAttribute('aria-checked', 'true')
+  await expect(zone).toHaveAttribute('aria-checked', 'false')
+  const legend = page.getByTestId('overlay-legend')
+  for (const name of ['Karg', 'Mittel', 'Gut', 'Sehr gut']) {
+    await expect(legend.getByText(name, { exact: true })).toBeVisible()
+  }
+  await page.screenshot({ path: 'docs/progress/S7.png' })
+
+  await soil.click()
+  await expect(soil).toHaveAttribute('aria-checked', 'false')
+  await expect(legend).toHaveCount(0)
+  expect(errors).toEqual([])
+})
