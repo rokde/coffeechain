@@ -1244,3 +1244,34 @@ for (const [width, height, events] of [
     await page.screenshot({ path: `docs/progress/S52-${width}.png` })
   })
 }
+
+for (const [width, height] of [
+  [1440, 900],
+  [800, 600],
+  [390, 844],
+] as const) {
+  test(`U1: compact right panel with a hint at ${width}x${height}`, async ({ page }) => {
+    await page.setViewportSize({ width, height })
+    await page.goto('/?seed=48213')
+    await page.getByTestId('first-steps-close').click()
+    await page.getByTestId('tool-select').click()
+    const panel = page.getByTestId('hud-right-panel')
+    await expect(panel).toBeVisible()
+    await expect(panel).toContainText('Wähle eine Parzelle.')
+    expect((await panel.boundingBox())!.height).toBeLessThanOrEqual(120)
+    await page.screenshot({ path: `docs/progress/U1-${width}.png` })
+
+    if (width === 800) return
+    // The screen centre shows parcel (35, 38) at the start view, which is land.
+    await page.locator('canvas#scene').click({ position: { x: width / 2, y: height / 2 } })
+    await expect(page.getByTestId('parcel-inspector')).toBeVisible()
+    await expect(page.getByTestId('inspector-empty')).toHaveCount(0)
+    if (width !== 390) return
+    const style = await panel.evaluate((el) => {
+      const s = getComputedStyle(el)
+      return { maxHeight: s.maxHeight, overflowY: s.overflowY }
+    })
+    expect(style).toEqual({ maxHeight: '464px', overflowY: 'auto' })
+    expect((await panel.boundingBox())!.height).toBeLessThanOrEqual(464)
+  })
+}

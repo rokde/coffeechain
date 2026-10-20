@@ -1,6 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
-import { createSSRApp } from 'vue'
+import { createSSRApp, h } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import { useSelectionStore } from '../app/selection'
 import { useGameStore } from '../app/store'
@@ -11,6 +11,7 @@ import { isBuildable, isFree, quoteParcels } from '../sim/farm/parcels'
 import { fieldStatus } from '../sim/farm/status'
 import type { GameState } from '../sim/state'
 import { careParcel } from './farmAction'
+import Hud from './Hud.vue'
 import de from './i18n/de.json'
 import { formatMoney } from './money'
 import ParcelInspector from './ParcelInspector.vue'
@@ -186,5 +187,25 @@ describe('ParcelInspector tooltips (S53)', () => {
       expect(tips[key]).toBeTruthy()
       expect(attrs).toContain(` title="${tips[key]}"`)
     }
+  })
+})
+
+describe('ParcelInspector empty state (U1)', () => {
+  it('AC-1: the right panel shows the hint and no inspector without a selected parcel', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const selection = useSelectionStore(pinia)
+    selection.tool = 'select'
+    selection.parcel = null
+    const html = await renderToString(createSSRApp({ render: () => h(Hud) }).use(pinia))
+    const panel = html.split('data-testid="hud-right-panel"')[1]!.split('</aside>')[0]!
+    expect(panel).toMatch(/data-testid="inspector-empty"[^>]*>Wähle eine Parzelle\.</)
+    expect(panel).not.toContain('parcel-inspector')
+  })
+
+  it('AC-2: a selected parcel shows the inspector and no hint', async () => {
+    const { html } = await render(false)
+    expect(html).toContain('data-testid="parcel-inspector"')
+    expect(html).not.toContain('inspector-empty')
   })
 })
