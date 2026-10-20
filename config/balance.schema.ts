@@ -52,6 +52,7 @@ export const balanceSchema = z.object({
     firstCost: val(num),
     baseCost: val(num),
     zoneMultiplier: val(z.record(zone, num)),
+    maxSlope: val(num),
   }),
   varieties: z.object({
     robusta: variety,

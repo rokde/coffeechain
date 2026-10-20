@@ -41,7 +41,8 @@
     "zoneMultiplier": {
       "v": { "tiefland": 1.0, "hochland": 1.5, "hochlandKuehl": 2.0, "vulkan": 4.0 },
       "src": "NEU (Reihenfolge aus GDD 5.3 Landpreis)"
-    }
+    },
+    "maxSlope": { "v": 0.15, "src": "NEU" }
   },
 
   "varieties": {
