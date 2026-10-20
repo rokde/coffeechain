@@ -8,9 +8,7 @@ import { bankSellPrice } from '../market/market'
 import { growth, quotePlant } from './plants'
 import type { Variety } from './yield'
 
-const size = 4
-
-function testWorld(): World {
+function testWorld(size = 4): World {
   const parcels: Parcel[] = []
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
@@ -38,11 +36,12 @@ const plant = (state: GameState, variety: Variety, ...parcels: [number, number][
   dispatch(state, { type: 'Plant', variety, parcels: parcels.map(([x, y]) => ({ x, y })) })
 
 describe('Plant', () => {
-  it('AC-1: takes 2 CC per Robusta parcel and adds the plants', () => {
+  it('AC-1: takes about 2 CC per Robusta parcel and adds the plants', () => {
     const state = testState()
     const before = structuredClone(state)
     const next = plant(state, 'robusta', [0, 0], [1, 0])
-    expect(next.money).toBe(50000 - 400)
+    // 2 seeds at the mid volume of 1 unit: 2 × 2 × (1 + 0.3 × 1 / 200) = 4.006 CC.
+    expect(next.money).toBe(50000 - 401)
     expect(next.farm.plants).toEqual({
       0: { variety: 'robusta', plantedHour: 5 },
       1: { variety: 'robusta', plantedHour: 5 },
@@ -93,7 +92,7 @@ describe('Plant', () => {
     ['a locked variety', testState(), 'arabicaPremium', [[0, 0]]],
     [
       'a total cost above the money',
-      testState(399),
+      testState(400),
       'robusta',
       [
         [0, 0],
@@ -107,8 +106,18 @@ describe('Plant', () => {
   })
 
   it('AC-2: accepts a total cost equal to the money', () => {
-    expect(plant(testState(400), 'robusta', [0, 0], [1, 0]).money).toBe(0)
+    expect(plant(testState(401), 'robusta', [0, 0], [1, 0]).money).toBe(0)
   })
+
+  it.each(['constructor', 'toString', 'hasOwnProperty'])(
+    'AC-1 (S21b): rejects the inherited key %s as an unknown variety',
+    (variety) => {
+      const state = testState()
+      const before = structuredClone(state)
+      expect(() => plant(state, variety as Variety, [0, 0])).toThrow('Unknown variety')
+      expect(state).toEqual(before)
+    },
+  )
 
   it('keeps the plants when more parcels are bought', () => {
     const state = plant(testState(), 'robusta', [0, 0])
@@ -176,8 +185,8 @@ describe('growth stages', () => {
 
 describe('quotePlant (S13)', () => {
   it('AC-3: gives the seed cost in hundredths of CC', () => {
-    expect(quotePlant(testState(), 'robusta', 2)).toBe(400)
-    expect(quotePlant(testState(), 'arabicaStandard', 2)).toBe(800)
+    expect(quotePlant(testState(), 'robusta', 2)).toBe(401)
+    expect(quotePlant(testState(), 'arabicaStandard', 2)).toBe(801)
     expect(quotePlant(testState(), 'robusta', 0)).toBe(0)
   })
 })
@@ -217,7 +226,7 @@ describe('Plant with bought seed (S19b)', () => {
     const price = bankSellPrice(state, 'robusta')
     const seedCents = balance().varieties.robusta.seedCost * 100
     const next = plant(state, 'robusta', [0, 0], [1, 0], [2, 0])
-    expect(state.money - next.money).toBe(Math.round(3 * price * 100))
+    expect(state.money - next.money).toBe(Math.round(3 * bankSellPrice(state, 'robusta', 3) * 100))
     expect(state.money - next.money).toBeGreaterThan(3 * seedCents)
     expect(bankSellPrice(next, 'robusta')).toBeGreaterThan(price)
   })
@@ -263,11 +272,35 @@ describe('Plant with bought seed (S19b)', () => {
     expect(state).toEqual(before)
   })
 
-  it('AC-5: costs the seed cost at a neutral market with no stock', () => {
+  it('AC-5: costs the seed cost at the mid volume of a neutral market with no stock', () => {
     const state = testState()
-    expect(quotePlant(state, 'robusta', 2)).toBe(400)
+    expect(quotePlant(state, 'robusta', 2)).toBe(401)
     const next = plant(state, 'robusta', [0, 0], [1, 0])
-    expect(state.money - next.money).toBe(400)
+    expect(state.money - next.money).toBe(401)
     expect(next.market.seeds.robusta).toBe(0)
   })
+
+  it.each([
+    [0, 1],
+    [0, 50],
+    [10, 50],
+    [5, 64],
+  ])(
+    'AC-3 (S21b): with %i seeds in stock, the quote for %i parcels is the cost of Plant',
+    (stock, count) => {
+      const big = 8
+      const base = withSeeds(stock)
+      const state: GameState = {
+        ...base,
+        world: testWorld(big),
+        farm: {
+          ...base.farm,
+          parcels: Object.fromEntries(Array.from({ length: count }, (_, i) => [i, 0])),
+        },
+      }
+      const list = Array.from({ length: count }, (_, i) => ({ x: i % big, y: Math.floor(i / big) }))
+      const next = dispatch(state, { type: 'Plant', variety: 'robusta', parcels: list })
+      expect(quotePlant(state, 'robusta', count)).toBe(state.money - next.money)
+    },
+  )
 })
