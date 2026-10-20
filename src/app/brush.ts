@@ -2,7 +2,7 @@ import type { ParcelPos } from '../render/picking'
 import type { Command } from '../sim/commands'
 import { quoteCare } from '../sim/farm/care'
 import { quoteParcels } from '../sim/farm/parcels'
-import { quotePlant } from '../sim/farm/plants'
+import { canPlant, quotePlant } from '../sim/farm/plants'
 import type { Variety } from '../sim/farm/yield'
 import type { GameState } from '../sim/state'
 import { canSelect, farmTools, type BrushTool } from './selection'
@@ -29,6 +29,7 @@ export function brushParcel(
     command = { type: 'CreateParcels', parcels }
     cost = quoteParcels(state, parcels)
   } else if (tool === 'plant') {
+    if (!canPlant(state, variety, p.x, p.y)) return 'invalid'
     command = { type: 'Plant', variety, parcels }
     cost = quotePlant(state, variety, 1)
   } else if (tool === 'harvest') command = { type: 'Harvest', parcels }

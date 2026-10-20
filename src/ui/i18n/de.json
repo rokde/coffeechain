@@ -97,7 +97,7 @@
       "robusta": "Robusta",
       "arabicaStandard": "Arabica Standard",
       "arabicaPremium": "Arabica Premium",
-      "specialty": "Specialty"
+      "specialty": "Spezialität"
     }
   },
   "overlay": {
@@ -134,7 +134,8 @@
     "count": "Ausgewählt",
     "total": "Saatgut",
     "plant": "Pflanzen",
-    "tooExpensive": "Nicht genug CC."
+    "tooExpensive": "Nicht genug CC.",
+    "locked": "ab Phase {phase} · Kapital {capital}"
   },
   "buildTool": {
     "heading": "Bauen",

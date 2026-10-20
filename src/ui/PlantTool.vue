@@ -2,23 +2,33 @@
 import { computed } from 'vue'
 import { useSelectionStore } from '../app/selection'
 import { useGameStore } from '../app/store'
+import { balance } from '../sim/balance'
 import { quotePlant } from '../sim/farm/plants'
+import type { Variety } from '../sim/farm/yield'
+import { isVarietyUnlocked } from '../sim/progression/capital'
 import type { GameState } from '../sim/state'
-import { validParcels } from './farmAction'
 import de from './i18n/de.json'
 import { formatMoney } from './money'
-import { plantSelected, plantVarieties } from './plantAction'
+import { plantParcels, plantSelected, plantVarieties } from './plantAction'
 
 const t = de.plantTool
 const game = useGameStore()
 const selection = useSelectionStore()
-// validParcels and quotePlant only read the state, so the cast of the readonly snapshot is safe.
-const parcels = computed(() => validParcels(game.state as GameState, 'plant'))
+// plantParcels, quotePlant and isVarietyUnlocked only read the state, so the cast of the readonly snapshot is safe.
+const parcels = computed(() => plantParcels(game.state as GameState, selection.variety))
 const cost = computed(() =>
   quotePlant(game.state as GameState, selection.variety, parcels.value.length),
 )
 const tooExpensive = computed(() => cost.value > game.state.money)
 const disabled = computed(() => parcels.value.length === 0 || tooExpensive.value)
+const cfg = balance()
+// The unlock condition of a locked variety, or '' when it is unlocked. Capital unlocks it; the phase is only a label.
+function lockText(v: Variety) {
+  if (isVarietyUnlocked(game.state as GameState, v)) return ''
+  const capital = cfg.varieties[v].unlockCapital
+  const phase = cfg.progression.phases.find((p) => p.fromCapital === capital)?.id
+  return t.locked.replace('{phase}', String(phase)).replace('{capital}', formatMoney(capital * 100))
+}
 </script>
 
 <template>
@@ -32,9 +42,11 @@ const disabled = computed(() => parcels.value.length === 0 || tooExpensive.value
         type="button"
         :data-testid="`plant-tool-variety-${v}`"
         :aria-pressed="selection.variety === v"
+        :disabled="!!lockText(v)"
         @click="selection.variety = v"
       >
         {{ de.inspector.varieties[v] }}
+        <small v-if="lockText(v)" :data-testid="`plant-tool-locked-${v}`">{{ lockText(v) }}</small>
       </button>
     </div>
     <p v-if="selection.note" class="short" data-testid="tool-note">
@@ -99,7 +111,8 @@ dd {
   text-align: right;
 }
 .varieties {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 4px;
   margin: 0 0 16px;
   padding: 2px;
@@ -107,8 +120,12 @@ dd {
   background: rgb(255 255 255 / 8%);
 }
 .varieties button {
-  flex: 1;
-  height: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 4px;
   border: 0;
   border-radius: 8px;
   background: none;
@@ -117,6 +134,14 @@ dd {
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+}
+.varieties button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.varieties small {
+  font-size: 11px;
+  font-weight: 400;
 }
 .varieties button[aria-pressed='true'] {
   background: #f2c48d;

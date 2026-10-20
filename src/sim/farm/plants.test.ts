@@ -5,7 +5,7 @@ import { createState, type GameState } from '../state'
 import { step } from '../time/time'
 import type { Parcel, World } from '../world/types'
 import { bankSellPrice } from '../market/market'
-import { growth, quotePlant } from './plants'
+import { canPlant, growth, quotePlant } from './plants'
 import type { Variety } from './yield'
 
 function testWorld(size = 4): World {
@@ -303,4 +303,40 @@ describe('Plant with bought seed (S19b)', () => {
       expect(quotePlant(state, 'robusta', count)).toBe(state.money - next.money)
     },
   )
+})
+
+describe('Premium and Specialty (S48)', () => {
+  // Parcel (1,0) is volcano soil. Capital is the balance here: no stock and nothing invested.
+  function zoned(money: number): GameState {
+    const state = testState(money)
+    const parcels = state.world.parcels.map((p) =>
+      p.x === 1 && p.y === 0 ? { ...p, zone: 'vulkan' as const } : p,
+    )
+    return { ...state, world: { ...state.world, parcels } }
+  }
+
+  it('AC-1: Specialty needs 10.000 CC capital and a volcano parcel', () => {
+    expect(canPlant(zoned(999999), 'specialty', 1, 0)).toBe(false)
+    expect(canPlant(zoned(1000000), 'specialty', 1, 0)).toBe(true)
+    expect(canPlant(zoned(1000000), 'specialty', 0, 0)).toBe(false)
+    expect(canPlant(zoned(1000000), 'robusta', 1, 0)).toBe(true)
+  })
+
+  it('AC-1: a Plant command for Specialty on a lowland parcel throws and keeps the state', () => {
+    const state = zoned(1000000)
+    const before = structuredClone(state)
+    expect(() => plant(state, 'specialty', [0, 0])).toThrow()
+    expect(() => plant(state, 'specialty', [1, 0], [0, 0])).toThrow()
+    expect(state).toEqual(before)
+    expect(plant(state, 'specialty', [1, 0]).farm.plants[1]?.variety).toBe('specialty')
+  })
+
+  it('AC-2: Arabica Premium plants at 2.000 CC capital and takes the seed cost', () => {
+    const state = zoned(200000)
+    const cost = quotePlant(state, 'arabicaPremium', 1)
+    expect(cost).toBeGreaterThan(0)
+    const next = plant(state, 'arabicaPremium', [0, 0])
+    expect(next.farm.plants[0]).toEqual({ variety: 'arabicaPremium', plantedHour: 5 })
+    expect(next.money).toBe(200000 - cost)
+  })
 })

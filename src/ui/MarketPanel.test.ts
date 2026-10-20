@@ -102,3 +102,33 @@ describe('MarketPanel (S20)', () => {
     expect(game.state.money).toBe(before + income)
   })
 })
+
+describe('MarketPanel varieties (S48)', () => {
+  const render = (patch: (state: GameState) => GameState) => {
+    const pinia = createPinia()
+    const game = useGameStore(pinia)
+    game.replace(patch(game.state as GameState))
+    return renderToString(createSSRApp(MarketPanel).use(pinia))
+  }
+
+  it('AC-5: hides Arabica Premium in a new game', async () => {
+    const html = await render((s) => s)
+    expect(html).toContain('data-testid="market-robusta"')
+    expect(html).not.toContain('data-testid="market-arabicaPremium"')
+  })
+
+  it('AC-5: shows Arabica Premium with stock of it', async () => {
+    const html = await render((s) => ({
+      ...s,
+      storage: { ...s.storage, batches: [{ variety: 'arabicaPremium', units: 1, quality: 1 }] },
+    }))
+    expect(html).toContain('data-testid="market-arabicaPremium"')
+    expect(html).not.toContain('data-testid="market-specialty"')
+  })
+
+  it('AC-5: shows Arabica Premium when it is unlocked', async () => {
+    const html = await render((s) => ({ ...s, money: 200000 }))
+    expect(html).toContain('data-testid="market-arabicaPremium"')
+    expect(html).not.toContain('data-testid="market-specialty"')
+  })
+})
