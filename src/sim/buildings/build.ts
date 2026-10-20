@@ -66,8 +66,7 @@ export function build(state: GameState, command: Build): GameState {
   const { x, y } = command.parcel
   if (!canBuild(state, x, y))
     throw new Error(`Parcel ${x},${y} is outside the map, not owned, or has a plant or building`)
-  const entry = buildMenu(state).find((e) => e.kind === command.building)
-  if (!entry) throw new Error(`Unknown building: ${command.building}`)
+  const entry = buildMenu(state).find((e) => e.kind === command.building)!
   if (!entry.available) throw new Error(`The farm has the maximum of ${command.building}`)
   if (entry.locked) throw new Error(`${command.building} needs phase ${entry.requiredPhase}`)
   if (entry.cost > state.money)

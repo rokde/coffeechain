@@ -400,4 +400,9 @@ const storageText = computed(() =>
     font-size: 12px;
   }
 }
+@media (max-width: 380px) {
+  .toolbar button {
+    font-size: 11px;
+  }
+}
 </style>

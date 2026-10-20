@@ -24,8 +24,7 @@ export const isBrushTool = (tool: string): tool is BrushTool =>
 // The build tool has no brush, but it acts on the marks like a brush tool.
 const usesMarks = (tool: string) => isBrushTool(tool) || tool === 'build'
 
-// The plant tool selects only owned parcels without a plant and without a building.
-// The build tool selects only owned parcels without a plant and without a building.
+// The plant and build tools select only owned parcels without a plant and without a building.
 // The harvest tool selects only owned parcels with a ripe plant.
 // A care tool selects only owned parcels with an unripe plant that does not have this care yet.
 // The other tools select only free parcels that the farm does not own.

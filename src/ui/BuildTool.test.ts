@@ -96,6 +96,17 @@ describe('BuildTool (S44)', () => {
     expect(poor).toContain('data-testid="build-tool-short"')
   })
 
+  it('round 1: hides the cost of a built entry and names the first mark when there are several', async () => {
+    const { pinia } = setup((l) => [l.empty, l.empty2])
+    const several = await html(pinia)
+    expect(several).toContain('data-testid="build-tool-first"')
+    buildSelected('processing')
+    const text = await html(pinia)
+    expect(text).toMatch(/build-tool-processing"[^>]*>(?:(?!<\/li>)[\s\S])*Schon gebaut/)
+    expect(text).not.toMatch(/build-tool-processing"[^>]*>(?:(?!<\/li>)[\s\S])*build-tool-cost/)
+    expect(text).not.toContain('data-testid="build-tool-first"')
+  })
+
   it('AC-5: marks on planted or not owned parcels are cleared with "Hier nicht möglich."', async () => {
     const { pinia, selection } = setup((l) => [l.young, l.free])
     expect(selection.parcels).toEqual([])

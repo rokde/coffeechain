@@ -588,7 +588,7 @@ test('S18a: care and harvest tools, storage chip', async ({ page }) => {
   expect(errors).toEqual([])
 })
 
-for (const width of [1280, 390]) {
+for (const width of [1280, 390, 360]) {
   test(`S18a: all tools fit the toolbar at ${width} px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 })
     await page.goto('/')

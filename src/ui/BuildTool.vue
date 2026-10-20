@@ -13,7 +13,8 @@ const game = useGameStore()
 const selection = useSelectionStore()
 // buildMenu and validParcels only read the state, so the cast of the readonly snapshot is safe.
 const menu = computed(() => buildMenu(game.state as GameState))
-const hasTarget = computed(() => validParcels(game.state as GameState, 'build').length > 0)
+const targets = computed(() => validParcels(game.state as GameState, 'build').length)
+const hasTarget = computed(() => targets.value > 0)
 </script>
 
 <template>
@@ -23,11 +24,14 @@ const hasTarget = computed(() => validParcels(game.state as GameState, 'build').
     <p v-if="selection.note" class="short" data-testid="tool-note">
       {{ de.toolNote[selection.note] }}
     </p>
+    <p v-if="targets > 1" class="hint" data-testid="build-tool-first">{{ t.first }}</p>
     <ul>
       <li v-for="entry in menu" :key="entry.kind" :data-testid="`build-tool-${entry.kind}`">
         <div class="row">
           <strong>{{ t.buildings[entry.kind] }}</strong>
-          <span class="cost" data-testid="build-tool-cost">{{ formatMoney(entry.cost) }}</span>
+          <span v-if="entry.available" class="cost" data-testid="build-tool-cost">{{
+            formatMoney(entry.cost)
+          }}</span>
         </div>
         <p v-if="entry.locked" class="short" data-testid="build-tool-locked">
           {{ t.locked.replace('{phase}', String(entry.requiredPhase)) }}
@@ -79,9 +83,15 @@ ul {
 }
 .row {
   display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
   justify-content: space-between;
   margin: 0 0 8px;
   font-size: 14px;
+}
+.row strong,
+.cost {
+  white-space: nowrap;
 }
 .cost {
   font-weight: 600;
