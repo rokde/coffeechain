@@ -12,12 +12,14 @@ import { installDebugKeys } from './app/debugKeys'
 import { fpsFromFrames } from './app/fps'
 import { installHelpKeys } from './app/helpKeys'
 import { installSpeedKeys } from './app/speedKeys'
+import { installToolKeys } from './app/toolKeys'
 import { skipResume, startState } from './app/resume'
 import { setStartState, useGameStore } from './app/store'
 import { useViewStore } from './app/view'
 import { CAMERA, createCamera, gestureZoomDelta, startView, wheelZoomDelta } from './render/camera'
 import { createFieldMarks, FIELD_LABEL_STYLE, fieldAnchors, hoveredField } from './render/fields'
 import { loadModel, MODEL_IDS } from './render/models'
+import { createBuildings } from './render/buildings'
 import { createPlants, plantsKey } from './render/plants'
 import { createPath } from './render/path'
 import { createOutline, createOutlines, pickParcel, type ParcelPos } from './render/picking'
@@ -178,6 +180,7 @@ function start() {
   installAutosave(store)
   const viewStore = useViewStore(pinia)
   installHelpKeys(viewStore, useSelectionStore(pinia))
+  installToolKeys(viewStore, useSelectionStore(pinia), store)
   installDebugKeys(viewStore)
   // The model row lies at the origin, so the debug view has no terrain.
   // createTerrain only reads the world, so the cast of the readonly snapshot is safe.
@@ -187,6 +190,7 @@ function start() {
     const outline = createOutline(terrain, world.size)
     const outlines = createOutlines(terrain, world.size)
     const plants = createPlants(world)
+    const buildings = createBuildings(world)
     const worldProps = store.state.props as GameState['props']
     scene.add(
       terrain,
@@ -194,12 +198,22 @@ function start() {
       outline.line,
       outlines.line,
       plants.group,
+      buildings.group,
     )
     const { target, zoom } = startView(world, worldProps, window.innerWidth / window.innerHeight)
     view.frame(target, zoom)
     watch(
       () => plantsKey(store.state.farm.plants, store.state.time.hour),
       () => plants.show(store.state.farm.plants, store.state.time.hour),
+      { immediate: true },
+    )
+    // A load reloads the page, so the immediate run also shows the loaded buildings.
+    watch(
+      () => store.state.buildings,
+      (list) => {
+        buildings.show(list)
+        canvas.dataset.buildings = String(buildings.group.children.length)
+      },
       { immediate: true },
     )
     watch(
@@ -231,17 +245,19 @@ function start() {
       for (const { id, label } of fieldLabels) label.style.opacity = id === fadedField ? '0' : '1'
     }
     watch(
-      () => store.state.farm,
-      (farm) => {
+      () => [store.state.farm, store.state.buildings] as const,
+      ([farm, built]) => {
         // show and fieldAnchors only read the farm, so the cast of the readonly snapshot is safe.
         marks.show(farm as FarmState)
-        fieldLabels = fieldAnchors(world, farm as FarmState).map(({ id, name, position }) => {
-          const label = document.createElement('div')
-          label.dataset.testid = `field-label-${name}`
-          label.textContent = de.field.label.replace('{name}', name)
-          label.style.cssText = FIELD_LABEL_STYLE
-          return { id, label, at: new Vector3(position.x, position.y, position.z) }
-        })
+        fieldLabels = fieldAnchors(world, farm as FarmState, built).map(
+          ({ id, name, position }) => {
+            const label = document.createElement('div')
+            label.dataset.testid = `field-label-${name}`
+            label.textContent = de.field.label.replace('{name}', name)
+            label.style.cssText = FIELD_LABEL_STYLE
+            return { id, label, at: new Vector3(position.x, position.y, position.z) }
+          },
+        )
         fadeLabels()
         fieldLayer.replaceChildren(...fieldLabels.map(({ label }) => label))
       },

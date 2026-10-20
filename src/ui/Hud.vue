@@ -12,6 +12,7 @@ import { storageUsed } from '../sim/storage/storage'
 import { clock } from '../sim/time/time'
 import de from './i18n/de.json'
 import { formatMoney } from './money'
+import EventChips from './EventChips.vue'
 import FirstSteps from './FirstSteps.vue'
 import FarmTool from './FarmTool.vue'
 import FpsMeter from './FpsMeter.vue'
@@ -92,6 +93,7 @@ const phaseText = computed(() => {
         </div>
       </div>
       <div class="stats">
+        <EventChips />
         <span class="chip" data-testid="storage">{{ storageText }}</span>
         <span class="chip" data-testid="phase"
           >{{ phaseText.name }}
@@ -148,6 +150,8 @@ const phaseText = computed(() => {
         type="button"
         :data-testid="`tool-${tool.id}`"
         :aria-pressed="selection.tool === tool.id"
+        :title="`${tool.label} (${tool.key})`"
+        :aria-keyshortcuts="tool.key"
         :data-guide="steps.guide === `tool-${tool.id}` ? 'next' : undefined"
         @click="pickTool(selection, store.state as GameState, tool.id)"
       >
@@ -278,7 +282,7 @@ const phaseText = computed(() => {
   outline: 2px solid #f2c48d;
   outline-offset: 2px;
 }
-/* The bar has no room for the stats, so they hang below the bar as a tab. */
+/* With the phase chip the bar holds about 1130 px of content, so the stats hang below it as a tab. */
 @media (max-width: 1279px) {
   .stats {
     position: absolute;
@@ -293,9 +297,20 @@ const phaseText = computed(() => {
   .stats .chip {
     padding: 0;
     background: none;
+    font-size: 14px;
+  }
+  /* Only the icon fits, the aria-label keeps the name. */
+  .save-button {
+    width: 36px;
+    margin-left: 2px;
+    padding: 0;
+    justify-content: center;
+  }
+  .save-button span {
+    display: none;
   }
 }
-@media (max-width: 480px) {
+@media (max-width: 760px) {
   .top-bar {
     padding: 0 4px;
   }
@@ -313,10 +328,6 @@ const phaseText = computed(() => {
     font-size: 11px;
     line-height: 13px;
     white-space: nowrap;
-  }
-  /* The tab has no room for the progress beside the seed tab. */
-  .phase-progress {
-    display: none;
   }
   .time {
     gap: 4px;
@@ -349,15 +360,17 @@ const phaseText = computed(() => {
     width: 36px;
     margin-left: 2px;
   }
-  /* Only the icon fits, the aria-label keeps the name. */
-  .save-button {
-    width: 36px;
-    margin-left: 2px;
-    padding: 0;
-    justify-content: center;
-  }
-  .save-button span {
+}
+/* The stats tab must fit beside the seed tab, so it drops the progress and uses the seed tab font. */
+@media (max-width: 480px) {
+  .phase-progress {
     display: none;
+  }
+  .stats {
+    padding: 1px 6px;
+  }
+  .stats .chip {
+    font-size: 11px;
   }
 }
 .left-panel {
@@ -372,6 +385,17 @@ const phaseText = computed(() => {
   width: min(330px, calc(50vw - 24px));
   height: 480px;
   overflow-y: auto;
+}
+@media (max-width: 1279px) {
+  /* Room for the event tab below the stats tab. */
+  .left-panel {
+    top: 108px;
+    height: 204px;
+  }
+  .right-panel {
+    top: 108px;
+    height: 464px;
+  }
 }
 .toolbar {
   bottom: 16px;

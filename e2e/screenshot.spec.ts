@@ -64,7 +64,7 @@ test('S9: top bar fits a narrow window', async ({ page }) => {
   await expect(page.getByTestId('storage')).toBeInViewport({ ratio: 1 })
 })
 
-for (const width of [800, 390]) {
+for (const width of [1100, 800, 390, 360]) {
   test(`S47: phase chip fits the top bar at ${width} px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 })
     await page.goto('/?seed=4294967295')
@@ -74,9 +74,9 @@ for (const width of [800, 390]) {
     expect(await bar.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
     await expect(page.getByTestId('phase')).toBeInViewport({ ratio: 1 })
     const seed = (await page.getByTestId('world-seed').boundingBox())!
-    const storage = (await page.getByTestId('storage').boundingBox())!
-    // At 390 px the seed and the stats are tabs below the bar. They must not overlap.
-    expect(seed.x + seed.width <= storage.x || seed.y + seed.height <= storage.y).toBe(true)
+    const stats = (await page.locator('.stats').boundingBox())!
+    // At 760 px or less the seed and the stats are tabs below the bar. They must not overlap.
+    expect(seed.x + seed.width <= stats.x || seed.y + seed.height <= stats.y).toBe(true)
   })
 }
 
@@ -399,6 +399,44 @@ test('S44: build tool', async ({ page }) => {
   await page.getByTestId('build-tool-build-processing').click()
   await expect(money).toHaveText('335 CC')
   await expect(page.getByTestId('build-tool-build-processing')).toBeDisabled()
+  expect(errors).toEqual([])
+})
+
+test('S44b: building meshes', async ({ page }) => {
+  const errors: string[] = []
+  page.on('console', (msg) => {
+    if (msg.type() === 'error') errors.push(msg.text())
+  })
+  page.on('pageerror', (error) => errors.push(error.message))
+
+  await page.goto('/?seed=48213')
+  const canvas = page.locator('canvas#scene')
+  await expect(canvas).toHaveAttribute('data-buildings', '0')
+  // Buildable lowland parcels (32, 38) and (35, 37) of seed 48213 at the start view.
+  const sites = [
+    { position: { x: 607, y: 357 }, kind: 'processing' },
+    { position: { x: 758, y: 417 }, kind: 'storage' },
+  ]
+  await page.getByTestId('tool-parcel').click()
+  for (const { position } of sites) await canvas.click({ position })
+  for (const { position, kind } of sites) {
+    await page.getByTestId('tool-select').click()
+    await canvas.click({ position })
+    await page.getByTestId('tool-build').click()
+    await page.getByTestId(`build-tool-build-${kind}`).click()
+  }
+  await expect(canvas).toHaveAttribute('data-buildings', '2')
+  await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
+  await page.screenshot({ path: 'docs/progress/S44b.png' })
+
+  // A load reloads the page and shows the buildings of the slot again.
+  const row = page.getByTestId('save-slot-1')
+  await page.getByTestId('save-button').click()
+  await row.getByTestId('save-slot-save').click()
+  await expect(row.getByTestId('save-slot-load')).toBeEnabled()
+  await Promise.all([page.waitForEvent('load'), row.getByTestId('save-slot-load').click()])
+  await expect(page.getByTestId('save-panel')).toHaveCount(0)
+  await expect(canvas).toHaveAttribute('data-buildings', '2')
   expect(errors).toEqual([])
 })
 
@@ -848,6 +886,30 @@ test('S35a: help keys leave the speed alone and ignore inputs', async ({ page })
   await expect(page.getByTestId('help-overlay')).toHaveCount(0)
 })
 
+test('S53: letter keys pick tools, buttons have tooltips, the help lists the keys', async ({
+  page,
+}) => {
+  await page.goto('/')
+  const plant = page.getByTestId('tool-plant')
+  await expect(plant).toHaveAttribute('title', 'Pflanzen (L)')
+  await expect(plant).toHaveAttribute('aria-keyshortcuts', 'L')
+  await page.keyboard.press('l')
+  await expect(plant).toHaveAttribute('aria-pressed', 'true')
+  await page.keyboard.press('B')
+  await expect(page.getByTestId('tool-build')).toHaveAttribute('aria-pressed', 'true')
+  await page.keyboard.press('h')
+  const controls = page.getByTestId('help-controls')
+  await expect(controls).toContainText('Werkzeug Pflanzen')
+  await controls.getByText('Werkzeug Markt').scrollIntoViewIfNeeded()
+  await page.screenshot({ path: 'docs/progress/help-tool-keys.png' })
+  // The open help blocks the tool keys.
+  await page.keyboard.press('v')
+  await expect(page.getByTestId('tool-build')).toHaveAttribute('aria-pressed', 'true')
+  await page.keyboard.press('Escape')
+  await page.keyboard.press('v')
+  await expect(page.getByTestId('tool-select')).toHaveAttribute('aria-pressed', 'true')
+})
+
 test('S35a: help button and overlay fit a narrow window', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 640 })
   await page.goto('/')
@@ -1116,5 +1178,86 @@ for (const [width, height] of [
     expect(await panel.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
     await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
     await page.screenshot({ path: `docs/progress/S40-${width}.png` })
+  })
+}
+
+const activeAndWarned = [
+  { type: 'frost', announcedDay: 3, startDay: 5, endDay: 8 },
+  { type: 'boom', announcedDay: 2, startDay: 4, endDay: 7 },
+  { type: 'monsoon', announcedDay: 5, startDay: 7, endDay: 10 },
+  { type: 'pests', announcedDay: 5, startDay: 6, endDay: 9 },
+]
+const fourActive = ['frost', 'boom', 'crisis', 'pests'].map((type) => ({
+  type,
+  announcedDay: 3,
+  startDay: 5,
+  endDay: 8,
+}))
+
+for (const [width, height, events] of [
+  [1440, 900, activeAndWarned],
+  [1280, 800, fourActive],
+  [1024, 768, fourActive],
+  [800, 600, fourActive],
+  [481, 800, fourActive],
+  [390, 844, activeAndWarned],
+  [360, 640, activeAndWarned],
+] as const) {
+  test(`S52: event chips and warnings at ${width} px (${events === fourActive ? 'four active' : 'active and warned'})`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height })
+    await page.goto('/?seed=4294967295')
+    await page.getByTestId('save-button').click()
+    await page.getByTestId('save-slot-1').getByTestId('save-slot-save').click()
+    await page.evaluate((events) => {
+      const key = 'coffeechain.save.slot-1'
+      const save = JSON.parse(localStorage.getItem(key)!)
+      save.state.time = { ...save.state.time, hour: 4 * 24 + 8, speed: 0 }
+      save.state.events = events
+      localStorage.setItem(key, JSON.stringify(save))
+    }, events)
+    await page.getByTestId('save-panel-close').click()
+    await page.getByTestId('save-button').click()
+    await page.getByTestId('save-slot-1').getByTestId('save-slot-load').click()
+    await page.getByTestId('first-steps-close').click()
+    const chips = page.getByTestId('active-event')
+    if (events === fourActive) {
+      await expect(chips).toHaveText(['Frost', 'Marktboom', 'Marktkrise', 'Schädlinge'])
+    } else {
+      await expect(chips).toHaveText(['Frost', 'Marktboom'])
+      // Sorted by start day: pests (day 6) before monsoon (day 7).
+      const messages = page.getByTestId('message')
+      await expect(messages.nth(0)).toContainText('Schädlings-Warnung ab morgen')
+      await expect(messages.nth(1)).toContainText('Monsun-Warnung ab Tag 7')
+    }
+
+    const bar = page.getByTestId('hud-top-bar')
+    expect(await bar.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+    const parts = [
+      page.getByTestId('world-seed'),
+      page.getByTestId('clock'),
+      page.getByRole('group', { name: 'Spielgeschwindigkeit' }),
+      page.getByTestId('storage'),
+      page.getByTestId('phase'),
+      page.getByTestId('money'),
+      page.getByTestId('save-button'),
+      page.getByTestId('help-button'),
+      ...(await chips.all()),
+    ]
+    const boxes: { x: number; y: number; width: number; height: number }[] = []
+    for (const part of parts) {
+      await expect(part).toBeInViewport({ ratio: 1 })
+      boxes.push((await part.boundingBox())!)
+    }
+    const apart = (a: (typeof boxes)[0], b: (typeof boxes)[0]) =>
+      a.x + a.width <= b.x || b.x + b.width <= a.x || a.y + a.height <= b.y || b.y + b.height <= a.y
+    for (const [i, a] of boxes.entries())
+      for (const b of boxes.slice(i + 1)) expect(apart(a, b), JSON.stringify([a, b])).toBe(true)
+    for (const id of ['hud-left-panel', 'hud-right-panel']) {
+      const panel = (await page.getByTestId(id).boundingBox())!
+      for (const box of boxes) expect(apart(box, panel), JSON.stringify([box, panel])).toBe(true)
+    }
+    await page.screenshot({ path: `docs/progress/S52-${width}.png` })
   })
 }

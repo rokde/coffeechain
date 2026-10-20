@@ -67,6 +67,18 @@
       "ProtectPests": "Schützen"
     },
     "price": "Preis",
+    "tips": {
+      "zone": "Die Höhenzone bestimmt, welche Sorte hier gut wächst.",
+      "soilClass": "Die Bodenklasse ändert den Ertrag der Pflanze.",
+      "variety": "Die Kaffeesorte, die auf dieser Parzelle am besten wächst.",
+      "terrain": "Nur auf bebaubarem Gelände kannst du eine Parzelle anlegen.",
+      "yield": "Die erwartete Erntemenge, wenn du rechtzeitig erntest.",
+      "stage": "Die aktuelle Wachstumsphase der Pflanze.",
+      "growth": "Der Fortschritt der Pflanze bis zur Reife.",
+      "ripeness": "Die Zeit bis zur Reife oder bis die Pflanze überreif ist.",
+      "care": "Die Pflege, die die Pflanze in diesem Zyklus schon bekommen hat.",
+      "price": "Der Preis, den du für diese Parzelle zahlst."
+    },
     "zones": {
       "wasser": "Wasser",
       "tiefland": "Tiefland",
@@ -210,6 +222,35 @@
     "harvestPro": "Meilenstein Ernte-Profi erreicht: +5 % Erntequalität",
     "none": "Keine Meldungen"
   },
+  "events": {
+    "warnTomorrow": "{warning} ab morgen",
+    "warnDay": "{warning} ab Tag {day}",
+    "frost": {
+      "name": "Frost",
+      "warning": "Frost-Warnung",
+      "hint": "Hochland-Ernte sinkt, Arabica wird teurer."
+    },
+    "monsoon": {
+      "name": "Monsun",
+      "warning": "Monsun-Warnung",
+      "hint": "Robusta wird teurer."
+    },
+    "boom": {
+      "name": "Marktboom",
+      "warning": "Marktboom",
+      "hint": "Die Bank zahlt mehr."
+    },
+    "crisis": {
+      "name": "Marktkrise",
+      "warning": "Marktkrise",
+      "hint": "Die Bank zahlt weniger."
+    },
+    "pests": {
+      "name": "Schädlinge",
+      "warning": "Schädlings-Warnung",
+      "hint": "Schädlingsschutz halbiert den Verlust im Tiefland. Wähle ein Feld und klicke „Schützen“."
+    }
+  },
   "help": {
     "open": "Hilfe",
     "heading": "Hilfe",
@@ -224,6 +265,7 @@
       { "name": "Reinvestieren", "text": "Kaufe mit dem Geld neue Parzellen und pflanze mehr an." }
     ],
     "controlsHeading": "Steuerung",
+    "toolKey": "Werkzeug {label}",
     "controls": [
       { "keys": "Mausrad / Trackpad-Pinch", "text": "Zoom" },
       { "keys": "Linksklick mit Werkzeug", "text": "Werkzeug auf die Parzelle anwenden" },
