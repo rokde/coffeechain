@@ -22,7 +22,13 @@ const cared = { fertilized: true, irrigated: true, pestProtected: true }
 const robusta: PlantState = { variety: 'robusta', plantedHour: 0, ...cared }
 
 // Field A has a plant on parcel 0, field B on parcel 5. The B plant is planted at hourB.
-function render(hour: number, hourB?: number, used = 0, plantA = robusta) {
+function render(
+  hour: number,
+  hourB?: number,
+  used = 0,
+  plantA = robusta,
+  milestones: GameState['milestones'] = { harvested: 0 },
+) {
   const pinia = createPinia()
   const game = useGameStore(pinia)
   const state = game.state as GameState
@@ -31,6 +37,7 @@ function render(hour: number, hourB?: number, used = 0, plantA = robusta) {
   game.replace({
     ...state,
     time: { ...state.time, hour },
+    milestones,
     farm: {
       parcels: { 0: 0, 5: 1 },
       fields: [
@@ -93,5 +100,14 @@ describe('MessagePanel (S18b)', () => {
     expect(items(await render(0, undefined, 0, twoCares))).toEqual(['Feld A braucht Pflege'])
     expect(items(await render(0))).toEqual([])
     expect(items(await render(ripeHour, undefined, 0, bare))).toEqual(['Feld A ist erntereif'])
+  })
+
+  it('AC-4 (S49): shows the Ernte-Profi message for one game day', async () => {
+    const m = { harvested: 1000, harvestProHour: 10 }
+    const text = 'Meilenstein Ernte-Profi erreicht: +5 % Erntequalität'
+    expect(items(await render(10, undefined, 0, robusta, m))).toEqual([text])
+    expect(items(await render(10 + day - 1, undefined, 0, robusta, m))).toEqual([text])
+    expect(items(await render(10 + day, undefined, 0, robusta, m))).toEqual([])
+    expect(items(await render(10))).toEqual([])
   })
 })

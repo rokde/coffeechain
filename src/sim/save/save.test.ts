@@ -120,4 +120,31 @@ describe('save format', () => {
       expect(() => deserialize(plant('tea'))).toThrow(/farm\.plants\.0\.variety/)
     })
   })
+
+  it('loads a version 1 save with the events and milestones defaults', () => {
+    const old: Record<string, unknown> = { ...createState(1) }
+    delete old.events
+    delete old.milestones
+    const loaded = deserialize(JSON.stringify({ version: 1, state: old }))
+    expect(loaded.milestones).toEqual({ harvested: 0 })
+    expect(loaded).toEqual(createState(1))
+  })
+
+  it('loads a version 2 save with the milestones default', () => {
+    const old: Record<string, unknown> = { ...createState(1) }
+    delete old.milestones
+    const loaded = deserialize(JSON.stringify({ version: 2, state: old }))
+    expect(loaded).toEqual(createState(1))
+  })
+})
+
+describe('events migration', () => {
+  it('loads a version 1 save with an empty event list', () => {
+    const old: Record<string, unknown> = { ...createState(5) }
+    delete old.events
+    delete old.milestones
+    const loaded = deserialize(JSON.stringify({ version: 1, state: old }))
+    expect(loaded.events).toEqual([])
+    expect(loaded).toEqual(createState(5))
+  })
 })

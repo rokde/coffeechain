@@ -170,7 +170,8 @@
       "src": "GDD 12.1"
     },
     "harvestProUnits": { "v": 1000, "src": "GDD 12.3" },
-    "harvestProQualityBonus": { "v": 0.05, "src": "GDD 12.3" }
+    "harvestProQualityBonus": { "v": 0.05, "src": "GDD 12.3" },
+    "harvestProMessageDays": { "v": 1, "src": "NEU" }
   },
 
   "balanceSim": {
