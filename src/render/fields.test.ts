@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { balance } from '../sim/balance'
 import type { FarmState } from '../sim/farm/parcels'
 import { generateWorld } from '../sim/world/generate'
-import { createFieldMarks, fieldAnchors } from './fields'
+import { createFieldMarks, FIELD_LABEL_STYLE, fieldAnchors, hoveredField } from './fields'
 import { createTerrain } from './terrain'
 import { parcelCenter } from './surface'
 
@@ -81,5 +81,40 @@ describe('createFieldMarks', () => {
 
     show(farm({}, []))
     expect(mesh.geometry.getAttribute('position').count).toBe(0)
+  })
+})
+
+describe('hoveredField', () => {
+  // Label A at 100..160 x 50..70, label C at 300..360 x 50..70.
+  const labels = [
+    { id: 0, box: { left: 100, top: 50, right: 160, bottom: 70 } },
+    { id: 2, box: { left: 300, top: 50, right: 360, bottom: 70 } },
+  ]
+  const outside = { x: 500, y: 500 }
+
+  it('AC-1: gives the field of the label under the pointer, before the hovered parcel', () => {
+    expect(hoveredField(null, threeFields, n, { x: 130, y: 60 }, labels)).toBe(0)
+    expect(hoveredField({ x: 30, y: 12 }, threeFields, n, { x: 300, y: 70 }, labels)).toBe(2)
+    expect(hoveredField({ x: 5, y: 5 }, threeFields, n, { x: 160, y: 50 }, labels)).toBe(0)
+  })
+
+  it('AC-2: gives the field of the hovered parcel when no label is under the pointer', () => {
+    expect(hoveredField({ x: 10, y: 10 }, threeFields, n, outside, labels)).toBe(0)
+    expect(hoveredField({ x: 21, y: 21 }, threeFields, n, outside, labels)).toBe(2)
+    expect(hoveredField({ x: 30, y: 12 }, threeFields, n, outside, [])).toBe(1)
+  })
+
+  it('AC-3: gives null when no label is under the pointer and the parcel has no field', () => {
+    expect(hoveredField(null, threeFields, n, outside, labels)).toBeNull()
+    expect(hoveredField({ x: 5, y: 5 }, threeFields, n, outside, labels)).toBeNull()
+    expect(hoveredField({ x: 5, y: 5 }, farm({}, []), n, { x: 130, y: 60 }, [])).toBeNull()
+  })
+})
+
+describe('FIELD_LABEL_STYLE', () => {
+  it('AC-4: has a font of 12px or less and an opacity transition', () => {
+    const size = Number(/(\d+(?:\.\d+)?)px\s+system-ui/.exec(FIELD_LABEL_STYLE)![1])
+    expect(size).toBeLessThanOrEqual(12)
+    expect(FIELD_LABEL_STYLE).toMatch(/transition:\s*opacity/)
   })
 })

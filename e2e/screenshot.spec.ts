@@ -532,3 +532,51 @@ test('S18c: inspector yield forecast', async ({ page }) => {
   await page.screenshot({ path: 'docs/progress/S18c.png' })
   expect(errors).toEqual([])
 })
+
+test('S23: field labels fade on hover', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+
+  await page.goto('/?seed=48213')
+  // Buildable lowland parcels (18, 23) and (21, 23) of seed 48213 at the start camera.
+  await page.getByTestId('tool-parcel').click()
+  const canvas = page.locator('canvas#scene')
+  await canvas.click({ position: { x: 640, y: 370 } })
+  await canvas.click({ position: { x: 690, y: 400 } })
+  await page.getByTestId('parcel-tool-create').click()
+  await page.getByTestId('tool-select').click()
+
+  const labelA = page.getByTestId('field-label-A')
+  const labelB = page.getByTestId('field-label-B')
+  const opacity = (label: typeof labelA) => label.evaluate((el) => getComputedStyle(el).opacity)
+  await expect(labelA).not.toHaveAttribute('style', /^((?!left).)*$/)
+  expect(await labelA.evaluate((el) => getComputedStyle(el).pointerEvents)).toBe('none')
+
+  // Field A: the parcel at (640, 370).
+  await canvas.hover({ position: { x: 640, y: 370 } })
+  await expect.poll(() => opacity(labelA)).toBe('0')
+  expect(await opacity(labelB)).toBe('1')
+
+  // A new field under the still mouse rebuilds the labels. Label A stays faded.
+  await page.getByTestId('tool-parcel').click()
+  await canvas.click({ position: { x: 720, y: 450 } })
+  await canvas.hover({ position: { x: 640, y: 370 } })
+  await expect.poll(() => opacity(labelA)).toBe('0')
+  await page.getByTestId('parcel-tool-create').focus()
+  await page.keyboard.press('Enter')
+  await expect(page.getByTestId('field-label-C')).toBeAttached()
+  expect(await opacity(labelA)).toBe('0')
+  await page.getByTestId('tool-select').click()
+
+  // The island centre is land with no field.
+  await canvas.hover({ position: { x: 720, y: 450 } })
+  await expect.poll(() => opacity(labelA)).toBe('1')
+  await expect.poll(() => opacity(labelB)).toBe('1')
+
+  // A click at the label goes through the label layer to the parcel under it.
+  const box = (await labelA.boundingBox())!
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
+  await expect(page.getByTestId('parcel-inspector')).toBeVisible()
+  await expect.poll(() => opacity(labelA)).toBe('0')
+  expect(errors).toEqual([])
+})

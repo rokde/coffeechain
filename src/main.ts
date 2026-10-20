@@ -9,7 +9,7 @@ import { isFarmTool, useSelectionStore } from './app/selection'
 import { useGameStore } from './app/store'
 import { useViewStore } from './app/view'
 import { createCamera } from './render/camera'
-import { createFieldMarks, fieldAnchors } from './render/fields'
+import { createFieldMarks, FIELD_LABEL_STYLE, fieldAnchors, hoveredField } from './render/fields'
 import { loadModel, MODEL_IDS } from './render/models'
 import { createPlants, plantsKey } from './render/plants'
 import { createOutline, createOutlines, pickParcel } from './render/picking'
@@ -135,22 +135,25 @@ function start() {
     const fieldLayer = document.createElement('div')
     fieldLayer.style.cssText = 'position:fixed;inset:0;pointer-events:none;overflow:hidden'
     document.querySelector('#hud')!.before(fieldLayer)
-    let fieldLabels: { label: HTMLElement; at: Vector3 }[] = []
+    let fieldLabels: { id: number; label: HTMLElement; at: Vector3 }[] = []
+    // The field whose label is faded. It survives a rebuild of the labels under a still mouse.
+    let fadedField: number | null = null
+    const fadeLabels = () => {
+      for (const { id, label } of fieldLabels) label.style.opacity = id === fadedField ? '0' : '1'
+    }
     watch(
       () => store.state.farm,
       (farm) => {
         // show and fieldAnchors only read the farm, so the cast of the readonly snapshot is safe.
         marks.show(farm as FarmState)
-        fieldLabels = fieldAnchors(world, farm as FarmState).map(({ name, position }) => {
+        fieldLabels = fieldAnchors(world, farm as FarmState).map(({ id, name, position }) => {
           const label = document.createElement('div')
           label.dataset.testid = `field-label-${name}`
           label.textContent = de.field.label.replace('{name}', name)
-          label.style.cssText =
-            'position:absolute;transform:translate(-50%,calc(-100% - 8px));white-space:nowrap;' +
-            'padding:5px 12px;border-radius:999px;background:rgb(43 36 32 / 92%);color:#f5ece0;' +
-            'font:600 14px system-ui,sans-serif'
-          return { label, at: new Vector3(position.x, position.y, position.z) }
+          label.style.cssText = FIELD_LABEL_STYLE
+          return { id, label, at: new Vector3(position.x, position.y, position.z) }
         })
+        fadeLabels()
         fieldLayer.replaceChildren(...fieldLabels.map(({ label }) => label))
       },
       { immediate: true },
@@ -162,6 +165,22 @@ function start() {
         label.style.top = `${((1 - p.y) / 2) * window.innerHeight}px`
       }
     }
+    // The label of the field under the mouse fades out, so the player sees the field.
+    canvas.addEventListener('pointermove', (event) => {
+      const ndc = new Vector2(
+        (event.offsetX / canvas.clientWidth) * 2 - 1,
+        1 - (event.offsetY / canvas.clientHeight) * 2,
+      )
+      const parcel = pickParcel(ndc, view.camera, terrain, world.size)
+      const boxes = fieldLabels.map(({ id, label }) => ({ id, box: label.getBoundingClientRect() }))
+      const pointer = { x: event.clientX, y: event.clientY }
+      fadedField = hoveredField(parcel, store.state.farm as FarmState, world.size, pointer, boxes)
+      fadeLabels()
+    })
+    canvas.addEventListener('pointerleave', () => {
+      fadedField = null
+      fadeLabels()
+    })
     const selection = useSelectionStore(pinia)
     watch(() => (selection.tool === 'select' ? selection.parcel : null), outline.show)
     watch(() => selection.parcels, outlines.show)
