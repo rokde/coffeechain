@@ -6,7 +6,8 @@ import { dispatch, type Command } from '../src/sim/commands'
 import { isFree, quoteParcels } from '../src/sim/farm/parcels'
 import { growth, quotePlant } from '../src/sim/farm/plants'
 import type { Variety } from '../src/sim/farm/yield'
-import { bankBuyPrice, bankSellPrice } from '../src/sim/market/market'
+import { bankSellPrice } from '../src/sim/market/market'
+import { capital } from '../src/sim/progression/capital'
 import { createState, type GameState } from '../src/sim/state'
 import { storageUsed } from '../src/sim/storage/storage'
 import { step } from '../src/sim/time/time'
@@ -21,15 +22,6 @@ export interface BotResult {
   // Hundredths of CC.
   parcelSpend: number
   totalSpend: number
-}
-
-// paidParcelCost and state.money are in hundredths of CC. The result is in CC.
-export function capital(state: GameState, paidParcelCost: number): number {
-  const stock = state.storage.batches.reduce(
-    (sum, b) => sum + b.units * bankBuyPrice(state, b.variety),
-    0,
-  )
-  return (state.money + paidParcelCost) / 100 + stock
 }
 
 // First game day (1-based) with capital at or above the threshold.
@@ -129,7 +121,7 @@ export function runBot(seed: number, days: number): BotResult {
 
     for (let h = 0; h < cfg.time.ticksPerGameDay; h++) state = step(state)
     minMoney = Math.min(minMoney, state.money)
-    curve.push(capital(state, parcelSpend))
+    curve.push(capital(state) / 100)
   }
   return { seed, curve, parcels: owned().length, minMoney, parcelSpend, totalSpend }
 }
@@ -198,7 +190,7 @@ export function renderReport(results: BotResult[], cfg: Balance): string {
     '',
     'Erzeugt mit `npm run balance-sim`. Der Bot spielt die Simulation ohne Grafik. Jeden Spieltag erntet er alle reifen Parzellen, verkauft das ganze Lager an die Bank, pflanzt auf leeren Parzellen (Arabica Standard im Hochland, sonst Robusta), düngt und kauft neue Parzellen. Neue Parzellen kauft er in fester Reihenfolge (bester Boden zuerst), solange das Geld für Saatgut und Dünger aller Parzellen reicht.',
     '',
-    'Kapital nach PRD §10: Kontostand + Lager zum Bank-Ankaufspreis + bezahlte Parzellenkosten.',
+    'Kapital nach PRD §10: Kontostand + Lager zum Bank-Ankaufspreis + bezahlte Parzellen und Gebäude.',
     '',
     '## Parameter',
     '',

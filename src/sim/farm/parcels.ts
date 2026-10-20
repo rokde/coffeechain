@@ -107,6 +107,7 @@ export function createParcels(state: GameState, command: CreateParcels): GameSta
   return {
     ...state,
     money: state.money - cost,
+    invested: state.invested + cost,
     props: {
       ...state.props,
       trees: state.props.trees.filter(

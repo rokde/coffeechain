@@ -6,6 +6,7 @@ import { useSavePanelStore } from '../app/savePanel'
 import { useGameStore } from '../app/store'
 import { useViewStore } from '../app/view'
 import { balance } from '../sim/balance'
+import { phase, phaseProgress } from '../sim/progression/capital'
 import type { GameState } from '../sim/state'
 import { storageUsed } from '../sim/storage/storage'
 import { clock } from '../sim/time/time'
@@ -45,6 +46,16 @@ const storageText = computed(() =>
     .replace('{used}', String(storageUsed((store.state as GameState).storage)))
     .replace('{capacity}', String(balance().storage.startCapacity)),
 )
+const phaseText = computed(() => {
+  const state = store.state as GameState
+  const { next, share } = phaseProgress(state)
+  return {
+    name: de.phase.name.replace('{phase}', String(phase(state))),
+    // Round down, so the chip never shows 100 % before the next phase.
+    progress:
+      next === null ? '' : de.phase.progress.replace('{percent}', String(Math.floor(share * 100))),
+  }
+})
 </script>
 
 <template>
@@ -82,6 +93,12 @@ const storageText = computed(() =>
       </div>
       <div class="stats">
         <span class="chip" data-testid="storage">{{ storageText }}</span>
+        <span class="chip" data-testid="phase"
+          >{{ phaseText.name }}
+          <span v-if="phaseText.progress" class="phase-progress">{{
+            phaseText.progress
+          }}</span></span
+        >
         <span class="chip money" data-testid="money">{{ formatMoney(store.state.money) }}</span>
       </div>
       <button
@@ -261,6 +278,23 @@ const storageText = computed(() =>
   outline: 2px solid #f2c48d;
   outline-offset: 2px;
 }
+/* The bar has no room for the stats, so they hang below the bar as a tab. */
+@media (max-width: 1279px) {
+  .stats {
+    position: absolute;
+    top: 100%;
+    right: 12px;
+    padding: 1px 8px;
+    border-radius: 0 0 6px 6px;
+    background: var(--hud-bg);
+    font-size: 11px;
+    line-height: 13px;
+  }
+  .stats .chip {
+    padding: 0;
+    background: none;
+  }
+}
 @media (max-width: 480px) {
   .top-bar {
     padding: 0 4px;
@@ -280,20 +314,9 @@ const storageText = computed(() =>
     line-height: 13px;
     white-space: nowrap;
   }
-  /* Same tab as the seed, on the right. */
-  .stats {
-    position: absolute;
-    top: 100%;
-    right: 12px;
-    padding: 1px 8px;
-    border-radius: 0 0 6px 6px;
-    background: var(--hud-bg);
-    font-size: 11px;
-    line-height: 13px;
-  }
-  .stats .chip {
-    padding: 0;
-    background: none;
+  /* The tab has no room for the progress beside the seed tab. */
+  .phase-progress {
+    display: none;
   }
   .time {
     gap: 4px;

@@ -1,6 +1,7 @@
 import type { Balance } from '../../../config/balance.schema'
 import { balance } from '../balance'
 import { bankSellPrice, buy } from '../market/market'
+import { isVarietyUnlocked } from '../progression/capital'
 import type { GameState } from '../state'
 import type { Variety } from './yield'
 
@@ -29,8 +30,7 @@ export function plant(state: GameState, command: Plant): GameState {
   const cfg = balance()
   if (!Object.hasOwn(cfg.varieties, command.variety))
     throw new Error(`Unknown variety: ${command.variety}`)
-  // shortcut: only varieties with unlockCapital 0 can be planted, use the capital check from S29.
-  if (cfg.varieties[command.variety].unlockCapital > 0)
+  if (!isVarietyUnlocked(state, command.variety))
     throw new Error(`Variety ${command.variety} is locked`)
 
   const plants = { ...state.farm.plants }

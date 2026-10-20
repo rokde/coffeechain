@@ -1,4 +1,5 @@
 import { balance } from '../balance'
+import { phase } from '../progression/capital'
 import type { GameState } from '../state'
 
 export type BuildingKind = 'processing' | 'storage'
@@ -19,21 +20,19 @@ export interface MenuEntry {
   available: boolean
 }
 
-// shortcut: phase is always 1, use the capital phase from S47
-const PHASE = 1
-
 const count = (state: GameState, kind: BuildingKind) =>
   Object.values(state.buildings).filter((b) => b.kind === kind).length
 
 export function buildMenu(state: GameState): MenuEntry[] {
   const { processing, storage } = balance()
   const built = count(state, 'storage')
+  const current = phase(state)
   // After the last stage, the entry shows the last stage and is not available.
   const stage = storage.upgrades[Math.min(built, storage.upgrades.length - 1)]!
   const entry = (kind: BuildingKind, cost: number, requiredPhase: number, available: boolean) => ({
     kind,
     cost: Math.round(cost * 100),
-    locked: requiredPhase > PHASE,
+    locked: requiredPhase > current,
     requiredPhase,
     available,
   })
@@ -74,6 +73,7 @@ export function build(state: GameState, command: Build): GameState {
   return {
     ...state,
     money: state.money - entry.cost,
+    invested: state.invested + entry.cost,
     buildings: { ...state.buildings, [y * state.world.size + x]: { kind: command.building } },
   }
 }

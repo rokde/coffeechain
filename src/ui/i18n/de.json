@@ -152,6 +152,10 @@
     "money": "Nicht genug CC."
   },
   "storage": "Lager {used} / {capacity}",
+  "phase": {
+    "name": "Phase {phase}",
+    "progress": "· {percent} %"
+  },
   "farmTool": {
     "count": "Ausgewählt",
     "total": "Kosten",
