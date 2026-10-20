@@ -1,4 +1,4 @@
-import { isBrushTool, type BrushTool } from '../app/brush'
+import { isBrushTool, type BrushTool } from '../app/selection'
 
 // Each icon fills the 16 × 16 box at the lower right of the 32 × 32 cursor.
 const icons: Record<BrushTool, string> = {

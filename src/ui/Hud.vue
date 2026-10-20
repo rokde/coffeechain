@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useFirstStepsStore } from '../app/firstSteps'
-import { isFarmTool, useSelectionStore } from '../app/selection'
+import { isFarmTool, pickTool, useSelectionStore } from '../app/selection'
 import { useGameStore } from '../app/store'
 import { useViewStore } from '../app/view'
 import { balance } from '../sim/balance'
@@ -103,7 +103,7 @@ const storageText = computed(() =>
         :data-testid="`tool-${tool.id}`"
         :aria-pressed="selection.tool === tool.id"
         :data-guide="steps.guide === `tool-${tool.id}` ? 'next' : undefined"
-        @click="selection.tool = tool.id"
+        @click="pickTool(selection, store.state as GameState, tool.id)"
       >
         {{ tool.label }}
       </button>

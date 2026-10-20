@@ -4,6 +4,7 @@ import { useSelectionStore } from '../app/selection'
 import { useGameStore } from '../app/store'
 import { quotePlant } from '../sim/farm/plants'
 import type { GameState } from '../sim/state'
+import { validParcels } from './farmAction'
 import de from './i18n/de.json'
 import { formatMoney } from './money'
 import { plantSelected, plantVarieties } from './plantAction'
@@ -11,12 +12,13 @@ import { plantSelected, plantVarieties } from './plantAction'
 const t = de.plantTool
 const game = useGameStore()
 const selection = useSelectionStore()
-// quotePlant only reads the state, so the cast of the readonly snapshot is safe.
+// validParcels and quotePlant only read the state, so the cast of the readonly snapshot is safe.
+const parcels = computed(() => validParcels(game.state as GameState, 'plant'))
 const cost = computed(() =>
-  quotePlant(game.state as GameState, selection.variety, selection.parcels.length),
+  quotePlant(game.state as GameState, selection.variety, parcels.value.length),
 )
 const tooExpensive = computed(() => cost.value > game.state.money)
-const disabled = computed(() => selection.parcels.length === 0 || tooExpensive.value)
+const disabled = computed(() => parcels.value.length === 0 || tooExpensive.value)
 </script>
 
 <template>
@@ -41,7 +43,7 @@ const disabled = computed(() => selection.parcels.length === 0 || tooExpensive.v
     <template v-if="selection.parcels.length > 0">
       <dl>
         <dt>{{ t.count }}</dt>
-        <dd data-testid="plant-tool-count">{{ selection.parcels.length }}</dd>
+        <dd data-testid="plant-tool-count">{{ parcels.length }}</dd>
         <dt>{{ t.total }}</dt>
         <dd data-testid="plant-tool-total">{{ formatMoney(cost) }}</dd>
       </dl>

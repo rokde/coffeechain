@@ -4,7 +4,7 @@ import { dispatch } from '../sim/commands'
 import { balance } from '../sim/balance'
 import { isBuildable, isFree } from '../sim/farm/parcels'
 import { createState } from '../sim/state'
-import { canSelect, useSelectionStore } from './selection'
+import { canSelect, markParcel, parcelRect, pickTool, useSelectionStore } from './selection'
 
 const state = createState(42)
 const { world } = state
@@ -143,5 +143,87 @@ describe('selection store, farm tools (S18a)', () => {
     expect(selection.parcels).toEqual([])
     selection.toggle(mixed, done!)
     expect(selection.parcels).toEqual([done])
+  })
+})
+
+describe('selection first (S40c)', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+  const key = (p: { x: number; y: number }) => `${p.x},${p.y}`
+
+  it('AC-1: parcelRect gives the 9 parcels of the grid rectangle for each corner order', () => {
+    const want = [1, 2, 3].flatMap((y) => [2, 3, 4].map((x) => `${x},${y}`)).sort()
+    for (const [a, b] of [
+      [
+        { x: 2, y: 3 },
+        { x: 4, y: 1 },
+      ],
+      [
+        { x: 4, y: 1 },
+        { x: 2, y: 3 },
+      ],
+      [
+        { x: 2, y: 1 },
+        { x: 4, y: 3 },
+      ],
+      [
+        { x: 4, y: 3 },
+        { x: 2, y: 1 },
+      ],
+    ])
+      expect(parcelRect(a!, b!).map(key).sort()).toEqual(want)
+  })
+
+  it('AC-1: markParcel replaces on a click, and adds or removes on a Shift-click', () => {
+    const a = { x: 1, y: 1 }
+    const b = { x: 2, y: 1 }
+    expect(markParcel([a], b, false)).toEqual([b])
+    expect(markParcel([a], b, true)).toEqual([a, b])
+    expect(markParcel([a, b], { x: 2, y: 1 }, true)).toEqual([a])
+  })
+
+  const [free, empty, young] = world.parcels
+    .filter((p) => p.zone === 'tiefland' && isFree(state, p.x, p.y))
+    .map(at)
+  const owned = dispatch(
+    { ...state, money: 100000 },
+    { type: 'CreateParcels', parcels: [empty!, young!] },
+  )
+  const planted = dispatch(owned, { type: 'Plant', variety: 'robusta', parcels: [young!] })
+  const marks = [free!, empty!, young!]
+
+  it('AC-2: plant keeps only the owned empty parcel, fertilize only the planted parcel', () => {
+    const selection = useSelectionStore()
+    selection.parcels = marks
+    pickTool(selection, planted, 'plant')
+    expect(selection.tool).toBe('plant')
+    expect(selection.parcels).toEqual([empty])
+    selection.parcels = marks
+    pickTool(selection, planted, 'fertilize')
+    expect(selection.parcels).toEqual([young])
+  })
+
+  it('AC-2: a change from one brush tool to another filters the marks again', () => {
+    const selection = useSelectionStore()
+    selection.parcels = marks
+    pickTool(selection, planted, 'parcel')
+    expect(selection.parcels).toEqual([free])
+    pickTool(selection, planted, 'plant')
+    expect(selection.parcels).toEqual([])
+  })
+
+  it.each(['select', 'market'])('AC-2: %s clears the marks', (id) => {
+    const selection = useSelectionStore()
+    selection.tool = 'plant'
+    selection.parcels = marks
+    pickTool(selection, planted, id)
+    expect(selection.parcels).toEqual([])
+  })
+
+  it.each(['plant', 'select', 'market'])('AC-2: a change to %s clears the note', (id) => {
+    const selection = useSelectionStore()
+    selection.tool = 'parcel'
+    selection.note = 'money'
+    pickTool(selection, planted, id)
+    expect(selection.note).toBeNull()
   })
 })
