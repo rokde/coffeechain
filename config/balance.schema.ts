@@ -105,6 +105,14 @@ export const balanceSchema = z.object({
     demandUnitsForMaxFactor: val(num),
     historyDays: val(int),
   }),
+  orders: z.object({
+    maxOpen: val(int),
+    chancePerDay: val(num),
+    units: val(z.tuple([int, int])),
+    minQuality: val(z.tuple([int, int])),
+    priceFactor: val(range),
+    deadlineDays: val(z.tuple([int, int])),
+  }),
   events: z.object({
     maxConcurrent: val(int),
     maxEffect: val(num),

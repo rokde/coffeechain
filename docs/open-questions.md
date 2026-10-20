@@ -17,6 +17,12 @@ Values in `config/balance.json` with `src: "NEU"` that the world generation (S3)
 | `progression.harvestProMessageDays` | 1 | How many game days does the Ernte-Profi message stay in the message panel? |
 | `events.researchMaxCount` | 1 | How many research breakthroughs can the game give? See "Research stacking" below. |
 | `progression.harvestProQualityBonus` | 0.05 | The bonus has no visible effect: `storage.harvestQuality` is 100 and the cap is 100. It needs a quality formula (PRD §12 point 4). |
+| `orders.maxOpen` | 3 | How many buyer orders (S56) can be open at the same time? |
+| `orders.chancePerDay` | 0.3 | What is the chance that a buyer posts a new order on a game day? |
+| `orders.units` | 20–60 | How many units does one order ask for? |
+| `orders.minQuality` | 70–95 | Which minimum quality does an order ask for? Now each harvest starts at quality 100. |
+| `orders.priceFactor` | 1.0–1.3 | Which factor on the reference price does an order pay? The bank pays 0.8. |
+| `orders.deadlineDays` | 5–10 | How many game days after the post day can the player deliver? |
 
 `soilQuality` is the mean of `fertility` and `waterRetention`, divided by 100. Both have the same weight.
 

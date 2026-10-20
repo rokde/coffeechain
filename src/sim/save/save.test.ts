@@ -176,3 +176,52 @@ describe('research migration', () => {
     expect(() => deserialize(bad)).toThrow(/research/)
   })
 })
+
+describe('orders migration (S56)', () => {
+  it('AC-4: round-trips two open orders', () => {
+    const order = { id: 0, variety: 'robusta' as const, units: 30, minQuality: 80, price: 60 }
+    const state = {
+      ...createState(5),
+      orders: {
+        open: [
+          { ...order, deadlineDay: 12 },
+          { ...order, id: 1, variety: 'arabicaStandard' as const, deadlineDay: 15 },
+        ],
+        nextId: 2,
+      },
+    }
+    expect(deserialize(serialize(state))).toEqual(state)
+  })
+
+  it('rejects bad order values', () => {
+    const order = {
+      id: 0,
+      variety: 'robusta',
+      units: 30,
+      minQuality: 80,
+      price: 60,
+      deadlineDay: 9,
+    }
+    const save = (change: object, nextId = 1) =>
+      JSON.stringify({
+        version: SAVE_VERSION,
+        state: { ...createState(5), orders: { open: [{ ...order, ...change }], nextId } },
+      })
+    expect(deserialize(save({})).orders.open).toHaveLength(1)
+    expect(() => deserialize(save({ units: -5 }))).toThrow(/orders\.open\.0\.units/)
+    expect(() => deserialize(save({ units: 0 }))).toThrow(/orders\.open\.0\.units/)
+    expect(() => deserialize(save({ id: -1 }))).toThrow(/orders\.open\.0\.id/)
+    expect(() => deserialize(save({ price: -1 }))).toThrow(/orders\.open\.0\.price/)
+    expect(() => deserialize(save({ minQuality: 80.5 }))).toThrow(/orders\.open\.0\.minQuality/)
+    expect(() => deserialize(save({}, -1))).toThrow(/orders\.nextId/)
+  })
+
+  it('AC-4: loads a version 6 save with no orders', () => {
+    expect(SAVE_VERSION).toBe(7)
+    const old: Record<string, unknown> = { ...createState(5) }
+    delete old.orders
+    const loaded = deserialize(JSON.stringify({ version: 6, state: old }))
+    expect(loaded.orders).toEqual({ open: [], nextId: 0 })
+    expect(loaded).toEqual(createState(5))
+  })
+})

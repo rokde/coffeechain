@@ -9,6 +9,7 @@ import { isVarietyUnlocked } from '../sim/progression/capital'
 import type { GameState } from '../sim/state'
 import de from './i18n/de.json'
 import { formatMoney } from './money'
+import OrdersPanel from './OrdersPanel.vue'
 
 const t = de.marketPanel
 const game = useGameStore()
@@ -58,6 +59,7 @@ const blocks = computed(() => {
   <section class="tool" data-testid="market-panel">
     <h2>{{ t.heading }}</h2>
     <p class="hint">{{ t.hint }}</p>
+    <OrdersPanel />
     <article v-for="b in blocks" :key="b.variety" class="good" :data-testid="`market-${b.variety}`">
       <h3>{{ de.inspector.varieties[b.variety] }}</h3>
       <dl>
