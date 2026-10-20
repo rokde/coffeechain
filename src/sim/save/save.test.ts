@@ -111,6 +111,15 @@ describe('save format', () => {
       expect(() => deserialize(save((s) => delete s.farm))).toThrow(/farm/)
     })
 
+    it('AC-1: checks the events and milestones', () => {
+      expect(() => deserialize(save((s) => (s.events = [{ type: 'flood' }])))).toThrow(
+        /events\.0\.type/,
+      )
+      expect(() => deserialize(save((s) => (s.milestones = { harvested: '1' })))).toThrow(
+        /milestones\.harvested/,
+      )
+    })
+
     it('AC-1: checks nested fields and unknown varieties', () => {
       const plant = (variety: unknown) =>
         save((s) => {

@@ -54,4 +54,13 @@ export const gameStateSchema = z.object({
     volumes: z.array(z.object({ kind: z.enum(['coffee', 'seed']), variety, day: int, units: num })),
     seeds: z.partialRecord(z.string(), num),
   }),
+  events: z.array(
+    z.object({
+      type: z.enum(['frost', 'monsoon', 'boom', 'crisis', 'pests']),
+      announcedDay: int,
+      startDay: int,
+      endDay: int,
+    }),
+  ),
+  milestones: z.object({ harvested: num, harvestProHour: num.optional() }),
 }) satisfies z.ZodType<GameState>
