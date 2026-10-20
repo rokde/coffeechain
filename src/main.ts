@@ -12,6 +12,7 @@ import { installDebugKeys } from './app/debugKeys'
 import { fpsFromFrames } from './app/fps'
 import { installHelpKeys } from './app/helpKeys'
 import { installSpeedKeys } from './app/speedKeys'
+import { installToolKeys } from './app/toolKeys'
 import { skipResume, startState } from './app/resume'
 import { setStartState, useGameStore } from './app/store'
 import { useViewStore } from './app/view'
@@ -179,6 +180,7 @@ function start() {
   installAutosave(store)
   const viewStore = useViewStore(pinia)
   installHelpKeys(viewStore, useSelectionStore(pinia))
+  installToolKeys(viewStore, useSelectionStore(pinia), store)
   installDebugKeys(viewStore)
   // The model row lies at the origin, so the debug view has no terrain.
   // createTerrain only reads the world, so the cast of the readonly snapshot is safe.

@@ -82,41 +82,41 @@ const price = computed(() => {
       </button>
     </header>
     <dl>
-      <dt>{{ t.zone }}</dt>
+      <dt :title="t.tips.zone">{{ t.zone }}</dt>
       <dd data-testid="inspector-zone">{{ t.zones[info.zone] }}</dd>
-      <dt>{{ t.soilClass }}</dt>
+      <dt :title="t.tips.soilClass">{{ t.soilClass }}</dt>
       <dd data-testid="inspector-soil">{{ t.soilClasses[info.soilClass] }}</dd>
-      <dt>{{ t.variety }}</dt>
+      <dt :title="t.tips.variety">{{ t.variety }}</dt>
       <dd data-testid="inspector-variety">
         {{ info.variety ? t.varieties[info.variety] : t.noVariety }}
       </dd>
-      <dt>{{ t.terrain }}</dt>
+      <dt :title="t.tips.terrain">{{ t.terrain }}</dt>
       <dd data-testid="inspector-buildable">
         {{ info.buildable ? t.buildable : t.notBuildable }}
       </dd>
       <template v-if="forecast !== null">
-        <dt>{{ t.yield }}</dt>
+        <dt :title="t.tips.yield">{{ t.yield }}</dt>
         <dd data-testid="inspector-yield">{{ t.yieldUnits.replace('{n}', String(forecast)) }}</dd>
       </template>
       <!-- S21e field status -->
       <template v-if="status">
-        <dt>{{ t.stage }}</dt>
+        <dt :title="t.tips.stage">{{ t.stage }}</dt>
         <dd data-testid="inspector-stage">
           {{ status.overripe ? t.overripe : t.stages[status.stage] }}
         </dd>
-        <dt>{{ t.growth }}</dt>
+        <dt :title="t.tips.growth">{{ t.growth }}</dt>
         <dd data-testid="inspector-growth">
           {{ t.percent.replace('{n}', String(status.percent)) }}
         </dd>
         <template v-if="days">
-          <dt>{{ t.ripeness }}</dt>
+          <dt :title="t.tips.ripeness">{{ t.ripeness }}</dt>
           <dd data-testid="inspector-days">{{ days }}</dd>
         </template>
-        <dt>{{ t.care }}</dt>
+        <dt :title="t.tips.care">{{ t.care }}</dt>
         <dd data-testid="inspector-care">{{ careDone }}</dd>
       </template>
       <template v-if="price !== null">
-        <dt>{{ t.price }}</dt>
+        <dt :title="t.tips.price">{{ t.price }}</dt>
         <dd data-testid="inspector-price">{{ formatMoney(price) }}</dd>
       </template>
     </dl>

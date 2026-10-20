@@ -155,6 +155,13 @@ describe('ParcelInspector price (S21d)', () => {
     expect(html).toMatch(new RegExp(`data-testid="inspector-price"[^>]*>${price}<`))
   })
 
+  it('S53 AC-4: the price label has a tooltip', async () => {
+    const { html } = await show(isFree)
+    expect(html).toMatch(
+      new RegExp(`<dt title="${de.inspector.tips.price}"[^>]*>${de.inspector.price}<`),
+    )
+  })
+
   it('AC-5: shows no price for a parcel that is not free', async () => {
     const { html } = await show((s, x, y) => !isFree(s, x, y))
     expect(html).not.toContain('inspector-price')
@@ -163,6 +170,21 @@ describe('ParcelInspector price (S21d)', () => {
   it('AC-5: shows no price for an owned parcel', async () => {
     for (const planted of [false, true]) {
       expect((await render(planted)).html).not.toContain('inspector-price')
+    }
+  })
+})
+
+describe('ParcelInspector tooltips (S53)', () => {
+  it('AC-4: each label of a planted, owned parcel has a tooltip from inspector.tips', async () => {
+    const { html } = await render(true)
+    const dts = [...html.matchAll(/<dt([^>]*)>([^<]*)</g)]
+    expect(dts.length).toBeGreaterThanOrEqual(8)
+    const tips = de.inspector.tips
+    const keys = Object.keys(tips) as (keyof typeof tips)[]
+    for (const [, attrs, label] of dts) {
+      const key = keys.find((k) => de.inspector[k] === label)!
+      expect(tips[key]).toBeTruthy()
+      expect(attrs).toContain(` title="${tips[key]}"`)
     }
   })
 })
