@@ -6,8 +6,10 @@ import { loadBalance } from '../config/balance.schema'
 import { installAutosave } from './app/autosave'
 import { advance } from './app/loop'
 import { selectParcel } from './app/market'
-import { isBrushTool, isClick, strokeParcel } from './app/brush'
-import { useSelectionStore } from './app/selection'
+import { isClick, strokeParcel } from './app/brush'
+import { addMarks, isBrushTool, markParcel, parcelRect, useSelectionStore } from './app/selection'
+import { installDebugKeys } from './app/debugKeys'
+import { fpsFromFrames } from './app/fps'
 import { installHelpKeys } from './app/helpKeys'
 import { installSpeedKeys } from './app/speedKeys'
 import { useGameStore } from './app/store'
@@ -16,7 +18,7 @@ import { CAMERA, createCamera, gestureZoomDelta, wheelZoomDelta } from './render
 import { createFieldMarks, FIELD_LABEL_STYLE, fieldAnchors, hoveredField } from './render/fields'
 import { loadModel, MODEL_IDS } from './render/models'
 import { createPlants, plantsKey } from './render/plants'
-import { createOutline, createOutlines, pickParcel } from './render/picking'
+import { createOutline, createOutlines, pickParcel, type ParcelPos } from './render/picking'
 import { createProps, syncTrees } from './render/props'
 import { applyOverlay } from './render/overlays'
 import { createScene } from './render/scene'
@@ -172,7 +174,9 @@ function start() {
   const store = useGameStore(pinia)
   installSpeedKeys(store)
   installAutosave(store)
-  installHelpKeys(useViewStore(pinia), useSelectionStore(pinia))
+  const viewStore = useViewStore(pinia)
+  installHelpKeys(viewStore, useSelectionStore(pinia))
+  installDebugKeys(viewStore)
   // The model row lies at the origin, so the debug view has no terrain.
   // createTerrain only reads the world, so the cast of the readonly snapshot is safe.
   if (!debugModels) {
@@ -187,7 +191,6 @@ function start() {
       () => plants.show(store.state.farm.plants, store.state.time.hour),
       { immediate: true },
     )
-    const viewStore = useViewStore(pinia)
     watch(
       () => viewStore.overlay,
       (mode) => applyOverlay(terrain, world, mode),
@@ -266,16 +269,27 @@ function start() {
       (tool) => (canvas.style.cursor = toolCursor(tool)),
       { immediate: true },
     )
-    // Select tool: a click on the terrain selects its parcel, a click beside it clears the selection.
+    // Select tool: a click on the terrain selects and marks its parcel, a click beside it clears both.
     canvas.addEventListener('click', (event) => {
-      if (isBrushTool(selection.tool)) return
+      if (isBrushTool(selection.tool) || dragged) return
+      const parcel = pickParcel(ndcOf(event), view.camera, terrain, world.size)
       // selectParcel only reads the state, so the cast of the readonly snapshot is safe.
-      selectParcel(
-        selection,
-        store.state as GameState,
-        pickParcel(ndcOf(event), view.camera, terrain, world.size),
-      )
+      selectParcel(selection, store.state as GameState, parcel)
+      if (selection.tool === 'select')
+        selection.parcels = parcel ? markParcel(selection.parcels, parcel, event.shiftKey) : []
     })
+    // Select tool: a left drag marks the grid rectangle from the pressed parcel to the parcel under the pointer.
+    let marking: { x: number; y: number; from: ParcelPos | null; base: ParcelPos[] } | null = null
+    // True after a drag, so that the click at the end of the drag does not change the marks.
+    let dragged = false
+    const mark = (event: PointerEvent) => {
+      if (!marking || selection.tool !== 'select') return
+      if (!dragged && isClick(event.clientX - marking.x, event.clientY - marking.y)) return
+      dragged = true
+      const to = pickParcel(ndcOf(event), view.camera, terrain, world.size)
+      if (marking.from && to)
+        selection.parcels = addMarks(marking.base, parcelRect(marking.from, to))
+    }
     // Brush tools: a left press acts on the parcel under the pointer, a left drag paints over more parcels.
     let stroke: Set<number> | null = null
     let rightDown: { x: number; y: number } | null = null
@@ -295,6 +309,16 @@ function start() {
     }
     canvas.addEventListener('pointerdown', (event) => {
       if (event.button === 2) rightDown = { x: event.clientX, y: event.clientY }
+      if (event.button === 0 && selection.tool === 'select') {
+        dragged = false
+        marking = {
+          x: event.clientX,
+          y: event.clientY,
+          from: pickParcel(ndcOf(event), view.camera, terrain, world.size),
+          base: event.shiftKey ? selection.parcels : [],
+        }
+        canvas.setPointerCapture(event.pointerId)
+      }
       if (event.button !== 0 || !isBrushTool(selection.tool)) return
       stroke = new Set()
       // The capture sends the release to the canvas, also over the HUD, so no old stroke stays.
@@ -302,36 +326,48 @@ function start() {
       brush(event)
     })
     canvas.addEventListener('pointermove', (event) => {
-      if (event.buttons & 1) brush(event)
+      if (event.buttons & 1) {
+        brush(event)
+        mark(event)
+      }
     })
     canvas.addEventListener('pointerup', (event) => {
       stroke = null
+      marking = null
       if (event.button !== 2 || !rightDown) return
-      // A right-click puts down the tool. The end of a right-drag pan does not.
-      if (
-        isClick(event.clientX - rightDown.x, event.clientY - rightDown.y) &&
-        isBrushTool(selection.tool)
-      )
-        selection.tool = 'select'
+      // A right-click puts down the tool and clears the marks. The end of a right-drag pan does not.
+      if (isClick(event.clientX - rightDown.x, event.clientY - rightDown.y)) {
+        if (isBrushTool(selection.tool)) selection.tool = 'select'
+        selection.parcels = []
+      }
       rightDown = null
     })
     canvas.addEventListener('pointercancel', () => {
       stroke = null
+      marking = null
       rightDown = null
     })
-    canvas.addEventListener('lostpointercapture', () => (stroke = null))
+    canvas.addEventListener('lostpointercapture', () => {
+      stroke = null
+      marking = null
+    })
   }
   const { realSecondsPerGameDay, ticksPerGameDay } = balance().time
   const msPerTick = (realSecondsPerGameDay * 1000) / ticksPerGameDay
   let carryMs = 0
   let last: number | undefined
   let lastCameraKey = ''
+  // About one second of frames at 60 fps.
+  const frameTimes: number[] = []
 
   // setAnimationLoop runs on requestAnimationFrame.
   renderer.setAnimationLoop((now) => {
     const frameMs = now - (last ?? now)
     const due = advance(carryMs, frameMs, store.state.time.speed, msPerTick)
     last = now
+    frameTimes.push(frameMs)
+    if (frameTimes.length > 60) frameTimes.shift()
+    if (viewStore.fpsVisible) viewStore.fps = fpsFromFrames(frameTimes)
     const right = Number(held.has('d')) - Number(held.has('a'))
     const up = Number(held.has('w')) - Number(held.has('s'))
     if (right || up) {

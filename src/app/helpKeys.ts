@@ -1,4 +1,4 @@
-import { isBrushTool } from './brush'
+import { isBrushTool } from './selection'
 import { isTyping } from './speedKeys'
 import type { useViewStore } from './view'
 
@@ -21,14 +21,15 @@ export function disarmKey(key: string, helpOpen: boolean, typing: boolean): bool
 
 export function installHelpKeys(
   view: ReturnType<typeof useViewStore>,
-  selection: { tool: string },
+  selection: { tool: string; parcels: unknown[] },
 ) {
   window.addEventListener('keydown', (event) => {
     if (event.repeat || event.metaKey || event.ctrlKey || event.altKey) return
     const typing = isTyping(event.target)
     // Read helpOpen before the help closes, so that one Esc does not also put down the tool.
-    if (disarmKey(event.key, view.helpOpen, typing) && isBrushTool(selection.tool))
-      selection.tool = 'select'
-    else if (helpKeyAction(event.key, view.helpOpen, typing)) view.toggleHelp()
+    if (disarmKey(event.key, view.helpOpen, typing)) {
+      if (isBrushTool(selection.tool)) selection.tool = 'select'
+      selection.parcels = []
+    } else if (helpKeyAction(event.key, view.helpOpen, typing)) view.toggleHelp()
   })
 }

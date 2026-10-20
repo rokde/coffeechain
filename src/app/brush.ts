@@ -5,13 +5,9 @@ import { quoteParcels } from '../sim/farm/parcels'
 import { quotePlant } from '../sim/farm/plants'
 import type { Variety } from '../sim/farm/yield'
 import type { GameState } from '../sim/state'
-import { canSelect, farmTools, isFarmTool, type FarmTool } from './selection'
+import { canSelect, farmTools, type BrushTool } from './selection'
 
-export type BrushTool = 'parcel' | 'plant' | FarmTool
 export type BrushNote = 'invalid' | 'money'
-
-export const isBrushTool = (tool: string): tool is BrushTool =>
-  tool === 'parcel' || tool === 'plant' || isFarmTool(tool)
 
 // A right-click that moves less than this many pixels is a click, not a pan.
 export const CLICK_SLOP = 4

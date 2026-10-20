@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useFirstStepsStore } from '../app/firstSteps'
-import { isFarmTool, useSelectionStore } from '../app/selection'
+import { isFarmTool, pickTool, useSelectionStore } from '../app/selection'
 import { useSavePanelStore } from '../app/savePanel'
 import { useGameStore } from '../app/store'
 import { useViewStore } from '../app/view'
@@ -13,6 +13,7 @@ import de from './i18n/de.json'
 import { formatMoney } from './money'
 import FirstSteps from './FirstSteps.vue'
 import FarmTool from './FarmTool.vue'
+import FpsMeter from './FpsMeter.vue'
 import HelpOverlay from './HelpOverlay.vue'
 import MarketPanel from './MarketPanel.vue'
 import MessagePanel from './MessagePanel.vue'
@@ -129,11 +130,12 @@ const storageText = computed(() =>
         :data-testid="`tool-${tool.id}`"
         :aria-pressed="selection.tool === tool.id"
         :data-guide="steps.guide === `tool-${tool.id}` ? 'next' : undefined"
-        @click="selection.tool = tool.id"
+        @click="pickTool(selection, store.state as GameState, tool.id)"
       >
         {{ tool.label }}
       </button>
     </nav>
+    <FpsMeter v-if="view.fpsVisible" />
     <HelpOverlay v-if="view.helpOpen" />
     <SavePanel v-if="savePanel.open" />
   </div>

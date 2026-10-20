@@ -17,6 +17,10 @@ export const farmTools = {
 export type FarmTool = keyof typeof farmTools
 export const isFarmTool = (tool: string): tool is FarmTool => tool in farmTools
 
+export type BrushTool = 'parcel' | 'plant' | FarmTool
+export const isBrushTool = (tool: string): tool is BrushTool =>
+  tool === 'parcel' || tool === 'plant' || isFarmTool(tool)
+
 // The plant tool selects only owned parcels without a plant.
 // The harvest tool selects only owned parcels with a ripe plant.
 // A care tool selects only owned parcels with an unripe plant that does not have this care yet.
@@ -43,8 +47,9 @@ export const useSelectionStore = defineStore('selection', () => {
   const note = ref<'invalid' | 'money' | null>(null)
   watch(
     tool,
-    () => {
-      parcels.value = []
+    (id) => {
+      // pickTool filters the marks for a brush tool. The other tools do not use marks.
+      if (!isBrushTool(id)) parcels.value = []
       note.value = null
     },
     { flush: 'sync' },
@@ -59,3 +64,40 @@ export const useSelectionStore = defineStore('selection', () => {
 
   return { tool, parcel, parcels, variety, note, toggle }
 })
+
+const samePos = (a: ParcelPos, b: ParcelPos) => a.x === b.x && a.y === b.y
+
+// All parcels of the grid rectangle with the corners a and b.
+export function parcelRect(a: ParcelPos, b: ParcelPos): ParcelPos[] {
+  const rect: ParcelPos[] = []
+  for (let y = Math.min(a.y, b.y); y <= Math.max(a.y, b.y); y++)
+    for (let x = Math.min(a.x, b.x); x <= Math.max(a.x, b.x); x++) rect.push({ x, y })
+  return rect
+}
+
+// The marks after a click with the select tool. Shift adds p, or removes it when it is already marked.
+export function markParcel(marks: ParcelPos[], p: ParcelPos, shift: boolean): ParcelPos[] {
+  if (!shift) return [p]
+  const rest = marks.filter((q) => !samePos(q, p))
+  return rest.length < marks.length ? rest : [...marks, p]
+}
+
+// The marks plus the parcels of the rectangle, without duplicates.
+export const addMarks = (marks: ParcelPos[], add: ParcelPos[]) => [
+  ...marks,
+  ...add.filter((p) => !marks.some((q) => samePos(q, p))),
+]
+
+// A toolbar click. A brush tool keeps only the marks that it can act on.
+// When no mark stays, the note tells the player why the marks are gone.
+export function pickTool(
+  selection: ReturnType<typeof useSelectionStore>,
+  state: GameState,
+  id: string,
+) {
+  const marked = selection.parcels.length > 0
+  selection.tool = id
+  if (!isBrushTool(id)) return
+  selection.parcels = selection.parcels.filter((p) => canSelect(state, id, p))
+  if (marked && selection.parcels.length === 0) selection.note = 'invalid'
+}
