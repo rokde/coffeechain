@@ -13,6 +13,7 @@ import MarketPanel from './MarketPanel.vue'
 import { tools } from './toolbar'
 
 vi.stubGlobal('location', { search: '?seed=42' })
+vi.stubGlobal('sessionStorage', { getItem: () => null, removeItem: () => {} })
 
 // A neutral market with 10 Robusta units in storage and 3 Robusta seeds.
 function setup() {

@@ -12,6 +12,7 @@ import Hud from './Hud.vue'
 import MessagePanel from './MessagePanel.vue'
 
 vi.stubGlobal('location', { search: '?seed=42' })
+vi.stubGlobal('sessionStorage', { getItem: () => null, removeItem: () => {} })
 
 const day = balance().time.ticksPerGameDay
 const ripeHour = balance().varieties.robusta.cycleDays * day

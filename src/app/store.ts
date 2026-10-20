@@ -2,11 +2,12 @@ import { defineStore } from 'pinia'
 import { readonly, shallowRef } from 'vue'
 import { dispatch as dispatchCommand, type Command } from '../sim/commands'
 import { createState, type GameState } from '../sim/state'
+import { takePendingLoad } from './saves'
 import { pickSeed } from './seed'
 
 // The HUD reads the sim state here. It changes the state only through commands.
 export const useGameStore = defineStore('game', () => {
-  const snapshot = shallowRef(createState(pickSeed(location.search)))
+  const snapshot = shallowRef(takePendingLoad() ?? createState(pickSeed(location.search)))
 
   // Only the game loop calls this.
   function replace(next: GameState) {

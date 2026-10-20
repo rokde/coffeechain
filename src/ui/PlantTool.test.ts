@@ -14,6 +14,7 @@ import { plantSelected } from './plantAction'
 import { tools } from './toolbar'
 
 vi.stubGlobal('location', { search: '?seed=42' })
+vi.stubGlobal('sessionStorage', { getItem: () => null, removeItem: () => {} })
 
 // Owns 2 lowland parcels, selects them for the plant tool and sets the balance.
 function setup(money: number, variety: Variety = 'robusta') {
