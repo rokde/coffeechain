@@ -2,6 +2,8 @@
 import { computed } from 'vue'
 import { useSelectionStore } from '../app/selection'
 import { useGameStore } from '../app/store'
+import { forecastYield } from '../sim/farm/forecast'
+import type { GameState } from '../sim/state'
 import { inspectParcel } from '../sim/world/inspect'
 import type { World } from '../sim/world/types'
 import de from './i18n/de.json'
@@ -13,6 +15,10 @@ const info = computed(() => {
   const p = selection.parcel
   // inspectParcel only reads the world, so the cast of the readonly snapshot is safe.
   return p && inspectParcel(game.state.world as World, p.x, p.y)
+})
+const forecast = computed(() => {
+  const p = selection.parcel
+  return p ? forecastYield(game.state as GameState, p.x, p.y) : null
 })
 </script>
 
@@ -51,6 +57,10 @@ const info = computed(() => {
       <dd data-testid="inspector-buildable">
         {{ info.buildable ? t.buildable : t.notBuildable }}
       </dd>
+      <template v-if="forecast !== null">
+        <dt>{{ t.yield }}</dt>
+        <dd data-testid="inspector-yield">{{ t.yieldUnits.replace('{n}', String(forecast)) }}</dd>
+      </template>
     </dl>
   </section>
 </template>

@@ -25,6 +25,8 @@
     "noVariety": "keine",
     "buildable": "bebaubar",
     "notBuildable": "nicht bebaubar",
+    "yield": "Ertragsprognose",
+    "yieldUnits": "{n} Einheiten",
     "zones": {
       "wasser": "Wasser",
       "tiefland": "Tiefland",
