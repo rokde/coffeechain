@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 
-const shots = new Set([1, 10, 20, 30])
+const shotDays = [10, 20, 30]
 const parcels = [
   { x: 607, y: 357 },
   { x: 758, y: 417 },
@@ -28,11 +28,12 @@ test('S55: a fixed-seed farm plays from day 1 to day 30', async ({ page }) => {
     Number.parseFloat(((await money.textContent()) ?? '').replace(/\./g, '').replace(',', '.'))
   const storedUnits = async () =>
     Number(/^Lager (\d+) /.exec((await storage.textContent()) ?? '')?.[1])
-  const shot = async (day: number) => {
+  const shot = async (day: number, name = day) => {
     await page.getByTestId('speed-0').click()
+    await tool('select')
     await expect(page.getByTestId('clock')).toContainText(`Tag ${day} ·`)
     await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
-    await page.screenshot({ path: `docs/progress/run30-day${String(day).padStart(2, '0')}.png` })
+    await page.screenshot({ path: `docs/progress/run30-day${String(name).padStart(2, '0')}.png` })
   }
 
   await expect(storage).toHaveText('Lager 0 / 100')
@@ -76,10 +77,12 @@ test('S55: a fixed-seed farm plays from day 1 to day 30', async ({ page }) => {
       sales++
     }
     await care()
-    if (shots.has(day)) await shot(day)
+    // A jump never skips a shot day silently: the shot waits for the first day at or after it.
+    if (day >= (shotDays[0] ?? Infinity)) await shot(day, shotDays.shift()!)
   }
 
-  expect(sales).toBeGreaterThan(0)
+  expect(shotDays, 'all shot days were taken').toEqual([])
+  expect(sales, 'no harvest reached storage in 30 days').toBeGreaterThan(0)
   expect(errors).toEqual([])
 })
 
