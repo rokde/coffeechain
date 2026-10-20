@@ -15,15 +15,15 @@ refreshes it after each merge.
 - Lint / format: `none yet` (planned: `npm run lint`, `npm run typecheck`; ESLint + Prettier)
 
 ## Sources
-- GitHub issues: none (no `origin` remote; `gh` is logged in as `rokde`)
+- GitHub issues: none (no `origin` remote yet; planned repo `rokde/coffeechain`; `gh` is logged in as `rokde`)
 - Jira: none
 
 ## Conventions
-- Product spec: `PRD.md` (scope, architecture, milestones M0–M5 in §13). Game values: `docs/gdd.md` (authoritative for mechanics/balancing; file not in repo yet).
+- Product spec: `PRD.md` (scope, architecture, milestones M0–M7 in §13). Background mechanics: `docs/gdd.md` (multiplayer browser game; `PRD.md` decides what applies). All numbers: `config/balance.json` (exists; every value is `{"v": …, "src": …}`, the zod schema unwraps `v`).
 - Work milestone by milestone (`PRD.md` §13); each milestone ends with green tests, `npm run build` without errors, and a screenshot `docs/progress/<milestone>.png`.
 - Simulation first, test-driven, in `src/sim/`. `src/sim/` never imports from `render/`, `ui/`, `app/` and uses no DOM, Three.js or Vue.
 - Player actions only via commands in `src/sim/commands.ts`. Randomness only via seedable PRNG `src/sim/rng.ts`, never `Math.random()` in `sim/`.
-- Balancing numbers live in `config/balance.json`, never in code. Missing GDD value: placeholder in `config/balance.json` marked `TODO_GDD`, noted in `docs/open-questions.md`.
+- Balancing numbers live in `config/balance.json`, never in code. Missing value: add it to `config/balance.json` with `src: "NEU"` and list it in `docs/open-questions.md`. Never change values with `src: "GDD …"` on your own. After M4 stop and wait for Robert's balancing decision.
 - After scene/HUD changes: `npm run screenshot` and compare with `docs/mockups/`.
 - Code, identifiers and commits in English. Game texts in German in `src/ui/i18n/de.json`.
 - Commit messages: no history yet beyond "Initial commit"; use short imperative English subjects.
