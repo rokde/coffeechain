@@ -3,6 +3,7 @@ import type { BuildingKind } from './buildings/build'
 import type { GameEvent } from './events/schedule'
 import type { FarmState } from './farm/parcels'
 import type { MarketState } from './market/market'
+import type { OrdersState } from './market/orders'
 import type { StorageState } from './storage/storage'
 import type { TimeState } from './time/time'
 import { generateWorld } from './world/generate'
@@ -23,6 +24,7 @@ export interface GameState {
   buildings: Record<number, { kind: BuildingKind }>
   storage: StorageState
   market: MarketState
+  orders: OrdersState
   events: GameEvent[]
   // Start day of each research breakthrough. Breakthroughs are permanent.
   research: number[]
@@ -41,6 +43,7 @@ export function createState(seed: number): GameState {
     buildings: {},
     storage: { batches: [] },
     market: { volumes: [], seeds: {} },
+    orders: { open: [], nextId: 0 },
     events: [],
     research: [],
     milestones: { harvested: 0 },

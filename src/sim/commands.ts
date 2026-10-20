@@ -4,6 +4,7 @@ import { harvest, type Harvest } from './farm/harvest'
 import { createParcels, type CreateParcels } from './farm/parcels'
 import { plant, type Plant } from './farm/plants'
 import { buy, sell, type Buy, type Sell } from './market/market'
+import { deliverOrder, type DeliverOrder } from './market/orders'
 import type { GameState } from './state'
 import { setSpeed, type SetSpeed } from './time/time'
 
@@ -19,6 +20,7 @@ export type Command =
   | Sell
   | Buy
   | Build
+  | DeliverOrder
 
 type Handlers = {
   [K in Command['type']]: (state: GameState, command: Extract<Command, { type: K }>) => GameState
@@ -36,6 +38,7 @@ const handlers: Handlers = {
   Sell: sell,
   Buy: buy,
   Build: build,
+  DeliverOrder: deliverOrder,
 }
 
 export function dispatch(state: GameState, command: Command): GameState {
