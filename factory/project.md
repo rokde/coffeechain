@@ -9,7 +9,7 @@ refreshes it after each merge.
   (local merges not pushed yet). Every job's worktree starts there. No `origin`
   remote yet: worktrees start from local `main`.
 - Merge target: `main` (local, not pushed)
-- Language / stack: planned (per `CLAUDE.md`, `PRD.md` §3): TypeScript (strict), Three.js, Vue 3 + Pinia (HUD), Vite, Tauri 2, Vitest, Playwright, `simplex-noise`. No code or manifest yet (no `package.json`); milestone M0 creates it.
+- Language / stack: planned (per `CLAUDE.md`, `PRD.md` §3): TypeScript (strict), Three.js, Vue 3 + Pinia (HUD), Vite, Tauri 2, Vitest, Playwright, `simplex-noise`. No code or manifest yet (no `package.json`); milestone M0 creates it. Rust stable is installed via rustup (`~/.cargo/bin`), so `npm run tauri dev` / `npm run tauri build` work locally.
 - Install: `none yet` (planned: `npm install`). Run it once in each new worktree.
 - Test command: `none yet` (planned: `npm test` = Vitest; `npm run screenshot` = Playwright screenshots to `docs/progress/`)
 - Lint / format: `none yet` (planned: `npm run lint`, `npm run typecheck`; ESLint + Prettier)
