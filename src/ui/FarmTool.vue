@@ -4,7 +4,7 @@ import { farmTools, useSelectionStore, type FarmTool } from '../app/selection'
 import { useGameStore } from '../app/store'
 import { quoteCare } from '../sim/farm/care'
 import type { GameState } from '../sim/state'
-import { farmSelected } from './farmAction'
+import { farmSelected, validParcels } from './farmAction'
 import de from './i18n/de.json'
 import { formatMoney } from './money'
 
@@ -13,15 +13,16 @@ const game = useGameStore()
 const selection = useSelectionStore()
 // Hud.vue shows this panel only for a farm tool.
 const tool = computed(() => selection.tool as FarmTool)
-// quoteCare only reads the state, so the cast of the readonly snapshot is safe.
+// validParcels and quoteCare only read the state, so the cast of the readonly snapshot is safe.
+const parcels = computed(() => validParcels(game.state as GameState, tool.value))
 const cost = computed(() => {
   const type = farmTools[tool.value]
   return type === 'Harvest'
     ? 0
-    : quoteCare(game.state as GameState, { type, parcels: selection.parcels })
+    : quoteCare(game.state as GameState, { type, parcels: parcels.value })
 })
 const tooExpensive = computed(() => cost.value > game.state.money)
-const disabled = computed(() => selection.parcels.length === 0 || tooExpensive.value)
+const disabled = computed(() => parcels.value.length === 0 || tooExpensive.value)
 </script>
 
 <template>
@@ -30,7 +31,7 @@ const disabled = computed(() => selection.parcels.length === 0 || tooExpensive.v
     <p class="hint">{{ t[tool].hint }}</p>
     <dl>
       <dt>{{ t.count }}</dt>
-      <dd data-testid="farm-tool-count">{{ selection.parcels.length }}</dd>
+      <dd data-testid="farm-tool-count">{{ parcels.length }}</dd>
       <template v-if="tool !== 'harvest'">
         <dt>{{ t.total }}</dt>
         <dd data-testid="farm-tool-total">{{ formatMoney(cost) }}</dd>

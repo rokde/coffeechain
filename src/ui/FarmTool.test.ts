@@ -141,4 +141,30 @@ describe('FarmTool (S18a)', () => {
       new RegExp(`data-testid="storage"[^>]*>Lager ${used} / 100<`),
     )
   })
+
+  it('Round 1: drops parcels that turned ripe after the selection and does not throw', async () => {
+    const { pinia, game, selection } = setup('fertilize', 50000)
+    const { cycleDays } = balance().varieties.robusta
+    const state = game.state as GameState
+    const hour = state.time.hour + cycleDays * balance().time.ticksPerGameDay
+    game.replace({ ...state, time: { ...state.time, hour } })
+    const html = await renderToString(createSSRApp(FarmToolPanel).use(pinia))
+    expect(html).toMatch(/farm-tool-count"[^>]*>0</)
+    expect(html).toMatch(/farm-tool-total"[^>]*>0 CC</)
+    expect(applyButton(html)).toContain('disabled')
+    expect(() => farmSelected('fertilize')).not.toThrow()
+    expect(game.state.money).toBe(50000)
+    expect(selection.parcels).toEqual([])
+  })
+
+  it('Round 1: sends the command only for the parcels that are still valid', () => {
+    const { game, selection, parcels } = setup('fertilize', 50000)
+    const [cared, open] = parcels
+    game.replace(dispatch(game.state as GameState, { type: 'Fertilize', parcels: [cared!] }))
+    expect(() => farmSelected('fertilize')).not.toThrow()
+    const { size } = game.state.world
+    expect(game.state.farm.plants[open!.y * size + open!.x]!.fertilized).toBe(true)
+    expect(game.state.money).toBe(50000 - 200)
+    expect(selection.parcels).toEqual([])
+  })
 })
