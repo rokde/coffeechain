@@ -149,4 +149,31 @@ describe('SavePanel (S42b)', () => {
     expect(panel.open).toBe(false)
     expect(await html(pinia, Hud)).not.toContain('data-testid="save-panel"')
   })
+
+  it('S43 AC-3: the autosave row shows its day and loads, but has no save button', async () => {
+    const autosaveRow = (text: string) =>
+      text.split('data-testid="save-autosave"')[1]!.split('</li>')[0]!
+    const { pinia, game, panel } = setup()
+    await panel.refresh()
+    let r = autosaveRow(await html(pinia))
+    expect(r).toContain('Automatisch')
+    expect(status(r)).toBe('leer')
+    expect(loadButton(r)).toContain('disabled')
+    expect(r).not.toContain('save-slot-save')
+    expect(r).not.toContain('Speichern')
+
+    const state = game.state as GameState
+    local.set(
+      'coffeechain.save.autosave',
+      serialize({ ...state, time: { ...state.time, hour: 24 * 2 } }),
+    )
+    await panel.refresh()
+    r = autosaveRow(await html(pinia))
+    expect(status(r)).toBe('Tag 3')
+    expect(loadButton(r)).not.toContain('disabled')
+
+    await panel.load('autosave')
+    expect(session.get(PENDING)).toBe(local.get('coffeechain.save.autosave'))
+    expect(reload).toHaveBeenCalledOnce()
+  })
 })

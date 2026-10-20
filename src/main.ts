@@ -3,6 +3,7 @@ import { Vector2, Vector3, type Camera, type Scene } from 'three'
 import { createApp, watch } from 'vue'
 import raw from '../config/balance.json'
 import { loadBalance } from '../config/balance.schema'
+import { installAutosave } from './app/autosave'
 import { advance } from './app/loop'
 import { selectParcel } from './app/market'
 import { isClick, strokeParcel } from './app/brush'
@@ -173,6 +174,7 @@ function start() {
   const pinia = createPinia()
   const store = useGameStore(pinia)
   installSpeedKeys(store)
+  installAutosave(store)
   const viewStore = useViewStore(pinia)
   installHelpKeys(viewStore, useSelectionStore(pinia))
   installDebugKeys(viewStore)

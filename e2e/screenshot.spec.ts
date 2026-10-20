@@ -892,6 +892,33 @@ test('S42b: top bar fits a narrow window at day 9999', async ({ page }) => {
   await page.screenshot({ path: 'docs/progress/save-panel-day-9999.png' })
 })
 
+test('S43: the game writes the autosave at a new day, and the panel can load it', async ({
+  page,
+}) => {
+  test.setTimeout(60_000)
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+  await page.goto('/?seed=48213')
+  await page.getByTestId('save-button').click()
+  const row = page.getByTestId('save-autosave')
+  await expect(row).toContainText('Automatisch')
+  await expect(row.getByTestId('save-slot-status')).toHaveText('leer')
+  await expect(row.getByTestId('save-slot-load')).toBeDisabled()
+  await expect(row.getByTestId('save-slot-save')).toHaveCount(0)
+  await page.getByTestId('save-panel-close').click()
+
+  // At speed 16 one game day takes 15 real seconds.
+  await page.getByTestId('speed-16').click()
+  await expect(page.getByTestId('clock')).toHaveText(/^Tag 2 /, { timeout: 30_000 })
+  await page.getByTestId('speed-0').click()
+  await page.getByTestId('save-button').click()
+  await expect(row.getByTestId('save-slot-status')).toHaveText('Tag 2')
+  await page.screenshot({ path: 'docs/progress/save-panel-autosave.png' })
+  await row.getByTestId('save-slot-load').click()
+  await expect(page.getByTestId('clock')).toHaveText(/^Tag 2 · 00:00$/)
+  expect(errors).toEqual([])
+})
+
 test('S40: tool brush paints, notes and disarms', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))

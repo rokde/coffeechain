@@ -107,3 +107,51 @@ describe('save slots (S42)', () => {
     expect(session.getItem(PENDING)).toBeNull()
   })
 })
+
+describe('write queue (S43)', () => {
+  it('AC-2: a second write to a slot starts after the first ends, also after a reject', async () => {
+    vi.mocked(isTauri).mockReturnValue(true)
+    const calls: string[] = []
+    const ends: Array<(fail: boolean) => void> = []
+    vi.mocked(invoke).mockImplementation((_cmd, args) => {
+      calls.push((args as { text: string }).text)
+      return new Promise((resolve, reject) =>
+        ends.push((fail) => (fail ? reject('disk full') : resolve(null))),
+      )
+    })
+    const a = writeSlot('autosave', 'a')
+    const b = writeSlot('autosave', 'b')
+    const c = writeSlot('autosave', 'c')
+    await vi.waitFor(() => expect(calls).toEqual(['a']))
+    ends[0]!(true)
+    await expect(a).rejects.toBe('disk full')
+    await vi.waitFor(() => expect(calls).toEqual(['a', 'b']))
+    ends[1]!(false)
+    await b
+    await vi.waitFor(() => expect(calls).toEqual(['a', 'b', 'c']))
+    ends[2]!(false)
+    await c
+    expect(calls.at(-1)).toBe('c')
+  })
+
+  it('AC-2: the slot ends with the last write in localStorage', async () => {
+    const a = writeSlot('autosave', 'a')
+    const b = writeSlot('autosave', 'b')
+    await Promise.all([a, b])
+    expect(await readSlot('autosave')).toBe('b')
+  })
+
+  it('AC-2: writes to two slots do not wait for each other', async () => {
+    vi.mocked(isTauri).mockReturnValue(true)
+    const slots: string[] = []
+    const ends: Array<() => void> = []
+    vi.mocked(invoke).mockImplementation((_cmd, args) => {
+      slots.push((args as { slot: string }).slot)
+      return new Promise((resolve) => ends.push(() => resolve(null)))
+    })
+    const writes = [writeSlot('slot-1', 'a'), writeSlot('autosave', 'b')]
+    await vi.waitFor(() => expect(slots).toEqual(['slot-1', 'autosave']))
+    ends.forEach((end) => end())
+    await Promise.all(writes)
+  })
+})
