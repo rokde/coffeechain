@@ -347,3 +347,48 @@ test('S12b: owned parcel marks and field labels', async ({ page }) => {
   await page.screenshot({ path: 'docs/progress/S12b.png' })
   expect(errors).toEqual([])
 })
+
+test('S20: market panel from the toolbar and the market stand', async ({ page }) => {
+  const errors: string[] = []
+  page.on('console', (msg) => {
+    if (msg.type() === 'error') errors.push(msg.text())
+  })
+  page.on('pageerror', (error) => errors.push(error.message))
+
+  await page.goto('/?seed=48213')
+  const panel = page.getByTestId('market-panel')
+  await page.getByTestId('tool-market').click()
+  await expect(page.getByTestId('tool-market')).toHaveText('Markt')
+  await expect(panel).toBeVisible()
+  await expect(page.getByTestId('parcel-inspector')).toHaveCount(0)
+  await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
+  await page.screenshot({ path: 'docs/progress/S20.png' })
+  // The panel fits the right panel without a scroll bar.
+  expect(await panel.evaluate((el) => el.scrollHeight <= el.clientHeight)).toBe(true)
+
+  // Select a land parcel first: the market click must clear it.
+  const canvas = page.locator('canvas#scene')
+  await page.getByTestId('tool-select').click()
+  await canvas.click({ position: { x: 720, y: 450 } })
+  await expect(page.getByTestId('parcel-inspector')).toBeVisible()
+  // The market stand parcel (34, 39) of seed 48213 at the start camera.
+  await canvas.click({ position: { x: 640, y: 686 } })
+  await expect(page.getByTestId('tool-market')).toHaveAttribute('aria-pressed', 'true')
+  await expect(panel).toBeVisible()
+  await page.getByTestId('tool-select').click()
+  await expect(page.getByTestId('parcel-inspector')).toHaveCount(0)
+  expect(errors).toEqual([])
+})
+
+test('S20: market panel fits a narrow window', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/')
+  for (const tool of ['select', 'parcel', 'plant', 'market'])
+    await expect(page.getByTestId(`tool-${tool}`)).toBeInViewport({ ratio: 1 })
+  await page.getByTestId('tool-market').click()
+  const panel = page.getByTestId('market-panel')
+  await expect(panel).toBeVisible()
+  expect(await panel.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+  for (const row of await panel.locator('dl').all())
+    expect(await row.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+})
