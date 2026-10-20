@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 
+const speeds = [0, 1, 2, 4, 8, 16]
 const tools = ['select', 'parcel', 'plant', 'fertilize', 'irrigate', 'protect', 'harvest', 'market']
 
 test('M0: scene and empty HUD frame', async ({ page }) => {
@@ -26,7 +27,6 @@ test('M0: scene and empty HUD frame', async ({ page }) => {
 test('S9: clock and speed buttons', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByTestId('clock')).toHaveText('Tag 1 · 00:00')
-  const speeds = [0, 1, 2, 4]
   const expectActive = async (active: number) => {
     for (const s of speeds) {
       await expect(page.getByTestId(`speed-${s}`)).toHaveAttribute(
@@ -48,11 +48,45 @@ test('S9: top bar fits a narrow window', async ({ page }) => {
   await page.goto('/?seed=4294967295')
   const bar = page.getByTestId('hud-top-bar')
   expect(await bar.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
-  for (const s of [0, 1, 2, 4])
-    await expect(page.getByTestId(`speed-${s}`)).toBeInViewport({ ratio: 1 })
+  for (const s of speeds) await expect(page.getByTestId(`speed-${s}`)).toBeInViewport({ ratio: 1 })
   await expect(page.getByTestId('world-seed')).toBeInViewport({ ratio: 1 })
   await expect(page.getByTestId('money')).toBeInViewport({ ratio: 1 })
   await expect(page.getByTestId('storage')).toBeInViewport({ ratio: 1 })
+})
+
+test('S21c: keys change the speed', async ({ page }) => {
+  await page.goto('/')
+  const expectActive = async (active: number) => {
+    for (const s of speeds) {
+      await expect(page.getByTestId(`speed-${s}`)).toHaveAttribute(
+        'aria-pressed',
+        String(s === active),
+      )
+    }
+  }
+  await expectActive(1)
+  // Space on a focused button must not also click it.
+  await page.getByTestId('speed-2').focus()
+  await page.keyboard.press('5')
+  await expectActive(16)
+  await page.keyboard.press('Space')
+  await expectActive(0)
+  await page.keyboard.press('Space')
+  await expectActive(16)
+  await page.keyboard.press('0')
+  await expectActive(0)
+  await page.keyboard.press('3')
+  await expectActive(4)
+
+  await page.evaluate(() => {
+    const input = document.createElement('input')
+    input.dataset.testid = 'probe-input'
+    document.body.append(input)
+  })
+  await page.getByTestId('probe-input').focus()
+  await page.keyboard.press('5')
+  await page.keyboard.press('Space')
+  await expectActive(4)
 })
 
 test('S5: terrain and world seed', async ({ page }) => {

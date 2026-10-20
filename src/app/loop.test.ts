@@ -26,6 +26,8 @@ describe('advance', () => {
     [1, 240_000],
     [2, 120_000],
     [4, 60_000],
+    [8, 30_000],
+    [16, 15_000],
   ])('gives 24 ticks per game day at %i×', (speed, dayMs) => {
     expect(run(dayMs, speed)).toEqual({ ticks: 24, carryMs: 0 })
     expect(run(dayMs - 1, speed).ticks).toBe(23)

@@ -215,6 +215,11 @@ const storageText = computed(() =>
   .speeds {
     gap: 2px;
   }
+  /* Six speed buttons must fit beside the clock. */
+  .speeds button {
+    min-width: 32px;
+    padding: 0 2px;
+  }
 }
 .left-panel {
   top: 92px;

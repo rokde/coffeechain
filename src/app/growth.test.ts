@@ -29,6 +29,7 @@ describe('Robusta growth in real time', () => {
   it.each([
     [1, 720_000],
     [4, 180_000],
+    [16, 45_000],
   ])('AC-5: at %i× it is ripe after %i ms', (speed, ms) => {
     expect(stageAfter(ms - 1, speed)).not.toBe('reif')
     expect(stageAfter(ms, speed)).toBe('reif')
