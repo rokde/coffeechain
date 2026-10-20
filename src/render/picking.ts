@@ -3,9 +3,12 @@ import {
   Float32BufferAttribute,
   LineBasicMaterial,
   LineLoop,
+  LineSegments,
   Raycaster,
   Vector2,
+  type BufferAttribute,
   type Camera,
+  type InterleavedBufferAttribute,
   type Mesh,
 } from 'three'
 
@@ -27,6 +30,10 @@ export function pickParcel(ndc: Vector2, camera: Camera, terrain: Mesh, size: nu
   return hit ? parcelAt(hit.point, size) : null
 }
 
+// Keep water parcels above the water plane at y = 0.
+const corner = (corners: BufferAttribute | InterleavedBufferAttribute, i: number) =>
+  [corners.getX(i), Math.max(corners.getY(i), 0) + 0.05, corners.getZ(i)] as const
+
 // A white outline on the 4 corners of one parcel quad. show(null) hides it.
 export function createOutline(terrain: Mesh, size: number) {
   const corners = terrain.geometry.getAttribute('position')
@@ -40,13 +47,28 @@ export function createOutline(terrain: Mesh, size: number) {
     if (!parcel) return
     const first = 4 * (parcel.y * size + parcel.x)
     const position = geometry.getAttribute('position')
-    for (let i = 0; i < 4; i++) {
-      // Keep water parcels above the water plane at y = 0.
-      const y = Math.max(corners.getY(first + i), 0) + 0.05
-      position.setXYZ(i, corners.getX(first + i), y, corners.getZ(first + i))
-    }
+    for (let i = 0; i < 4; i++) position.setXYZ(i, ...corner(corners, first + i))
     position.needsUpdate = true
     geometry.computeBoundingSphere()
+  }
+
+  return { line, show }
+}
+
+// White outlines of many parcels in one LineSegments. show rebuilds the geometry.
+export function createOutlines(terrain: Mesh, size: number) {
+  const corners = terrain.geometry.getAttribute('position')
+  const line = new LineSegments(new BufferGeometry(), new LineBasicMaterial({ color: 0xffffff }))
+
+  function show(parcels: readonly ParcelPos[]) {
+    const points = parcels.flatMap(({ x, y }) => {
+      const first = 4 * (y * size + x)
+      // The 4 edges of the quad: corner 0-1, 1-2, 2-3 and 3-0.
+      return [0, 1, 1, 2, 2, 3, 3, 0].flatMap((i) => corner(corners, first + i))
+    })
+    line.geometry.dispose()
+    line.geometry = new BufferGeometry()
+    line.geometry.setAttribute('position', new Float32BufferAttribute(points, 3))
   }
 
   return { line, show }

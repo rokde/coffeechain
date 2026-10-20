@@ -7,7 +7,7 @@ import { createState, type GameState } from '../state'
 import { generateWorld } from '../world/generate'
 import { placeProps } from '../world/props'
 import type { Parcel, World, Zone } from '../world/types'
-import { isBuildable } from './parcels'
+import { isBuildable, quoteParcels } from './parcels'
 
 const size = 6
 
@@ -73,6 +73,32 @@ describe('CreateParcels cost', () => {
   it('AC-2: takes 150 CC for a highland parcel after the first parcel', () => {
     const first = buy(testState(), [1, 2])
     expect(buy(first, [4, 4]).money).toBe(first.money - 15000)
+  })
+})
+
+describe('quoteParcels (S12)', () => {
+  const pos = (...list: [number, number][]) => list.map(([x, y]) => ({ x, y }))
+  const owned = buy(testState(), [3, 3])
+  it.each<[string, GameState, [number, number][], number]>([
+    ['one lowland parcel, none owned', testState(), [[1, 2]], 4800],
+    [
+      'two lowland parcels, none owned',
+      testState(),
+      [
+        [1, 2],
+        [2, 2],
+      ],
+      14800,
+    ],
+    ['one lowland parcel, one owned', owned, [[1, 2]], 10000],
+    ['one highland parcel, one owned', owned, [[4, 4]], 15000],
+  ])('AC-1: %s gives %i, and CreateParcels takes the same', (_, state, list, cost) => {
+    expect(quoteParcels(state, pos(...list))).toBe(cost)
+    expect(state.money - buy(state, ...list).money).toBe(cost)
+  })
+
+  it('AC-1: gives 0 for an empty list', () => {
+    expect(quoteParcels(testState(), [])).toBe(0)
   })
 })
 

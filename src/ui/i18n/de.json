@@ -47,5 +47,19 @@
     "soil": "Bodenqualität",
     "zone": "Lagen",
     "soilHint": "Dunkler Boden bringt mehr Ertrag pro Pflanze."
+  },
+  "money": "{n} CC",
+  "tools": {
+    "label": "Werkzeuge",
+    "select": "Auswählen",
+    "parcel": "Parzelle"
+  },
+  "parcelTool": {
+    "heading": "Parzellen anlegen",
+    "count": "Ausgewählt",
+    "total": "Kosten",
+    "create": "Anlegen",
+    "hint": "Klicke bebaubare Parzellen an, um sie auszuwählen. Ein zweiter Klick entfernt sie. Wasser, zu steile und eigene Parzellen sind nicht wählbar.",
+    "tooExpensive": "Nicht genug CC."
   }
 }

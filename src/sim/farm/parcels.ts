@@ -43,14 +43,24 @@ export function isBuildable(world: World, x: number, y: number): boolean {
   )
 }
 
-export function createParcels(state: GameState, command: CreateParcels): GameState {
+// Cost in hundredths of CC. It does not validate the list.
+// The caller must give only buildable parcels that the farm does not own, each one time.
+export function quoteParcels(state: GameState, list: { x: number; y: number }[]): number {
   const { size, parcels } = state.world
   const { firstCost, baseCost, zoneMultiplier } = balance().parcels
+  const owned = Object.keys(state.farm.parcels).length
+  return list.reduce((cost, { x, y }, i) => {
+    // Buildable parcels are never water, so the zone is a land zone.
+    const zone = parcels[y * size + x]!.zone as Exclude<Zone, 'wasser'>
+    return cost + Math.round((owned + i === 0 ? firstCost : baseCost) * zoneMultiplier[zone] * 100)
+  }, 0)
+}
+
+export function createParcels(state: GameState, command: CreateParcels): GameState {
+  const { size } = state.world
   const owned = { ...state.farm.parcels }
   let fields = [...state.farm.fields]
   let nextFieldId = state.farm.nextFieldId
-  let count = Object.keys(owned).length
-  let cost = 0
 
   for (const { x, y } of command.parcels) {
     const inside =
@@ -61,10 +71,6 @@ export function createParcels(state: GameState, command: CreateParcels): GameSta
     if (!isBuildable(state.world, x, y)) {
       throw new Error(`Parcel ${x},${y} is water or too steep`)
     }
-    // isBuildable rejects water, so the zone is a land zone.
-    const zone = parcels[index]!.zone as Exclude<Zone, 'wasser'>
-    cost += Math.round((count === 0 ? firstCost : baseCost) * zoneMultiplier[zone] * 100)
-    count++
 
     const touched = [
       ...new Set(
@@ -87,6 +93,7 @@ export function createParcels(state: GameState, command: CreateParcels): GameSta
     owned[index] = id
   }
 
+  const cost = quoteParcels(state, command.parcels)
   if (cost > state.money) throw new Error(`Not enough money: cost ${cost}, balance ${state.money}`)
   return {
     ...state,
