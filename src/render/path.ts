@@ -11,8 +11,8 @@ export const PATH = {
   lift: 0.08,
   // The largest distance between two samples along the path.
   step: 0.1,
-  // Light sand, apart from the zone colors and the overlay palettes.
-  color: 0xfff6dc,
+  // Cool light stone: apart from the terrain, the zone colors and the soil palette.
+  color: 0xc4d0de,
 }
 
 // One flat ribbon through the parcel centers of the path, from the hut to the market.

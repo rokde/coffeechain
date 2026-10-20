@@ -111,7 +111,7 @@ test('S8: parcel inspector', async ({ page }) => {
   const inspector = page.getByTestId('parcel-inspector')
   await expect(inspector).toHaveCount(0)
 
-  // The screen centre shows the hut parcel (35, 39) at the start view, which is land.
+  // The screen centre shows parcel (35, 38) at the start view, which is land.
   await page.locator('canvas#scene').click({ position: { x: 720, y: 450 } })
   await expect(inspector).toBeVisible()
   await expect(page.getByTestId('hud-right-panel')).toContainText('Parzelle')
@@ -211,7 +211,7 @@ for (const [width, height] of [
     await page.setViewportSize({ width, height })
     await page.goto('/?seed=48213')
     await page.getByTestId('overlay-soil').click()
-    // The screen centre shows the hut parcel (35, 39) at the start view, which is land.
+    // The screen centre shows parcel (35, 38) at the start view, which is land.
     await page.locator('canvas#scene').click({ position: { x: width / 2, y: height / 2 } })
     await expect(page.getByTestId('parcel-inspector')).toBeVisible()
     const a = (await page.getByTestId('hud-overlay-panel').boundingBox())!
@@ -248,15 +248,15 @@ test('S12: parcel tool and money', async ({ page }) => {
   // Buildable lowland parcels (32, 38) and (35, 37) of seed 48213 at the start view.
   const canvas = page.locator('canvas#scene')
   // S40: each click buys its parcel at once. No confirm button is necessary.
-  await canvas.click({ position: { x: 673, y: 379 } })
-  await canvas.click({ position: { x: 767, y: 416 } })
+  await canvas.click({ position: { x: 607, y: 357 } })
+  await canvas.click({ position: { x: 758, y: 417 } })
   await expect(money).toHaveText('457,2 CC')
   await expect(page.getByTestId('parcel-tool-create')).toHaveCount(0)
   await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
   await page.screenshot({ path: 'docs/progress/S12.png' })
 
   // An owned parcel cannot be bought again.
-  await canvas.click({ position: { x: 673, y: 379 } })
+  await canvas.click({ position: { x: 607, y: 357 } })
   await expect(page.getByTestId('tool-note')).toHaveText('Hier nicht möglich.')
   await expect(money).toHaveText('457,2 CC')
 
@@ -313,8 +313,8 @@ test('S13: plant tool', async ({ page }) => {
   const canvas = page.locator('canvas#scene')
   // Buildable lowland parcels (32, 38) and (35, 37) of seed 48213 at the start view.
   const clicks = [
-    { x: 673, y: 379 },
-    { x: 767, y: 416 },
+    { x: 607, y: 357 },
+    { x: 758, y: 417 },
   ]
   await page.getByTestId('tool-parcel').click()
   for (const position of clicks) await canvas.click({ position })
@@ -361,8 +361,8 @@ test('S12b: owned parcel marks and field labels', async ({ page }) => {
   // Buildable lowland parcels (32, 38) and (35, 37) of seed 48213 at the start view.
   await page.getByTestId('tool-parcel').click()
   const canvas = page.locator('canvas#scene')
-  await canvas.click({ position: { x: 673, y: 379 } })
-  await canvas.click({ position: { x: 767, y: 416 } })
+  await canvas.click({ position: { x: 607, y: 357 } })
+  await canvas.click({ position: { x: 758, y: 417 } })
 
   await expect(page.getByTestId('field-label-A')).toHaveText('Feld A')
   await expect(page.getByTestId('field-label-B')).toHaveText('Feld B')
@@ -407,7 +407,7 @@ test('S20: market panel from the toolbar and the market stand', async ({ page })
   await canvas.click({ position: { x: 720, y: 450 } })
   await expect(page.getByTestId('parcel-inspector')).toBeVisible()
   // The market stand parcel (34, 39) of seed 48213 at the start view.
-  await canvas.click({ position: { x: 697, y: 435 } })
+  await canvas.click({ position: { x: 644, y: 447 } })
   await expect(page.getByTestId('tool-market')).toHaveAttribute('aria-pressed', 'true')
   await expect(panel).toBeVisible()
   await page.getByTestId('tool-select').click()
@@ -430,7 +430,7 @@ test('S40b: start view frames the hut, the market stand and the path', async ({ 
   await page.screenshot({ path: 'docs/progress/S40b.png' })
 
   // The projected screen point of the market stand parcel (34, 39) at 1280 x 900.
-  await canvas.click({ position: { x: 619, y: 436 } })
+  await canvas.click({ position: { x: 573, y: 447 } })
   await expect(page.getByTestId('market-panel')).toBeVisible()
   await page.getByTestId('tool-select').click()
 
@@ -439,7 +439,7 @@ test('S40b: start view frames the hut, the market stand and the path', async ({ 
   await page.getByTestId('overlay-soil').click()
 
   // One large wheel step clamps the zoom to CAMERA.minZoom. The cursor stays on the hut.
-  await page.mouse.move(640, 447)
+  await page.mouse.move(606, 465)
   await page.mouse.wheel(0, 10_000)
   await page.screenshot({ path: 'docs/progress/S40b-far.png' })
 
@@ -448,6 +448,8 @@ test('S40b: start view frames the hut, the market stand and the path', async ({ 
   await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
   await page.getByTestId('speed-0').click()
   await page.screenshot({ path: 'docs/progress/S40b-slope.png' })
+  await page.getByTestId('overlay-soil').click()
+  await page.screenshot({ path: 'docs/progress/S40b-slope-soil.png', animations: 'disabled' })
   expect(errors).toEqual([])
 })
 
@@ -475,8 +477,8 @@ test('S13b: plant meshes', async ({ page }) => {
   const canvas = page.locator('canvas#scene')
   // Buildable lowland parcels (32, 38) and (35, 37) of seed 48213 at the start view.
   const clicks = [
-    { x: 673, y: 379 },
-    { x: 767, y: 416 },
+    { x: 607, y: 357 },
+    { x: 758, y: 417 },
   ]
   await page.getByTestId('tool-parcel').click()
   for (const position of clicks) await canvas.click({ position })
@@ -504,8 +506,8 @@ test('S18a: care and harvest tools, storage chip', async ({ page }) => {
   await expect(storage).toHaveText('Lager 0 / 100')
   // Buildable lowland parcels (32, 38) and (35, 37) of seed 48213 at the start view.
   const clicks = [
-    { x: 673, y: 379 },
-    { x: 767, y: 416 },
+    { x: 607, y: 357 },
+    { x: 758, y: 417 },
   ]
   await page.getByTestId('tool-parcel').click()
   for (const position of clicks) await canvas.click({ position })
@@ -567,7 +569,7 @@ test('S18c: inspector yield forecast', async ({ page }) => {
   await page.goto('/?seed=48213')
   const canvas = page.locator('canvas#scene')
   // Buildable lowland parcel (32, 38) of seed 48213 at the start view.
-  const position = { x: 673, y: 379 }
+  const position = { x: 607, y: 357 }
   await page.getByTestId('tool-parcel').click()
   await canvas.click({ position })
   await page.getByTestId('tool-select').click()
@@ -593,7 +595,7 @@ test('S21e: field status and care buttons in the inspector', async ({ page }) =>
   await page.getByTestId('first-steps-close').click()
   const canvas = page.locator('canvas#scene')
   // Buildable lowland parcel (32, 38) of seed 48213 at the start view.
-  const position = { x: 673, y: 379 }
+  const position = { x: 607, y: 357 }
   await page.getByTestId('tool-parcel').click()
   await canvas.click({ position })
   await page.getByTestId('tool-plant').click()
@@ -649,8 +651,8 @@ test('S23: field labels fade on hover', async ({ page }) => {
   // Buildable lowland parcels (32, 38) and (35, 37) of seed 48213 at the start view.
   await page.getByTestId('tool-parcel').click()
   const canvas = page.locator('canvas#scene')
-  await canvas.click({ position: { x: 673, y: 379 } })
-  await canvas.click({ position: { x: 767, y: 416 } })
+  await canvas.click({ position: { x: 607, y: 357 } })
+  await canvas.click({ position: { x: 758, y: 417 } })
   await page.getByTestId('tool-select').click()
 
   const labelA = page.getByTestId('field-label-A')
@@ -659,20 +661,20 @@ test('S23: field labels fade on hover', async ({ page }) => {
   await expect(labelA).not.toHaveAttribute('style', /^((?!left).)*$/)
   expect(await labelA.evaluate((el) => getComputedStyle(el).pointerEvents)).toBe('none')
 
-  // Field A: the parcel at (673, 379).
-  await canvas.hover({ position: { x: 673, y: 379 } })
+  // Field A: the parcel at (607, 357).
+  await canvas.hover({ position: { x: 607, y: 357 } })
   await expect.poll(() => opacity(labelA)).toBe('0')
   expect(await opacity(labelB)).toBe('1')
 
   // A new field under the still mouse rebuilds the labels. Label A stays faded.
-  // A synthetic press buys parcel (36, 40) at (720, 477) while the mouse stays still on field A.
+  // A synthetic press buys parcel (36, 40) at (682, 515) while the mouse stays still on field A.
   await page.getByTestId('tool-parcel').click()
-  await canvas.hover({ position: { x: 673, y: 379 } })
+  await canvas.hover({ position: { x: 607, y: 357 } })
   await expect.poll(() => opacity(labelA)).toBe('0')
   // pointerId 1 is the mouse in Chromium. The stroke captures it, so the test releases it.
   await page.evaluate(() => {
     const canvas = document.querySelector('canvas#scene')!
-    const at = { clientX: 720, clientY: 477, button: 0, buttons: 1, pointerId: 1 }
+    const at = { clientX: 682, clientY: 515, button: 0, buttons: 1, pointerId: 1 }
     canvas.dispatchEvent(new PointerEvent('pointerdown', at))
     canvas.dispatchEvent(new PointerEvent('pointerup', at))
     canvas.releasePointerCapture(1)
@@ -681,7 +683,7 @@ test('S23: field labels fade on hover', async ({ page }) => {
   expect(await opacity(labelA)).toBe('0')
   await page.getByTestId('tool-select').click()
 
-  // The screen centre shows the hut parcel, which is land with no field.
+  // The screen centre shows parcel (35, 38), which is land with no field.
   await canvas.hover({ position: { x: 720, y: 450 } })
   await expect.poll(() => opacity(labelA)).toBe('1')
   await expect.poll(() => opacity(labelB)).toBe('1')
@@ -826,14 +828,14 @@ test('S40: tool brush paints, notes and disarms', async ({ page }) => {
   // A left drag over lowland buys each parcel under the pointer once and does not pan the camera.
   await page.getByTestId('tool-parcel').click()
   expect(await canvas.evaluate((el) => el.style.cursor)).toMatch(/^url\("data:image\/svg\+xml,/)
-  await page.mouse.move(673, 379)
+  await page.mouse.move(607, 357)
   await page.mouse.down()
-  await page.mouse.move(767, 416, { steps: 10 })
+  await page.mouse.move(758, 417, { steps: 10 })
   await page.mouse.up()
   const after = await money.textContent()
   expect(after).not.toBe('500 CC')
   // The parcel at the start of the drag is owned now, so the camera did not move.
-  await canvas.click({ position: { x: 673, y: 379 } })
+  await canvas.click({ position: { x: 607, y: 357 } })
   await expect(page.getByTestId('tool-note')).toHaveText('Hier nicht möglich.')
   await expect(money).toHaveText(after!)
 
@@ -879,8 +881,8 @@ test('S40: a release over the HUD ends the stroke', async ({ page }) => {
   const after = (await money.textContent())!
   // A press on the panel and a drag onto lowland must not paint with the old stroke.
   await page.mouse.down()
-  await page.mouse.move(673, 379, { steps: 10 })
-  await page.mouse.move(767, 416, { steps: 5 })
+  await page.mouse.move(607, 357, { steps: 10 })
+  await page.mouse.move(758, 417, { steps: 5 })
   await page.mouse.up()
   await expect(money).toHaveText(after)
 })
@@ -894,7 +896,7 @@ for (const [width, height] of [
     await page.goto('/?seed=48213')
     await page.getByTestId('tool-plant').click()
     await page.getByTestId('plant-tool-variety-arabicaStandard').click()
-    // The screen centre shows the hut parcel, which is land that the farm does not own.
+    // The screen centre shows parcel (35, 38), which is land that the farm does not own.
     await page.locator('canvas#scene').click({ position: { x: width / 2, y: height / 2 } })
     const note = page.getByTestId('tool-note')
     await expect(note).toHaveText('Hier nicht möglich.')

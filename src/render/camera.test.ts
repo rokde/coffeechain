@@ -12,6 +12,7 @@ import {
   nextZoom,
   rotateYaw,
   START_FRAME,
+  START_REACH,
   START_YAW,
   startView,
   wheelZoomDelta,
@@ -229,21 +230,22 @@ describe('startView (S40b)', () => {
     const camera = createCamera(aspect, world.size)
     camera.frame(view.target, view.zoom)
     expect(camera.camera.zoom).toBe(view.zoom)
-    const { startReach } = balance().world
     const n = world.size
-    const clip = (v: number) => Math.min(n, Math.max(0, v))
-    const square = [-startReach, startReach + 1].flatMap((dx) =>
-      [-startReach, startReach + 1].map((dz) => ({
-        x: clip(world.start.x + dx) - n / 2,
-        z: clip(world.start.y + dz) - n / 2,
-      })),
+    const land = world.parcels.filter(
+      (q) =>
+        q.zone !== 'wasser' &&
+        Math.max(Math.abs(q.x - world.start.x), Math.abs(q.y - world.start.y)) <= START_REACH,
+    )
+    // The start parcel is good lowland, so the land is never empty.
+    expect(land.length).toBeGreaterThan(0)
+    const corners = land.flatMap((q) =>
+      [0, 1].flatMap((dx) => [0, 1].map((dz) => ({ x: q.x + dx - n / 2, z: q.y + dz - n / 2 }))),
     )
     const centre = (p: { x: number; y: number }) => ({
       x: p.x + 0.5 - n / 2,
       z: p.y + 0.5 - n / 2,
     })
-    const points = [props.hut, props.market, ...props.path].map(centre).concat(square)
-    expect(points.length).toBe(props.path.length + 6)
+    const points = [props.hut, props.market, ...props.path].map(centre).concat(corners)
     for (const { x, z } of points) {
       const q = new Vector3(x, terrainHeightAt(world, x, z), z).project(camera.camera)
       expect(q.x).toBeGreaterThanOrEqual(START_FRAME.left - 1e-9)
@@ -256,8 +258,8 @@ describe('startView (S40b)', () => {
 
   it('AC-1: frames the start area inside the frame region for seed 48213 and 20 more seeds', () => {
     expect(START_FRAME).toEqual({ left: -0.45, right: 0.42, bottom: -0.7, top: 0.78 })
-    // The start zoom was 1 before S40b. It is about 1.3 now.
-    expect(zoomOf(48213)).toBeGreaterThan(1.2)
+    expect(START_REACH).toBe(4)
+    expect(zoomOf(48213)).toBeGreaterThanOrEqual(2)
     for (let seed = 1; seed <= 20; seed++) zoomOf(seed)
   })
 

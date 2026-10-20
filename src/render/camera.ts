@@ -1,5 +1,4 @@
 import { OrthographicCamera, Plane, Raycaster, Vector3, type Vector2 } from 'three'
-import { balance } from '../sim/balance'
 import type { WorldProps } from '../sim/world/props'
 import type { World } from '../sim/world/types'
 import { cornerY, parcelCenter } from './surface'
@@ -25,6 +24,9 @@ export const CAMERA = {
 // At 1280 x 900 the HUD covers x 16–316 (left panels) and 934–1264 (right panel),
 // y 16–76 (top bar) and 802–884 (toolbar). That leaves NDC x [-0.51, 0.46], y [-0.78, 0.83].
 export const START_FRAME = { left: -0.45, right: 0.42, bottom: -0.7, top: 0.78 }
+// The start view shows the land parcels within this many parcels of the start.
+// The full start reach (balance world.startReach) does not fit between the HUD panels at zoom 2.
+export const START_REACH = 4
 
 // Turns the yaw (degrees) by 90° per step. E is +1, Q is -1. Result is in [0, 360).
 export function rotateYaw(yaw: number, steps: number): number {
@@ -64,18 +66,21 @@ export function groundDirection(yaw: number, right: number, up: number) {
   }
 }
 
-// Frames the hut, the market, the path and the start reach square for START_YAW.
+// Frames the hut, the market, the path and the land parcels near the start for START_YAW.
 export function startView(world: World, props: WorldProps, aspect: number) {
   const n = world.size
-  const { startReach } = balance().world
-  const lo = (v: number) => Math.max(0, v - startReach)
-  const hi = (v: number) => Math.min(n, v + startReach + 1)
-  const corners = [
-    [lo(world.start.x), lo(world.start.y)],
-    [hi(world.start.x), lo(world.start.y)],
-    [lo(world.start.x), hi(world.start.y)],
-    [hi(world.start.x), hi(world.start.y)],
-  ].map(([cx, cz]) => ({ x: cx! - n / 2, y: cornerY(world, cx!, cz!), z: cz! - n / 2 }))
+  // Sea parcels are skipped: a start on the shore would else give a small zoom.
+  const land = world.parcels.filter(
+    (q) =>
+      q.zone !== 'wasser' &&
+      Math.abs(q.x - world.start.x) <= START_REACH &&
+      Math.abs(q.y - world.start.y) <= START_REACH,
+  )
+  const corners = land.flatMap((q) =>
+    [0, 1].flatMap((dx) =>
+      [0, 1].map((dz) => ({ x: q.x + dx - n / 2, y: cornerY(world, q.x + dx, q.y + dz), z: q.y + dz - n / 2 })),
+    ),
+  )
   const points = [props.hut, props.market, ...props.path]
     .map((p) => parcelCenter(world, p.x, p.y))
     .concat(corners)
