@@ -34,6 +34,7 @@ Robert gets a singleplayer 3D coffee farm game for the Mac: he builds a farm on 
 - vitest: unit tests; @playwright/test: browser screenshots.
 - eslint, typescript-eslint, eslint-plugin-vue, prettier: lint and format (PRD M0).
 - tsx: runs `tools/balance-sim.ts` from npm without a build step.
+- @types/three, @types/node (and other `@types/*` for listed packages): type definitions only, needed for strict TypeScript.
 - Kenney kits (CC0 assets, not npm packages): Nature Kit, Survival Kit, City Kit Suburban, Fantasy Town Kit. Only the used glTF files go into `assets/kenney/`, with `License.txt`.
 
 ## Architecture
