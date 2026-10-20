@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
-    "test": "vitest run --exclude src/app/perf.test.ts && vitest run src/app/perf.test.ts",
+    "test": "vitest run --exclude src/app/perf.test.ts",
+    "test:perf": "vitest run src/app/perf.test.ts",
+    "test:ci": "npm test && npm run test:perf",
     "lint": "eslint .",
     "typecheck": "vue-tsc --noEmit",
     "format": "prettier --write .",
