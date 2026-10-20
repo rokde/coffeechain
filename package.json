@@ -12,7 +12,8 @@
     "lint": "eslint .",
     "typecheck": "vue-tsc --noEmit",
     "format": "prettier --write .",
-    "screenshot": "playwright test",
+    "screenshot": "playwright test --project=screenshot",
+    "run30": "playwright test --project=run30",
     "tauri": "tauri",
     "balance-sim": "tsx tools/balance-sim.ts"
   },
