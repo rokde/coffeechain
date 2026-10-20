@@ -11,6 +11,8 @@ export const CAMERA = {
   maxZoom: 6,
   // Zoom factor per wheel delta unit: one mouse wheel notch (deltaY 100) zooms by e^0.2.
   wheelFactor: 0.002,
+  // A Chromium pinch (wheel with ctrlKey) sends small deltas of about 1 to 10.
+  pinchFactor: 0.02,
   // Ground units per second at zoom 1.
   keySpeed: 20,
 }
@@ -27,6 +29,16 @@ export function clampZoom(zoom: number): number {
 // A negative deltaY (wheel up, pinch out) zooms in.
 export function nextZoom(zoom: number, deltaY: number): number {
   return clampZoom(zoom * Math.exp(-deltaY * CAMERA.wheelFactor))
+}
+
+// Turns a wheel event into the deltaY that nextZoom expects.
+export function wheelZoomDelta(deltaY: number, ctrlKey: boolean): number {
+  return ctrlKey ? (deltaY * CAMERA.pinchFactor) / CAMERA.wheelFactor : deltaY
+}
+
+// Turns a WebKit gesture scale step into a deltaY, so that the zoom changes by scale / lastScale.
+export function gestureZoomDelta(scale: number, lastScale: number): number {
+  return -Math.log(scale / lastScale) / CAMERA.wheelFactor
 }
 
 export function clampTarget(target: { x: number; z: number }, size: number) {

@@ -8,7 +8,7 @@ import { selectParcel } from './app/market'
 import { isFarmTool, useSelectionStore } from './app/selection'
 import { useGameStore } from './app/store'
 import { useViewStore } from './app/view'
-import { CAMERA, createCamera } from './render/camera'
+import { CAMERA, createCamera, gestureZoomDelta, wheelZoomDelta } from './render/camera'
 import { createFieldMarks, fieldAnchors } from './render/fields'
 import { loadModel, MODEL_IDS } from './render/models'
 import { createPlants, plantsKey } from './render/plants'
@@ -105,15 +105,34 @@ function start() {
       (event.offsetX / canvas.clientWidth) * 2 - 1,
       1 - (event.offsetY / canvas.clientHeight) * 2,
     )
-  // A trackpad pinch sends wheel events with ctrlKey. preventDefault stops the page zoom.
+  // Chromium sends a trackpad pinch as wheel events with ctrlKey. preventDefault stops the page zoom.
   canvas.addEventListener(
     'wheel',
     (event) => {
       event.preventDefault()
-      view.zoomAt(ndcOf(event), event.deltaY)
+      view.zoomAt(ndcOf(event), wheelZoomDelta(event.deltaY, event.ctrlKey))
     },
     { passive: false },
   )
+  // WebKit (Tauri on macOS) sends a trackpad pinch as gesture events. TypeScript has no type for them.
+  type GestureEvent = UIEvent & { scale: number; clientX: number; clientY: number }
+  let lastScale = 1
+  canvas.addEventListener('gesturestart', (event) => {
+    event.preventDefault()
+    lastScale = 1
+  })
+  canvas.addEventListener('gesturechange', (event) => {
+    event.preventDefault()
+    const { scale, clientX, clientY } = event as GestureEvent
+    const rect = canvas.getBoundingClientRect()
+    const ndc = new Vector2(
+      ((clientX - rect.left) / rect.width) * 2 - 1,
+      1 - ((clientY - rect.top) / rect.height) * 2,
+    )
+    view.zoomAt(ndc, gestureZoomDelta(scale, lastScale))
+    lastScale = scale
+  })
+  canvas.addEventListener('gestureend', (event) => event.preventDefault())
   canvas.addEventListener('contextmenu', (event) => event.preventDefault())
   let drag: { x: number; y: number } | null = null
   canvas.addEventListener('pointerdown', (event) => {

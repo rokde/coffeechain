@@ -7,9 +7,11 @@ import {
   clampTarget,
   clampZoom,
   createCamera,
+  gestureZoomDelta,
   nextZoom,
   rotateYaw,
   START_YAW,
+  wheelZoomDelta,
 } from './camera'
 import { parcelAt, pickParcel } from './picking'
 import { createTerrain } from './terrain'
@@ -71,6 +73,20 @@ describe('nextZoom (S22)', () => {
     expect(createCamera(1, SIZE).camera.zoom).toBe(1)
     expect(CAMERA.minZoom).toBeLessThanOrEqual(1)
     expect(CAMERA.maxZoom).toBeGreaterThanOrEqual(1)
+  })
+})
+
+describe('pinch zoom (S22 round 1)', () => {
+  it('a WebKit gesture zooms by the scale ratio between two events', () => {
+    expect(nextZoom(1, gestureZoomDelta(1.5, 1))).toBeCloseTo(1.5)
+    expect(nextZoom(2, gestureZoomDelta(1.2, 1.5))).toBeCloseTo(1.6)
+    expect(gestureZoomDelta(1.3, 1.3)).toBeCloseTo(0)
+  })
+
+  it('a ctrl wheel (Chromium pinch) zooms by the pinch factor, a plain wheel by the wheel factor', () => {
+    expect(wheelZoomDelta(100, false)).toBe(100)
+    expect(nextZoom(1, wheelZoomDelta(-10, true))).toBeCloseTo(Math.exp(10 * CAMERA.pinchFactor))
+    expect(CAMERA.pinchFactor).toBeGreaterThan(CAMERA.wheelFactor)
   })
 })
 
