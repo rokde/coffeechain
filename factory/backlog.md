@@ -9,7 +9,7 @@ that feature then references it. `/factory:import github <query>` or
 Example: `- [ ] PROJ-1 a hello CLI command that greets a name passed as an argument`
 
 
-- [ ] S1 Walking skeleton: `npm run dev` shows a water plane, a rotatable orthographic camera and an empty HUD frame; `balance.json` loads through the zod schema, and a test checks that every value has a source; `npm test`, `npm run lint`, `npm run typecheck`, `npm run build`, `npm run screenshot` (writes `docs/progress/M0.png`) all work.
+- [x] S1 Walking skeleton: `npm run dev` shows a water plane, a rotatable orthographic camera and an empty HUD frame; `balance.json` loads through the zod schema, and a test checks that every value has a source; `npm test`, `npm run lint`, `npm run typecheck`, `npm run build`, `npm run screenshot` (writes `docs/progress/M0.png`) all work. → 001-walking-skeleton
 - [ ] S2 Mac app shell and CI: `src-tauri/` with app name "CoffeeChain"; `rustup default stable` is set, and `npm run tauri dev` and `npm run tauri build` work locally; `.github/workflows/ci.yml` runs lint, typecheck, test and build on Ubuntu and builds the Mac app on `macos-latest`. Needs S1.
 - [ ] S3 World generation: `generateWorld(seed)` in `src/sim/world/` gives height, zones, fertility, water retention and soil class per parcel, exactly one volcano zone, the start guarantee, and the places of hut, market, path and trees; tests: same seed gives the same hash, and 200 random worlds pass the guarantee. Needs S1.
 - [ ] S4 Kenney models: the used models (hut, market stand, path pieces, trees, rocks) from the four Kenney kits are in `assets/kenney/` with the license file; `src/render/models.ts` loads and caches them, and a debug view shows each one. Needs S1.
