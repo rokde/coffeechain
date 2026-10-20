@@ -48,15 +48,19 @@ export function marketPrice(market: MarketState, good: Good, day: number, cfg = 
     .filter((v) => v.kind === good.kind && v.variety === good.variety)
     .filter((v) => v.day <= day && v.day > day - m.volumeWindowDays)
     .reduce((sum, v) => sum + v.units, 0)
-  const sold = good.kind === 'coffee' ? units : 0
-  const bought = good.kind === 'seed' ? units : 0
-  const supply = clamp(1 - 0.3 * Math.min(1, sold / m.supplyUnitsForMinFactor), m.supplyFactorRange)
-  const demand = clamp(
-    1 + 0.3 * Math.min(1, bought / m.demandUnitsForMaxFactor),
-    m.demandFactorRange,
-  )
+  // The factor moves linearly from 1.0 to the far end of its range: supply goes down, demand up.
+  const factor =
+    good.kind === 'coffee'
+      ? clamp(
+          1 - (1 - m.supplyFactorRange[0]) * Math.min(1, units / m.supplyUnitsForMinFactor),
+          m.supplyFactorRange,
+        )
+      : clamp(
+          1 + (m.demandFactorRange[1] - 1) * Math.min(1, units / m.demandUnitsForMaxFactor),
+          m.demandFactorRange,
+        )
   const ref = reference(good, cfg)
-  return clamp(ref * supply * demand, [m.priceFloor * ref, m.priceCeiling * ref])
+  return clamp(ref * factor, [m.priceFloor * ref, m.priceCeiling * ref])
 }
 
 // Price in CC per unit that the bank pays for raw coffee today.
@@ -82,7 +86,8 @@ export function priceHistory(state: GameState, good: Good): number[] {
 }
 
 function checkTrade(command: Sell | Buy, cfg: Balance) {
-  if (!cfg.varieties[command.variety]) throw new Error(`Unknown variety: ${command.variety}`)
+  if (!Object.hasOwn(cfg.varieties, command.variety))
+    throw new Error(`Unknown variety: ${command.variety}`)
   if (!Number.isInteger(command.units) || command.units <= 0) {
     throw new Error(`Units must be a positive integer: ${command.units}`)
   }
@@ -135,7 +140,8 @@ export function buy(state: GameState, command: Buy): GameState {
   checkTrade(command, cfg)
   const { variety, units } = command
   const cost = Math.round(units * bankSellPrice(state, variety) * 100)
-  if (cost > state.money) throw new Error(`Not enough money: cost ${cost}, balance ${state.money}`)
+  if (cost > state.money)
+    throw new Error(`Not enough money: cost ${cost / 100} CC, balance ${state.money / 100} CC`)
 
   const day = clock(state.time.hour).day
   const volumes = record(state.market, { kind: 'seed', variety }, units, day, cfg)

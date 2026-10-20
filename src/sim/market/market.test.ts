@@ -65,6 +65,8 @@ describe('market', () => {
         { type, variety: 'robusta', units: 1.5 },
         { type, variety: 'robusta', units: Number.NaN },
         { type, variety: 'mocha', units: 1 },
+        { type, variety: 'constructor', units: 1 },
+        { type, variety: 'toString', units: 1 },
       ]),
     ] as const
     const poor = { ...state, money: 0 }
