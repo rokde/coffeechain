@@ -19,6 +19,7 @@ const PENDING = 'coffeechain.pendingLoad'
 let local: Map<string, string>
 let session: Map<string, string>
 let reload: ReturnType<typeof vi.fn>
+let replace: ReturnType<typeof vi.fn>
 
 const storage = (items: Map<string, string>) => ({
   getItem: (k: string) => items.get(k) ?? null,
@@ -30,9 +31,10 @@ beforeEach(() => {
   local = new Map()
   session = new Map()
   reload = vi.fn()
+  replace = vi.fn()
   vi.stubGlobal('localStorage', storage(local))
   vi.stubGlobal('sessionStorage', storage(session))
-  vi.stubGlobal('location', { search: '?seed=42', reload })
+  vi.stubGlobal('location', { search: '?seed=42', pathname: '/', reload, replace })
   vi.mocked(isTauri).mockReturnValue(false)
   vi.mocked(invoke).mockReset()
   setStartState(null)
@@ -143,9 +145,7 @@ describe('SavePanel (S42b)', () => {
     expect(game.state).toEqual(createState(42))
     expect(pendingLoadError()).toMatch(/invalid/)
     expect(panel.open).toBe(true)
-    expect(await html(pinia, Hud)).toContain(
-      'Der geladene Spielstand ist ungültig. Ein neues Spiel hat begonnen.',
-    )
+    expect(await html(pinia, Hud)).toContain('Der geladene Spielstand ist ungültig.')
   })
 
   it.each([
@@ -204,6 +204,9 @@ describe('SavePanel (S42b)', () => {
       expect(has(text, 'save-new-game-confirm')).toBe(true)
       expect(has(text, 'save-new-game-cancel')).toBe(true)
       expect(text).toContain('Abbrechen')
+      expect(text).toMatch(
+        /<button[^>]*class="danger"[^>]*data-testid="save-new-game-confirm"[^>]*>\s*Ja, neues Spiel/,
+      )
       expect(has(text, 'save-new-game')).toBe(false)
       expect(local.size).toBe(0)
 
@@ -214,12 +217,13 @@ describe('SavePanel (S42b)', () => {
       expect(has(text, 'save-new-game')).toBe(true)
       expect(local.size).toBe(0)
       expect(reload).not.toHaveBeenCalled()
+      expect(replace).not.toHaveBeenCalled()
     })
 
-    it('AC-3: confirm writes a day-1 world to the autosave one time, then reloads', async () => {
+    it('AC-3: confirm pauses, writes a day-1 world to the autosave one time, then reloads', async () => {
       const { game, panel } = setup()
       const state = game.state as GameState
-      game.replace({ ...state, time: { ...state.time, hour: 24 * 6 } })
+      game.replace({ ...state, time: { ...state.time, hour: 24 * 6, speed: 16 } })
       panel.confirmNewGame = true
       const setItem = vi.spyOn(localStorage, 'setItem')
       await panel.newGame()
@@ -229,8 +233,11 @@ describe('SavePanel (S42b)', () => {
       expect(clock(fresh.time.hour).day).toBe(1)
       expect(fresh.money).toBe(createState(1).money)
       expect([...local.keys()]).toEqual([AUTOSAVE])
-      expect(reload).toHaveBeenCalledOnce()
-      expect(reload.mock.invocationCallOrder[0]).toBeGreaterThan(
+      expect(game.state.time.speed).toBe(0)
+      expect(reload).not.toHaveBeenCalled()
+      // The path without ?seed=42, so the start reads the new autosave.
+      expect(replace).toHaveBeenCalledExactlyOnceWith('/')
+      expect(replace.mock.invocationCallOrder[0]).toBeGreaterThan(
         setItem.mock.invocationCallOrder[0]!,
       )
     })
@@ -241,6 +248,7 @@ describe('SavePanel (S42b)', () => {
       const { pinia, panel } = setup()
       panel.confirmNewGame = true
       await expect(panel.newGame()).resolves.toBeUndefined()
+      expect(replace).not.toHaveBeenCalled()
       expect(invoke).toHaveBeenCalledOnce()
       expect(invoke).toHaveBeenCalledWith('save_write', {
         slot: 'autosave',

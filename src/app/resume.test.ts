@@ -57,6 +57,15 @@ describe('startState (S43b)', () => {
     },
   )
 
+  it('AC-1: returns null for a save whose parcel count does not match the size', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const state = saved()
+    const world = { ...state.world, parcels: state.world.parcels.slice(0, 10) }
+    local.set(AUTOSAVE, serialize({ ...state, world }))
+    await expect(startState('')).resolves.toBeNull()
+    expect(String(error.mock.calls[0]?.[1])).toMatch(/Parcel count does not match size/)
+  })
+
   it('AC-1: returns null and logs when readSlot rejects', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.mocked(isTauri).mockReturnValue(true)

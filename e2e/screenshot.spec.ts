@@ -935,10 +935,14 @@ test('S43b: the game resumes from the autosave, and "Neues Spiel" starts day 1',
   await expect(clock).toHaveText(/^Tag 2 /)
 
   await page.getByTestId('save-button').click()
-  await page.getByTestId('save-new-game').click()
-  await page.getByTestId('save-new-game-cancel').click()
+  await page.getByTestId('save-new-game').focus()
+  await page.keyboard.press('Enter')
+  await expect(page.getByTestId('save-new-game-cancel')).toBeFocused()
+  await page.keyboard.press('Enter')
   await expect(page.getByTestId('save-new-game-confirm')).toHaveCount(0)
+  await expect(page.getByTestId('save-new-game')).toBeFocused()
   await page.getByTestId('save-new-game').click()
+  await expect(page.getByTestId('save-new-game-confirm')).toHaveText('Ja, neues Spiel')
   await expect(page.getByTestId('save-panel')).toContainText(
     'Das laufende Spiel geht verloren. Neues Spiel beginnen?',
   )

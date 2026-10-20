@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, useTemplateRef, watch } from 'vue'
 import { slots, useSavePanelStore, type SlotStatus } from '../app/savePanel'
 import de from './i18n/de.json'
 
@@ -19,6 +19,24 @@ const messageText = computed(() => {
   if (m === null) return null
   return m.key === 'invalidPending' ? t.invalidPending : t[m.key].replace('{reason}', m.reason)
 })
+
+// On a narrow window the panel scrolls, so the message can be out of view.
+const messageBox = useTemplateRef('messageBox')
+watch(messageText, async (text) => {
+  if (text === null) return
+  await nextTick()
+  messageBox.value?.scrollIntoView({ block: 'nearest' })
+})
+
+// The swapped buttons remove the focused button, so move the focus to the new step.
+const newGameButton = useTemplateRef('newGameButton')
+const cancelButton = useTemplateRef('cancelButton')
+async function askNewGame(ask: boolean) {
+  panel.confirmNewGame = ask
+  await nextTick()
+  // The cancel button gets the focus, so Enter does not overwrite the game.
+  ;(ask ? cancelButton : newGameButton).value?.focus()
+}
 </script>
 
 <template>
@@ -42,7 +60,13 @@ const messageText = computed(() => {
           ×
         </button>
       </header>
-      <p v-if="messageText" class="message" role="alert" data-testid="save-panel-message">
+      <p
+        v-if="messageText"
+        ref="messageBox"
+        class="message"
+        role="alert"
+        data-testid="save-panel-message"
+      >
         {{ messageText }}
       </p>
       <ul>
@@ -79,26 +103,36 @@ const messageText = computed(() => {
         </li>
       </ul>
       <div
-        v-if="panel.confirmNewGame"
         class="new-game"
-        role="group"
+        :role="panel.confirmNewGame ? 'group' : undefined"
         aria-labelledby="new-game-text"
-        data-testid="save-new-game-step"
       >
-        <p id="new-game-text">{{ t.newGameConfirm }}</p>
-        <button type="button" data-testid="save-new-game-confirm" @click="panel.newGame()">
-          {{ t.newGame }}
-        </button>
+        <template v-if="panel.confirmNewGame">
+          <p id="new-game-text">{{ t.newGameConfirm }}</p>
+          <button
+            type="button"
+            class="danger"
+            data-testid="save-new-game-confirm"
+            @click="panel.newGame()"
+          >
+            {{ t.newGameYes }}
+          </button>
+          <button
+            ref="cancelButton"
+            type="button"
+            data-testid="save-new-game-cancel"
+            @click="askNewGame(false)"
+          >
+            {{ t.cancel }}
+          </button>
+        </template>
         <button
+          v-else
+          ref="newGameButton"
           type="button"
-          data-testid="save-new-game-cancel"
-          @click="panel.confirmNewGame = false"
+          data-testid="save-new-game"
+          @click="askNewGame(true)"
         >
-          {{ t.cancel }}
-        </button>
-      </div>
-      <div v-else class="new-game">
-        <button type="button" data-testid="save-new-game" @click="panel.confirmNewGame = true">
           {{ t.newGame }}
         </button>
       </div>
@@ -169,6 +203,10 @@ li {
 .new-game p {
   flex-basis: 100%;
   margin: 0;
+}
+.danger {
+  color: #f2c48d;
+  box-shadow: inset 0 0 0 1px #f2c48d;
 }
 .name {
   font-weight: 600;

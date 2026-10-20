@@ -35,7 +35,9 @@ const plant = z.object({
 // Shape check of a loaded state. The output type must stay assignable to GameState.
 export const gameStateSchema = z.object({
   time: z.object({ hour: int, speed: num }),
-  world: z.object({ seed: int, size: int, parcels: z.array(parcel), start: place }),
+  world: z
+    .object({ seed: int, size: int, parcels: z.array(parcel), start: place })
+    .refine((w) => w.parcels.length === w.size * w.size, 'Parcel count does not match size'),
   props: z.object({
     hut: place,
     market: place,
