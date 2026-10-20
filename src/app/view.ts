@@ -16,5 +16,11 @@ export const useViewStore = defineStore('view', () => {
     helpOpen.value = !helpOpen.value
   }
 
-  return { overlay, toggle, helpOpen, toggleHelp }
+  const fpsVisible = ref(false)
+  const fps = ref(0)
+  function toggleFps() {
+    fpsVisible.value = !fpsVisible.value
+  }
+
+  return { overlay, toggle, helpOpen, toggleHelp, fpsVisible, fps, toggleFps }
 })

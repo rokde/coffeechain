@@ -16,6 +16,9 @@
     "pause": "Pause",
     "speed": "{speed}×"
   },
+  "debug": {
+    "fps": "{fps} fps"
+  },
   "inspector": {
     "heading": "Parzelle",
     "position": "{x} / {y}",
@@ -216,6 +219,7 @@
       { "keys": "0 / 1–5", "text": "Pause / 1× / 2× / 4× / 8× / 16×" },
       { "keys": "Leertaste", "text": "Pause an / aus" },
       { "keys": "H", "text": "Hilfe öffnen / schließen" },
+      { "keys": "F", "text": "Bildrate (fps) zeigen / verbergen" },
       { "keys": "Esc", "text": "Hilfe schließen / Werkzeug ablegen" },
       { "keys": "Rechtsklick", "text": "Werkzeug ablegen" }
     ]

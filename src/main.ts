@@ -7,6 +7,8 @@ import { advance } from './app/loop'
 import { selectParcel } from './app/market'
 import { isBrushTool, isClick, strokeParcel } from './app/brush'
 import { useSelectionStore } from './app/selection'
+import { installDebugKeys } from './app/debugKeys'
+import { fpsFromFrames } from './app/fps'
 import { installHelpKeys } from './app/helpKeys'
 import { installSpeedKeys } from './app/speedKeys'
 import { useGameStore } from './app/store'
@@ -170,7 +172,9 @@ function start() {
   const pinia = createPinia()
   const store = useGameStore(pinia)
   installSpeedKeys(store)
-  installHelpKeys(useViewStore(pinia), useSelectionStore(pinia))
+  const viewStore = useViewStore(pinia)
+  installHelpKeys(viewStore, useSelectionStore(pinia))
+  installDebugKeys(viewStore)
   // The model row lies at the origin, so the debug view has no terrain.
   // createTerrain only reads the world, so the cast of the readonly snapshot is safe.
   if (!debugModels) {
@@ -185,7 +189,6 @@ function start() {
       () => plants.show(store.state.farm.plants, store.state.time.hour),
       { immediate: true },
     )
-    const viewStore = useViewStore(pinia)
     watch(
       () => viewStore.overlay,
       (mode) => applyOverlay(terrain, world, mode),
@@ -324,12 +327,17 @@ function start() {
   let carryMs = 0
   let last: number | undefined
   let lastCameraKey = ''
+  // About one second of frames at 60 fps.
+  const frameTimes: number[] = []
 
   // setAnimationLoop runs on requestAnimationFrame.
   renderer.setAnimationLoop((now) => {
     const frameMs = now - (last ?? now)
     const due = advance(carryMs, frameMs, store.state.time.speed, msPerTick)
     last = now
+    frameTimes.push(frameMs)
+    if (frameTimes.length > 60) frameTimes.shift()
+    if (viewStore.fpsVisible) viewStore.fps = fpsFromFrames(frameTimes)
     const right = Number(held.has('d')) - Number(held.has('a'))
     const up = Number(held.has('w')) - Number(held.has('s'))
     if (right || up) {
