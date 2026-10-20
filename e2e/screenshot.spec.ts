@@ -1012,3 +1012,53 @@ for (const [width, height] of [
     await page.screenshot({ path: `docs/progress/S40-${width}.png` })
   })
 }
+
+for (const [width, height] of [
+  [1440, 900],
+  [390, 844],
+  [360, 640],
+] as const) {
+  test(`S52: event chips in the top bar and warnings in the messages at ${width} px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height })
+    await page.goto('/?seed=4294967295')
+    await page.getByTestId('save-button').click()
+    await page.getByTestId('save-slot-1').getByTestId('save-slot-save').click()
+    await page.evaluate(() => {
+      const key = 'coffeechain.save.slot-1'
+      const save = JSON.parse(localStorage.getItem(key)!)
+      save.state.time = { ...save.state.time, hour: 4 * 24 + 8, speed: 0 }
+      save.state.events = [
+        { type: 'frost', announcedDay: 3, startDay: 5, endDay: 8 },
+        { type: 'boom', announcedDay: 2, startDay: 4, endDay: 7 },
+        { type: 'pests', announcedDay: 5, startDay: 6, endDay: 9 },
+        { type: 'monsoon', announcedDay: 5, startDay: 7, endDay: 10 },
+      ]
+      localStorage.setItem(key, JSON.stringify(save))
+    })
+    await page.getByTestId('save-panel-close').click()
+    await page.getByTestId('save-button').click()
+    await page.getByTestId('save-slot-1').getByTestId('save-slot-load').click()
+    await page.getByTestId('first-steps-close').click()
+    await expect(page.getByTestId('active-event')).toHaveText(['Frost', 'Marktboom'])
+    const messages = page.getByTestId('message')
+    await expect(messages.nth(0)).toContainText('Schädlings-Warnung ab morgen')
+    await expect(messages.nth(1)).toContainText('Monsun-Warnung ab Tag 7')
+    const bar = page.getByTestId('hud-top-bar')
+    expect(await bar.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+    for (const chip of await page.getByTestId('active-event').all())
+      await expect(chip).toBeInViewport({ ratio: 1 })
+    const seed = (await page.getByTestId('world-seed').boundingBox())!
+    const storage = (await page.getByTestId('storage').boundingBox())!
+    const first = (await page.getByTestId('active-event').first().boundingBox())!
+    for (const box of [storage, first])
+      expect(box.x >= seed.x + seed.width || box.y >= seed.y + seed.height).toBe(true)
+    const panel = (await page.getByTestId('hud-right-panel').boundingBox())!
+    for (const chip of await page.getByTestId('active-event').all())
+      expect(
+        (await chip.boundingBox())!.y + (await chip.boundingBox())!.height,
+      ).toBeLessThanOrEqual(panel.y)
+    await page.screenshot({ path: `docs/progress/S52-${width}.png` })
+  })
+}

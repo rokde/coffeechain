@@ -192,6 +192,35 @@
     "harvestPro": "Meilenstein Ernte-Profi erreicht: +5 % Erntequalität",
     "none": "Keine Meldungen"
   },
+  "events": {
+    "warnTomorrow": "{warning} ab morgen",
+    "warnDay": "{warning} ab Tag {day}",
+    "frost": {
+      "name": "Frost",
+      "warning": "Frost-Warnung",
+      "hint": "Hochland-Ernte sinkt, Arabica wird teurer."
+    },
+    "monsoon": {
+      "name": "Monsun",
+      "warning": "Monsun-Warnung",
+      "hint": "Robusta wird teurer."
+    },
+    "boom": {
+      "name": "Marktboom",
+      "warning": "Marktboom",
+      "hint": "Die Bank zahlt mehr."
+    },
+    "crisis": {
+      "name": "Marktkrise",
+      "warning": "Marktkrise",
+      "hint": "Die Bank zahlt weniger."
+    },
+    "pests": {
+      "name": "Schädlinge",
+      "warning": "Schädlings-Warnung",
+      "hint": "Schädlingsschutz halbiert den Verlust im Tiefland."
+    }
+  },
   "help": {
     "open": "Hilfe",
     "heading": "Hilfe",

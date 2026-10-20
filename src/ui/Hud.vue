@@ -11,6 +11,7 @@ import { storageUsed } from '../sim/storage/storage'
 import { clock } from '../sim/time/time'
 import de from './i18n/de.json'
 import { formatMoney } from './money'
+import EventChips from './EventChips.vue'
 import FirstSteps from './FirstSteps.vue'
 import FarmTool from './FarmTool.vue'
 import FpsMeter from './FpsMeter.vue'
@@ -80,6 +81,7 @@ const storageText = computed(() =>
         </div>
       </div>
       <div class="stats">
+        <EventChips />
         <span class="chip" data-testid="storage">{{ storageText }}</span>
         <span class="chip money" data-testid="money">{{ formatMoney(store.state.money) }}</span>
       </div>
@@ -384,6 +386,15 @@ const storageText = computed(() =>
   outline-offset: 2px;
 }
 @media (max-width: 480px) {
+  /* Room for the event tab below the stats tab. */
+  .left-panel {
+    top: 108px;
+    height: 204px;
+  }
+  .right-panel {
+    top: 108px;
+    height: 464px;
+  }
   /* Eight tools do not fit in one row, so they use two rows of four. */
   .toolbar {
     height: auto;
