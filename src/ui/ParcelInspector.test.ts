@@ -4,11 +4,15 @@ import { createSSRApp } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import { useSelectionStore } from '../app/selection'
 import { useGameStore } from '../app/store'
+import { balance } from '../sim/balance'
 import { dispatch } from '../sim/commands'
 import { forecastYield } from '../sim/farm/forecast'
 import { isBuildable } from '../sim/farm/parcels'
+import { fieldStatus } from '../sim/farm/status'
 import type { GameState } from '../sim/state'
+import { careParcel } from './farmAction'
 import de from './i18n/de.json'
+import { formatMoney } from './money'
 import ParcelInspector from './ParcelInspector.vue'
 
 vi.stubGlobal('location', { search: '?seed=42' })
@@ -44,5 +48,89 @@ describe('ParcelInspector yield forecast', () => {
     const text = de.inspector.yieldUnits.replace('{n}', String(forecast))
     expect(html).toContain(de.inspector.yield)
     expect(html).toMatch(new RegExp(`data-testid="inspector-yield"[^>]*>${text}<`))
+  })
+})
+
+// Owns one lowland parcel with Robusta, applies the change and selects the parcel.
+function setupStatus(change: (s: GameState, parcels: { x: number; y: number }[]) => GameState) {
+  const pinia = createPinia()
+  setActivePinia(pinia)
+  const game = useGameStore(pinia)
+  const state = game.state as GameState
+  const { x, y } = state.world.parcels.find(
+    (p) => p.zone === 'tiefland' && isBuildable(state.world, p.x, p.y),
+  )!
+  const parcels = [{ x, y }]
+  const owned = dispatch({ ...state, money: 100000 }, { type: 'CreateParcels', parcels })
+  const planted = dispatch(owned, { type: 'Plant', variety: 'robusta', parcels })
+  game.replace(change(planted, parcels))
+  useSelectionStore(pinia).parcel = { x, y }
+  return { pinia, game, parcel: { x, y } }
+}
+
+const text = (html: string, id: string) =>
+  [...html.matchAll(new RegExp(`data-testid="${id}"[^>]*>([^<]*)<`, 'g'))].map((m) => m[1]!.trim())
+const buttons = (html: string) => html.match(/<button[^>]*inspector-care-action[^>]*>/g) ?? []
+const ripeHours = balance().varieties.robusta.cycleDays * balance().time.ticksPerGameDay
+const irrigationCost = Math.round(balance().varieties.robusta.careCost.irrigation * 100)
+
+describe('ParcelInspector field status (S21e)', () => {
+  it('AC-3: shows stage, growth, days, cares, hints and the open care buttons', async () => {
+    const { pinia, game, parcel } = setupStatus((s, parcels) => {
+      const irrigated = dispatch(s, { type: 'Irrigate', parcels })
+      return { ...irrigated, time: { ...irrigated.time, hour: irrigated.time.hour + 30 } }
+    })
+    const status = fieldStatus(game.state as GameState, parcel.x, parcel.y)!
+    expect(status.daysToRipe).toBeGreaterThan(1)
+    const html = await renderToString(createSSRApp(ParcelInspector).use(pinia))
+    expect(text(html, 'inspector-stage')).toEqual([de.inspector.stages[status.stage]])
+    expect(text(html, 'inspector-growth')).toEqual([`${status.percent} %`])
+    expect(text(html, 'inspector-days')).toEqual([`Reif in ${status.daysToRipe} Tagen`])
+    expect(html).toContain('Pflege')
+    expect(text(html, 'inspector-care')).toEqual(['gewässert'])
+    expect(text(html, 'inspector-care-hint')).toEqual(['Düngen möglich', 'Schützen möglich'])
+    expect(text(html, 'inspector-care-action')).toEqual(['Düngen', 'Schützen'])
+    expect(buttons(html).every((b) => !b.includes('disabled'))).toBe(true)
+    expect(buttons(html).every((b) => !b.includes('title='))).toBe(true)
+    expect(html).toMatch(/<dt[^>]*>Fortschritt<\/dt>/)
+  })
+
+  it('AC-3: shows no status rows for an empty parcel', async () => {
+    const { pinia } = setupStatus((s) => ({ ...s, farm: { ...s.farm, plants: {} } }))
+    const html = await renderToString(createSSRApp(ParcelInspector).use(pinia))
+    expect(html).toContain('data-testid="parcel-inspector"')
+    for (const id of ['stage', 'growth', 'days', 'care', 'care-hint', 'care-action'])
+      expect(html).not.toContain(`inspector-${id}"`)
+  })
+
+  it('AC-4: careParcel irrigates the parcel and takes the irrigation cost', () => {
+    const { game, parcel } = setupStatus((s) => s)
+    const money = game.state.money
+    careParcel('Irrigate', parcel)
+    expect(game.state.farm.plants[parcel.y * game.state.world.size + parcel.x]?.irrigated).toBe(
+      true,
+    )
+    expect(game.state.money).toBe(money - irrigationCost)
+  })
+
+  it('AC-4: the "Wässern" button is disabled when the money is less than the cost', async () => {
+    const { pinia } = setupStatus((s) => ({ ...s, money: irrigationCost - 1 }))
+    const html = await renderToString(createSSRApp(ParcelInspector).use(pinia))
+    const irrigate = buttons(html).find(
+      (b, i) => text(html, 'inspector-care-action')[i] === 'Wässern',
+    )
+    expect(irrigate).toContain('disabled')
+    expect(irrigate).toContain(`title="Zu wenig Geld: kostet ${formatMoney(irrigationCost)}"`)
+  })
+
+  it('AC-4: careParcel on a ripe plant does not throw and keeps the money', () => {
+    const { game, parcel } = setupStatus((s) => ({
+      ...s,
+      time: { ...s.time, hour: s.time.hour + ripeHours },
+    }))
+    const before = game.state
+    expect(() => careParcel('Irrigate', parcel)).not.toThrow()
+    expect(game.state.money).toBe(before.money)
+    expect(game.state).toStrictEqual(before)
   })
 })

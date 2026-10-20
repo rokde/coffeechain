@@ -27,6 +27,40 @@
     "notBuildable": "nicht bebaubar",
     "yield": "Ertragsprognose",
     "yieldUnits": "{n} Einheiten",
+    "stage": "Stadium",
+    "stages": {
+      "setzling": "Setzling",
+      "wachstum": "Wachstum",
+      "bluete": "Blüte",
+      "fruchtansatz": "Fruchtansatz",
+      "reif": "Reif"
+    },
+    "overripe": "Überreif",
+    "growth": "Fortschritt",
+    "percent": "{n} %",
+    "ripeness": "Reife",
+    "daysToRipe": "Reif in {n} Tagen",
+    "daysToRipeOne": "Reif in 1 Tag",
+    "daysToOverripe": "Überreif in {n} Tagen",
+    "daysToOverripeOne": "Überreif in 1 Tag",
+    "care": "Pflege",
+    "careNone": "keine",
+    "careTooExpensive": "Zu wenig Geld: kostet {cost}",
+    "careDone": {
+      "fertilized": "gedüngt",
+      "irrigated": "gewässert",
+      "pestProtected": "geschützt"
+    },
+    "careHints": {
+      "Fertilize": "Düngen möglich",
+      "Irrigate": "Wässern möglich",
+      "ProtectPests": "Schützen möglich"
+    },
+    "careActions": {
+      "Fertilize": "Düngen",
+      "Irrigate": "Wässern",
+      "ProtectPests": "Schützen"
+    },
     "zones": {
       "wasser": "Wasser",
       "tiefland": "Tiefland",
@@ -123,6 +157,7 @@
     "heading": "Meldungen",
     "ripe": "Feld {name} ist erntereif",
     "overripe": "Feld {name} ist überreif",
+    "needsCare": "Feld {name} braucht Pflege",
     "storageFull": "Lager voll",
     "none": "Keine Meldungen"
   }
