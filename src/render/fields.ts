@@ -1,6 +1,8 @@
 import { BufferGeometry, Float32BufferAttribute, Mesh, MeshLambertMaterial } from 'three'
 import type { FarmState } from '../sim/farm/parcels'
+import type { GameState } from '../sim/state'
 import type { World } from '../sim/world/types'
+import { buildingTop } from './buildings'
 import { corner, type ParcelPos } from './picking'
 import { parcelCenter } from './surface'
 
@@ -8,14 +10,25 @@ import { parcelCenter } from './surface'
 const SOIL_COLOR = 0x6b4a32
 
 // One anchor per field, at the mean parcel center of its parcels.
-export function fieldAnchors(world: World, farm: FarmState) {
+// The anchor goes up to the top of the highest building, so the label does not hide it.
+export function fieldAnchors(
+  world: World,
+  farm: FarmState,
+  buildings: Readonly<GameState['buildings']> = {},
+) {
   return farm.fields.map(({ id, name }) => {
-    const centers = Object.entries(farm.parcels)
+    const indexes = Object.entries(farm.parcels)
       .filter(([, field]) => field === id)
-      .map(([index]) => parcelCenter(world, +index % world.size, Math.floor(+index / world.size)))
+      .map(([index]) => +index)
+    const centers = indexes.map((index) =>
+      parcelCenter(world, index % world.size, Math.floor(index / world.size)),
+    )
     const mean = (key: 'x' | 'y' | 'z') =>
       centers.reduce((sum, c) => sum + c[key], 0) / centers.length
-    return { id, name, position: { x: mean('x'), y: mean('y'), z: mean('z') } }
+    const tops = indexes.flatMap((index, i) =>
+      buildings[index] ? [centers[i]!.y + buildingTop(buildings[index].kind)] : [],
+    )
+    return { id, name, position: { x: mean('x'), y: Math.max(mean('y'), ...tops), z: mean('z') } }
   })
 }
 

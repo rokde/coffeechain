@@ -386,6 +386,44 @@ test('S44: build tool', async ({ page }) => {
   expect(errors).toEqual([])
 })
 
+test('S44b: building meshes', async ({ page }) => {
+  const errors: string[] = []
+  page.on('console', (msg) => {
+    if (msg.type() === 'error') errors.push(msg.text())
+  })
+  page.on('pageerror', (error) => errors.push(error.message))
+
+  await page.goto('/?seed=48213')
+  const canvas = page.locator('canvas#scene')
+  await expect(canvas).toHaveAttribute('data-buildings', '0')
+  // Buildable lowland parcels (32, 38) and (35, 37) of seed 48213 at the start view.
+  const sites = [
+    { position: { x: 607, y: 357 }, kind: 'processing' },
+    { position: { x: 758, y: 417 }, kind: 'storage' },
+  ]
+  await page.getByTestId('tool-parcel').click()
+  for (const { position } of sites) await canvas.click({ position })
+  for (const { position, kind } of sites) {
+    await page.getByTestId('tool-select').click()
+    await canvas.click({ position })
+    await page.getByTestId('tool-build').click()
+    await page.getByTestId(`build-tool-build-${kind}`).click()
+  }
+  await expect(canvas).toHaveAttribute('data-buildings', '2')
+  await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
+  await page.screenshot({ path: 'docs/progress/S44b.png' })
+
+  // A load reloads the page and shows the buildings of the slot again.
+  const row = page.getByTestId('save-slot-1')
+  await page.getByTestId('save-button').click()
+  await row.getByTestId('save-slot-save').click()
+  await expect(row.getByTestId('save-slot-load')).toBeEnabled()
+  await Promise.all([page.waitForEvent('load'), row.getByTestId('save-slot-load').click()])
+  await expect(page.getByTestId('save-panel')).toHaveCount(0)
+  await expect(canvas).toHaveAttribute('data-buildings', '2')
+  expect(errors).toEqual([])
+})
+
 test('S12b: owned parcel marks and field labels', async ({ page }) => {
   const errors: string[] = []
   page.on('console', (msg) => {

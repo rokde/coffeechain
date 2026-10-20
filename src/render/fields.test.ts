@@ -3,6 +3,7 @@ import { balance } from '../sim/balance'
 import type { FarmState } from '../sim/farm/parcels'
 import { generateWorld } from '../sim/world/generate'
 import { createFieldMarks, FIELD_LABEL_STYLE, fieldAnchors, hoveredField } from './fields'
+import { buildingTop } from './buildings'
 import { createTerrain } from './terrain'
 import { parcelCenter } from './surface'
 
@@ -52,6 +53,26 @@ describe('fieldAnchors', () => {
     for (const k of ['x', 'y', 'z'] as const) {
       expect(anchors[2]!.position[k]).toBeCloseTo(merged[k], 10)
     }
+  })
+
+  it('raises the anchor of a field with a building to the building top', () => {
+    const anchors = fieldAnchors(world, threeFields, {
+      [at(10, 10)]: { kind: 'processing' },
+      [at(21, 21)]: { kind: 'storage' },
+    })
+    expect(buildingTop('processing')).toBeGreaterThan(0.4)
+    expect(anchors[0]!.position.y).toBeCloseTo(
+      parcelCenter(world, 10, 10).y + buildingTop('processing'),
+      10,
+    )
+    expect(anchors[1]!.position).toEqual(parcelCenter(world, 30, 12))
+    expect(anchors[2]!.position.y).toBeCloseTo(
+      Math.max(
+        fieldAnchors(world, threeFields)[2]!.position.y,
+        parcelCenter(world, 21, 21).y + buildingTop('storage'),
+      ),
+      10,
+    )
   })
 
   it('AC-1: gives an empty list for an empty farm', () => {
