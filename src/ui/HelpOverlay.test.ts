@@ -4,6 +4,7 @@ import { createSSRApp } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import { useViewStore } from '../app/view'
 import Hud from './Hud.vue'
+import { tools } from './toolbar'
 
 vi.stubGlobal('location', { search: '?seed=42' })
 vi.stubGlobal('sessionStorage', { getItem: () => null, removeItem: () => {} })
@@ -62,5 +63,29 @@ describe('HelpOverlay (S35a)', () => {
       expect(controls).toContain(text)
     expect(controls.match(/<dt[^>]*>Esc/g)).toHaveLength(1)
     expect(html).toContain('data-testid="help-close"')
+  })
+})
+
+describe('tool keys and tooltips (S53)', () => {
+  it('AC-3: each toolbar button has the title "<label> (<KEY>)" and aria-keyshortcuts', async () => {
+    const html = await render(false)
+    expect(tools).toHaveLength(9)
+    for (const tool of tools) {
+      const button = html.match(new RegExp(`<button[^>]*data-testid="tool-${tool.id}"[^>]*>`))![0]
+      expect(button).toContain(`title="${tool.label} (${tool.key})"`)
+      expect(button).toContain(`aria-keyshortcuts="${tool.key}"`)
+    }
+    expect(html).toMatch(/<button[^>]*data-testid="tool-plant"[^>]*title="Pflanzen \(L\)"/)
+  })
+
+  it('AC-5: the help lists one row per tool with its key and label, after the old rows', async () => {
+    const html = await render(true)
+    const controls = html.split('data-testid="help-controls"')[1]!.split('</dl>')[0]!
+    const rows = [...controls.matchAll(/<dt[^>]*>([^<]*)<\/dt><dd[^>]*>([^<]*)<\/dd>/g)]
+    const old = rows.length - tools.length
+    expect(old).toBe(16)
+    expect(rows.slice(old).map((m) => [m[1], m[2]])).toEqual(
+      tools.map((tool) => [tool.key, `Werkzeug ${tool.label}`]),
+    )
   })
 })

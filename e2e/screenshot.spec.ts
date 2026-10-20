@@ -832,6 +832,30 @@ test('S35a: help keys leave the speed alone and ignore inputs', async ({ page })
   await expect(page.getByTestId('help-overlay')).toHaveCount(0)
 })
 
+test('S53: letter keys pick tools, buttons have tooltips, the help lists the keys', async ({
+  page,
+}) => {
+  await page.goto('/')
+  const plant = page.getByTestId('tool-plant')
+  await expect(plant).toHaveAttribute('title', 'Pflanzen (L)')
+  await expect(plant).toHaveAttribute('aria-keyshortcuts', 'L')
+  await page.keyboard.press('l')
+  await expect(plant).toHaveAttribute('aria-pressed', 'true')
+  await page.keyboard.press('B')
+  await expect(page.getByTestId('tool-build')).toHaveAttribute('aria-pressed', 'true')
+  await page.keyboard.press('h')
+  const controls = page.getByTestId('help-controls')
+  await expect(controls).toContainText('Werkzeug Pflanzen')
+  await controls.getByText('Werkzeug Markt').scrollIntoViewIfNeeded()
+  await page.screenshot({ path: 'docs/progress/help-tool-keys.png' })
+  // The open help blocks the tool keys.
+  await page.keyboard.press('v')
+  await expect(page.getByTestId('tool-build')).toHaveAttribute('aria-pressed', 'true')
+  await page.keyboard.press('Escape')
+  await page.keyboard.press('v')
+  await expect(page.getByTestId('tool-select')).toHaveAttribute('aria-pressed', 'true')
+})
+
 test('S35a: help button and overlay fit a narrow window', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 640 })
   await page.goto('/')

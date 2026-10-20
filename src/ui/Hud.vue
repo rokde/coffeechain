@@ -131,6 +131,8 @@ const storageText = computed(() =>
         type="button"
         :data-testid="`tool-${tool.id}`"
         :aria-pressed="selection.tool === tool.id"
+        :title="`${tool.label} (${tool.key})`"
+        :aria-keyshortcuts="tool.key"
         :data-guide="steps.guide === `tool-${tool.id}` ? 'next' : undefined"
         @click="pickTool(selection, store.state as GameState, tool.id)"
       >

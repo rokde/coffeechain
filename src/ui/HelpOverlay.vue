@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useViewStore } from '../app/view'
 import de from './i18n/de.json'
+import { tools } from './toolbar'
 
 const view = useViewStore()
 </script>
@@ -36,6 +37,10 @@ const view = useViewStore()
         <template v-for="row in de.help.controls" :key="row.keys">
           <dt>{{ row.keys }}</dt>
           <dd>{{ row.text }}</dd>
+        </template>
+        <template v-for="tool in tools" :key="tool.id">
+          <dt>{{ tool.key }}</dt>
+          <dd>{{ de.help.toolKey.replace('{label}', tool.label) }}</dd>
         </template>
       </dl>
     </section>
