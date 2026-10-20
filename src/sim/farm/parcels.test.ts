@@ -5,8 +5,9 @@ import { balance } from '../balance'
 import { dispatch } from '../commands'
 import { createState, type GameState } from '../state'
 import { generateWorld } from '../world/generate'
-import { isBuildable } from './parcels'
+import { placeProps } from '../world/props'
 import type { Parcel, World, Zone } from '../world/types'
+import { isBuildable } from './parcels'
 
 const size = 6
 
@@ -25,7 +26,20 @@ function testWorld(): World {
   return { seed: 0, size, parcels, start: { x: 2, y: 2 } }
 }
 
-const testState = (money = 50000): GameState => ({ ...createState(1), world: testWorld(), money })
+// Trees at (3,3), (1,4) and (4,2). The test world has no poor soil, so placeProps sets no trees.
+const testState = (money = 50000): GameState => ({
+  ...createState(1),
+  world: testWorld(),
+  props: {
+    ...placeProps(testWorld(), balance()),
+    trees: [
+      { x: 3, y: 3 },
+      { x: 1, y: 4 },
+      { x: 4, y: 2 },
+    ],
+  },
+  money,
+})
 
 const buy = (state: GameState, ...parcels: [number, number][]) =>
   dispatch(state, { type: 'CreateParcels', parcels: parcels.map(([x, y]) => ({ x, y })) })
@@ -171,6 +185,57 @@ describe('CreateParcels fields', () => {
     const state = buy(testState(), [1, 1], [2, 2])
     expect(fieldOf(state, 1, 1)).toBe('A')
     expect(fieldOf(state, 2, 2)).toBe('B')
+  })
+})
+
+describe('CreateParcels trees', () => {
+  it('AC-2: removes the tree on a bought parcel', () => {
+    const state = buy(testState(), [3, 3])
+    expect(state.props.trees).not.toContainEqual({ x: 3, y: 3 })
+  })
+
+  it('AC-3: keeps the other trees in order and the hut, market and path', () => {
+    const before = testState()
+    const after = buy(before, [3, 3])
+    expect(after.props).toEqual({
+      ...before.props,
+      trees: [
+        { x: 1, y: 4 },
+        { x: 4, y: 2 },
+      ],
+    })
+  })
+
+  it.each<[string, GameState, [number, number][]]>([
+    [
+      'water',
+      testState(),
+      [
+        [3, 3],
+        [0, 0],
+      ],
+    ],
+    [
+      'too steep',
+      testState(),
+      [
+        [3, 3],
+        [5, 0],
+      ],
+    ],
+    ['not enough money', testState(100), [[3, 3]]],
+    [
+      'already owned',
+      buy(testState(), [2, 2]),
+      [
+        [3, 3],
+        [2, 2],
+      ],
+    ],
+  ])('AC-4: keeps all trees when the command throws (%s)', (_, state, parcels) => {
+    expect(() => buy(state, ...parcels)).toThrow()
+    expect(state.props.trees).toHaveLength(3)
+    expect(state.props.trees).toContainEqual({ x: 3, y: 3 })
   })
 })
 

@@ -91,6 +91,12 @@ export function createParcels(state: GameState, command: CreateParcels): GameSta
   return {
     ...state,
     money: state.money - cost,
+    props: {
+      ...state.props,
+      trees: state.props.trees.filter(
+        (t) => !command.parcels.some((p) => p.x === t.x && p.y === t.y),
+      ),
+    },
     farm: { ...state.farm, parcels: owned, fields, nextFieldId },
   }
 }
