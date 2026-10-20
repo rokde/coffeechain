@@ -11,7 +11,8 @@
     "typecheck": "vue-tsc --noEmit",
     "format": "prettier --write .",
     "screenshot": "playwright test",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "balance-sim": "tsx tools/balance-sim.ts"
   },
   "dependencies": {
     "pinia": "^4.1.0",
@@ -29,6 +30,7 @@
     "eslint": "^10.13.0",
     "eslint-plugin-vue": "^10.11.1",
     "prettier": "^3.9.10",
+    "tsx": "^4.23.15",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.72.0",
     "vite": "^8.3.4",
