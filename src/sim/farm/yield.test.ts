@@ -16,9 +16,7 @@ describe('all varieties and soil classes', () => {
   const pairs = varieties.flatMap((variety) => soils.map((soilClass) => ({ variety, soilClass })))
 
   it.each(pairs)('$variety on $soilClass', ({ variety, soilClass }) => {
-    const expected = Math.floor(
-      cfg.varieties[variety].baseYield * cfg.soil.yieldFactor[soilClass] + 1e-9,
-    )
+    const expected = Math.floor(cfg.varieties[variety].baseYield * cfg.soil.yieldFactor[soilClass])
     expect(
       computeYield({ variety, soilClass, zoneMatches: true, fertilized: false, random: 1 }),
     ).toBe(expected)
@@ -64,6 +62,16 @@ it('does not lose a unit to float noise', () => {
       fertilized: true,
     }),
   ).toBe(6)
+})
+
+it('rounds 28.999999999999996 (100 × 0.29) up to 29', () => {
+  const cfg = balance()
+  const noisy = {
+    ...cfg,
+    varieties: { ...cfg.varieties, robusta: { ...cfg.varieties.robusta, baseYield: 100 } },
+    soil: { ...cfg.soil, yieldFactor: { ...cfg.soil.yieldFactor, gut: 0.29 } },
+  }
+  expect(computeYield(base, noisy)).toBe(29)
 })
 
 it('keeps yieldRandom inside the range and repeats it for the same seed', () => {
