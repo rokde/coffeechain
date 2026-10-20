@@ -29,6 +29,7 @@ test('S4: debug view shows each Kenney model', async ({ page }) => {
     await expect(page.getByTestId(`model-${id}`)).toBeVisible()
   }
   await page.waitForLoadState('networkidle')
+  await expect(page.locator('canvas#scene')).not.toHaveAttribute('data-props')
 
   await page.screenshot({ path: 'docs/progress/S4-models.png' })
   expect(errors).toEqual([])

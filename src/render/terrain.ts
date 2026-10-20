@@ -1,9 +1,8 @@
 import { BufferGeometry, Color, Float32BufferAttribute, Mesh, MeshLambertMaterial } from 'three'
-import { balance } from '../sim/balance'
 import type { World, Zone } from '../sim/world/types'
+import { cornerY } from './surface'
 
 // Render constants, not balancing numbers.
-const HEIGHT_SCALE = 6
 export const ZONE_COLORS: Record<Zone, number> = {
   wasser: 0xc8b98e,
   tiefland: 0x8fb05a,
@@ -15,21 +14,6 @@ export const ZONE_COLORS: Record<Zone, number> = {
 // One quad per parcel with its own 4 corners. A corner gets the mean height of the parcels that touch it.
 export function buildTerrainGeometry(world: World): BufferGeometry {
   const { size: n, parcels } = world
-  // The lowest land height is the sea level, so water parcels lie below y = 0.
-  const seaLevel = balance().world.zoneMinHeight.tiefland
-  const cornerY = (cx: number, cz: number) => {
-    let sum = 0
-    let count = 0
-    for (let y = cz - 1; y <= cz; y++) {
-      for (let x = cx - 1; x <= cx; x++) {
-        if (x < 0 || y < 0 || x >= n || y >= n) continue
-        sum += parcels[y * n + x]!.height
-        count++
-      }
-    }
-    return (sum / count - seaLevel) * HEIGHT_SCALE
-  }
-
   const positions: number[] = []
   const colors: number[] = []
   const indices: number[] = []
@@ -43,7 +27,7 @@ export function buildTerrainGeometry(world: World): BufferGeometry {
       [p.x + 1, p.y + 1],
       [p.x, p.y + 1],
     ] as const) {
-      positions.push(cx - n / 2, cornerY(cx, cz), cz - n / 2)
+      positions.push(cx - n / 2, cornerY(world, cx, cz), cz - n / 2)
       colors.push(color.r, color.g, color.b)
     }
     // Counter-clockwise from above, so the faces point up.

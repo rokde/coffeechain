@@ -9,6 +9,8 @@ import { parcelCenter } from './surface'
 
 const world = generateWorld(42, balance())
 const places = placeProps(world, balance())
+// The lowest seed from 1 upward with a corner in the path. The S6 e2e test uses it too.
+const CORNER_SEED = 7
 
 // Hut-like and tree-like boxes of different sizes. Path tiles have their top 0.05 below the origin.
 const fakeLoad = async (id: ModelId): Promise<Object3D> => {
@@ -77,6 +79,11 @@ describe('pathPieces', () => {
       { x: 4, y: 5 },
     ])
     expect(back[0]!.quarterTurns).toBe(turns[0])
+  })
+
+  it('AC-2: gives at least one corner piece for the corner seed', () => {
+    const path = placeProps(generateWorld(CORNER_SEED, balance()), balance()).path
+    expect(pathPieces(path).some((p) => p.model === 'path-corner')).toBe(true)
   })
 })
 
