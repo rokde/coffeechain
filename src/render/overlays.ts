@@ -26,13 +26,9 @@ export function overlayColors(world: World, mode: OverlayMode): Float32Array {
   const out = new Float32Array(world.parcels.length * 12)
   const color = new Color()
   world.parcels.forEach((p, i) => {
-    color.setHex(
-      mode === 'zone'
-        ? ZONE_OVERLAY_COLORS[p.zone]
-        : mode === 'soil' && p.zone !== 'wasser'
-          ? SOIL_COLORS[p.soilClass]
-          : ZONE_COLORS[p.zone],
-    )
+    if (mode === 'zone') color.setHex(ZONE_OVERLAY_COLORS[p.zone])
+    else if (mode === 'soil' && p.zone !== 'wasser') color.setHex(SOIL_COLORS[p.soilClass])
+    else color.setHex(ZONE_COLORS[p.zone])
     for (let v = 0; v < 4; v++) out.set([color.r, color.g, color.b], i * 12 + v * 3)
   })
   return out

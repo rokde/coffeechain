@@ -143,3 +143,20 @@ test('S7: soil and zone overlay switches', async ({ page }) => {
   await expect(legend).toHaveCount(0)
   expect(errors).toEqual([])
 })
+
+test('S7: overlay panel fits a narrow window', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/')
+  const panel = page.getByTestId('hud-overlay-panel')
+  for (const mode of ['soil', 'zone']) {
+    await page.getByTestId(`overlay-${mode}`).click()
+    const track = page.getByTestId(`overlay-${mode}`).locator('.track')
+    expect((await track.boundingBox())!.width).toBe(52)
+    const box = (await panel.boundingBox())!
+    for (const item of await page.getByTestId('overlay-legend').locator('li').all()) {
+      const fits = await item.evaluate((el) => el.scrollWidth <= el.clientWidth)
+      const b = (await item.boundingBox())!
+      expect(fits && b.x + b.width <= box.x + box.width).toBe(true)
+    }
+  }
+})

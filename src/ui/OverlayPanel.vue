@@ -63,6 +63,7 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   width: 100%;
   min-height: 44px;
   padding: 0;
@@ -80,6 +81,7 @@ button:focus-visible {
   border-radius: 6px;
 }
 .track {
+  flex: none;
   position: relative;
   width: 52px;
   height: 28px;
@@ -122,6 +124,11 @@ button[aria-checked='true'] .thumb {
   width: 18px;
   height: 18px;
   border-radius: 4px;
+}
+@media (max-width: 480px) {
+  .legend {
+    grid-template-columns: 1fr;
+  }
 }
 .hint {
   margin: 8px 0 4px;
