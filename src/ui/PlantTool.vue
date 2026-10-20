@@ -112,7 +112,7 @@ dd {
 }
 .varieties {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 4px;
   margin: 0 0 16px;
   padding: 2px;
