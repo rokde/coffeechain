@@ -56,6 +56,7 @@ function start() {
     const due = advance(carryMs, now - (last ?? now), store.state.time.speed, msPerTick)
     last = now
     carryMs = due.carryMs
+    // step never changes its input, so the cast of the readonly snapshot is safe.
     let state = store.state as GameState
     for (let i = 0; i < due.ticks; i++) state = step(state)
     if (due.ticks > 0) store.replace(state)

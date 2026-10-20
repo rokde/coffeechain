@@ -19,7 +19,7 @@ const clockText = computed(() => {
 <template>
   <div class="hud">
     <header class="frame top-bar" data-testid="hud-top-bar">
-      <strong>{{ de.game.name }}</strong>
+      <strong class="name">{{ de.game.name }}</strong>
       <div class="time">
         <span class="chip" data-testid="clock">{{ clockText }}</span>
         <div class="speeds" role="group" :aria-label="de.time.speeds">
@@ -92,13 +92,13 @@ const clockText = computed(() => {
 .speeds {
   display: flex;
   gap: 4px;
-  padding: 4px;
+  padding: 2px;
   border-radius: 10px;
   background: rgb(255 255 255 / 8%);
 }
 .speeds button {
   min-width: 44px;
-  height: 36px;
+  height: 44px;
   border: 0;
   border-radius: 8px;
   background: none;
@@ -109,6 +109,27 @@ const clockText = computed(() => {
 .speeds button[aria-pressed='true'] {
   background: #f2c48d;
   color: #2b2420;
+}
+.speeds button:focus-visible {
+  outline: 2px solid #f2c48d;
+  outline-offset: 2px;
+}
+@media (max-width: 480px) {
+  .top-bar {
+    padding: 0 12px;
+  }
+  .name {
+    display: none;
+  }
+  .time {
+    gap: 8px;
+  }
+  .chip {
+    padding: 8px 10px;
+  }
+  .speeds {
+    gap: 2px;
+  }
 }
 .left-panel {
   top: 92px;

@@ -39,3 +39,12 @@ test('S9: clock and speed buttons', async ({ page }) => {
     await expectActive(speed)
   }
 })
+
+test('S9: top bar fits a narrow window', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/')
+  const bar = page.getByTestId('hud-top-bar')
+  expect(await bar.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+  for (const s of [0, 1, 2, 4])
+    await expect(page.getByTestId(`speed-${s}`)).toBeInViewport({ ratio: 1 })
+})

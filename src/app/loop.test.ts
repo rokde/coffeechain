@@ -36,6 +36,12 @@ describe('advance', () => {
     expect(advance(9_999, 1, 1, msPerTick)).toEqual({ ticks: 1, carryMs: 0 })
   })
 
+  it('caps the ticks per frame at 24 and drops the extra time', () => {
+    expect(advance(0, 240_000, 1, msPerTick)).toEqual({ ticks: 24, carryMs: 0 })
+    expect(advance(5_000, 240_000, 1, msPerTick)).toEqual({ ticks: 24, carryMs: 5_000 })
+    expect(advance(0, 600_000, 1, msPerTick)).toEqual({ ticks: 24, carryMs: 0 })
+  })
+
   it('gives no ticks at pause and releases no stored ticks after it', () => {
     expect(run(1_000_000, 0)).toEqual({ ticks: 0, carryMs: 0 })
     const paused = run(1_000_000, 0, 5_000)
