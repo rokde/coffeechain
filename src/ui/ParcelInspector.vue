@@ -3,10 +3,12 @@ import { computed } from 'vue'
 import { useSelectionStore } from '../app/selection'
 import { useGameStore } from '../app/store'
 import { forecastYield } from '../sim/farm/forecast'
+import { isFree, quoteParcels } from '../sim/farm/parcels'
 import type { GameState } from '../sim/state'
 import { inspectParcel } from '../sim/world/inspect'
 import type { World } from '../sim/world/types'
 import de from './i18n/de.json'
+import { formatMoney } from './money'
 
 const t = de.inspector
 const game = useGameStore()
@@ -19,6 +21,13 @@ const info = computed(() => {
 const forecast = computed(() => {
   const p = selection.parcel
   return p ? forecastYield(game.state as GameState, p.x, p.y) : null
+})
+// Only for a parcel that the farm can buy.
+const price = computed(() => {
+  const p = selection.parcel
+  const state = game.state as GameState
+  const owned = p && p.y * state.world.size + p.x in state.farm.parcels
+  return p && !owned && isFree(state, p.x, p.y) ? quoteParcels(state, [p]) : null
 })
 </script>
 
@@ -60,6 +69,10 @@ const forecast = computed(() => {
       <template v-if="forecast !== null">
         <dt>{{ t.yield }}</dt>
         <dd data-testid="inspector-yield">{{ t.yieldUnits.replace('{n}', String(forecast)) }}</dd>
+      </template>
+      <template v-if="price !== null">
+        <dt>{{ t.price }}</dt>
+        <dd data-testid="inspector-price">{{ formatMoney(price) }}</dd>
       </template>
     </dl>
   </section>

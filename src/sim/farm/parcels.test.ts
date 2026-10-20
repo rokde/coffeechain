@@ -10,6 +10,12 @@ import { isBuildable, isFree, quoteParcels } from './parcels'
 
 const size = 6
 
+// The test world has soilQuality 0.5 everywhere, so the quality factor is 1.
+const { firstCost, baseCost, zoneMultiplier } = balance().parcels
+const FIRST = Math.round(firstCost * 100)
+const BASE = Math.round(baseCost * 100)
+const HIGH = Math.round(baseCost * zoneMultiplier.hochland * 100)
+
 // Flat lowland. (0,0) is water, (4,4) is highland, (5,0) is a peak, so it and its neighbours are steep.
 function testWorld(): World {
   const parcels: Parcel[] = []
@@ -64,20 +70,20 @@ describe('createState', () => {
 })
 
 describe('CreateParcels cost', () => {
-  it('AC-2: takes 48 CC for the first lowland parcel and 100 CC for the next', () => {
+  it('AC-2: takes firstCost for the first lowland parcel and baseCost for the next', () => {
     const both = buy(testState(), [1, 2], [2, 2])
-    expect(both.money).toBe(50000 - 4800 - 10000)
+    expect(both.money).toBe(50000 - FIRST - BASE)
 
     const first = buy(testState(), [1, 2])
-    expect(first.money).toBe(50000 - 4800)
+    expect(first.money).toBe(50000 - FIRST)
     const second = buy(first, [2, 2])
-    expect(second.money).toBe(50000 - 14800)
+    expect(second.money).toBe(50000 - FIRST - BASE)
     expect(second.farm).toEqual(both.farm)
   })
 
-  it('AC-2: takes 150 CC for a highland parcel after the first parcel', () => {
+  it('AC-2: takes the highland price for a highland parcel after the first parcel', () => {
     const first = buy(testState(), [1, 2])
-    expect(buy(first, [4, 4]).money).toBe(first.money - 15000)
+    expect(buy(first, [4, 4]).money).toBe(first.money - HIGH)
   })
 })
 
@@ -85,7 +91,7 @@ describe('quoteParcels (S12)', () => {
   const pos = (...list: [number, number][]) => list.map(([x, y]) => ({ x, y }))
   const owned = buy(testState(), [3, 3])
   it.each<[string, GameState, [number, number][], number]>([
-    ['one lowland parcel, none owned', testState(), [[1, 2]], 4800],
+    ['one lowland parcel, none owned', testState(), [[1, 2]], FIRST],
     [
       'two lowland parcels, none owned',
       testState(),
@@ -93,10 +99,10 @@ describe('quoteParcels (S12)', () => {
         [1, 2],
         [2, 2],
       ],
-      14800,
+      FIRST + BASE,
     ],
-    ['one lowland parcel, one owned', owned, [[1, 2]], 10000],
-    ['one highland parcel, one owned', owned, [[4, 4]], 15000],
+    ['one lowland parcel, one owned', owned, [[1, 2]], BASE],
+    ['one highland parcel, one owned', owned, [[4, 4]], HIGH],
   ])('AC-1: %s gives %i, and CreateParcels takes the same', (_, state, list, cost) => {
     expect(quoteParcels(state, pos(...list))).toBe(cost)
     expect(state.money - buy(state, ...list).money).toBe(cost)
@@ -177,7 +183,7 @@ describe('CreateParcels rejects', () => {
     ],
     [
       'a total cost above the balance',
-      testState(14799),
+      testState(FIRST + BASE - 1),
       [
         [1, 1],
         [2, 1],
@@ -190,7 +196,7 @@ describe('CreateParcels rejects', () => {
   })
 
   it('AC-3: accepts a total cost equal to the balance', () => {
-    expect(buy(testState(14800), [1, 1], [2, 1]).money).toBe(0)
+    expect(buy(testState(FIRST + BASE), [1, 1], [2, 1]).money).toBe(0)
   })
 })
 
