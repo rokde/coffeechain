@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import raw from './balance.json'
 import { loadBalance } from './balance.schema'
@@ -39,5 +40,23 @@ describe('balance.json', () => {
     const cfg = copy()
     delete cfg.varieties.robusta.seedCost.src
     expect(() => loadBalance(cfg)).toThrow('varieties.robusta.seedCost.src')
+  })
+
+  it('marks the world generation values as NEU and lists them in docs/open-questions.md', () => {
+    const doc = readFileSync(new URL('../docs/open-questions.md', import.meta.url), 'utf8')
+    const paths = [
+      'world.startReach',
+      'world.maxAttempts',
+      'world.zoneMinHeight',
+      'world.falloffPower',
+      'world.noiseScale',
+      'world.volcanoSize',
+      'soil.classMinQuality',
+    ]
+    const src = Object.fromEntries(leaves(raw).map((l) => [l.path, l.src]))
+    for (const path of paths) {
+      expect(src[path], path).toBe('NEU')
+      expect(doc).toContain(`\`${path}\``)
+    }
   })
 })
