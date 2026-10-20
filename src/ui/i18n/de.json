@@ -218,7 +218,7 @@
     "pests": {
       "name": "Schädlinge",
       "warning": "Schädlings-Warnung",
-      "hint": "Schädlingsschutz halbiert den Verlust im Tiefland."
+      "hint": "Schädlingsschutz halbiert den Verlust im Tiefland. Wähle ein Feld und klicke „Schützen“."
     }
   },
   "help": {

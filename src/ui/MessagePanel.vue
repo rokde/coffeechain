@@ -16,7 +16,8 @@ const game = useGameStore()
 const warnings = computed(() => {
   const state = game.state as GameState
   const tomorrow = clock(state.time.hour).day + 1
-  return warnedEvents(state).map((e) => {
+  const events = [...warnedEvents(state)].sort((a, b) => a.startDay - b.startDay)
+  return events.map((e) => {
     const { warning, hint } = de.events[e.type]
     const text = e.startDay === tomorrow ? de.events.warnTomorrow : de.events.warnDay
     return { text: text.replace('{warning}', warning).replace('{day}', String(e.startDay)), hint }

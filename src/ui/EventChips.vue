@@ -12,38 +12,32 @@ const events = computed(() => activeEvents(game.state as GameState))
 
 <template>
   <span v-if="events.length" class="events">
-    <span v-for="e in events" :key="e.type" class="chip" data-testid="active-event">{{
+    <span v-for="e in events" :key="e.type" data-testid="active-event">{{
       de.events[e.type].name
     }}</span>
   </span>
 </template>
 
 <style scoped>
+/* The top bar has no room for more chips, so the events hang below it as a tab. */
 .events {
-  display: contents;
-}
-/* Same as .chip in Hud.vue: scoped styles of the parent do not reach this component. */
-.chip {
-  padding: 8px 16px;
-  border-radius: 999px;
-  background: rgb(255 255 255 / 8%);
+  position: absolute;
+  top: 100%;
+  right: 12px;
+  display: flex;
+  gap: 12px;
+  padding: 1px 8px;
+  border-radius: 0 0 6px 6px;
+  background: var(--hud-bg);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 14px;
   white-space: nowrap;
 }
-@media (max-width: 480px) {
-  /* The stats tab has no room, so the events hang below it as a second tab. */
+/* Below 1024 px the stats are a tab too, so the events hang below the stats tab. */
+@media (max-width: 1024px) {
   .events {
-    position: absolute;
-    top: 100%;
     right: 0;
-    display: flex;
-    gap: 8px;
-    padding: 1px 8px;
-    border-radius: 0 0 6px 6px;
-    background: var(--hud-bg);
-  }
-  .chip {
-    padding: 0;
-    background: none;
   }
 }
 </style>

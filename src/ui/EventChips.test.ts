@@ -75,10 +75,16 @@ describe('Event HUD (S52)', () => {
     expect(items(b)[0]).toBe(`Frost-Warnung ab Tag ${DAY + 2} ${hint}`)
   })
 
+  it('AC-3: warnings are sorted by start day', async () => {
+    const html = await panel([event('monsoon', DAY + 2), event('frost', DAY + 1)])
+    expect(items(html).map((t) => t.split(' ab ')[0])).toEqual(['Frost-Warnung', 'Monsun-Warnung'])
+  })
+
   it('AC-4: a warned pests event shows the care hint, an active event gives no warning', async () => {
     const html = await panel([event('pests', DAY + 1)])
     expect(items(html)[0]).toContain(de.events.pests.warning)
     expect(html).toContain('Schädlingsschutz halbiert den Verlust im Tiefland.')
+    expect(html).toContain('„Schützen“')
     const active = await panel([event('pests', DAY)])
     expect(active).not.toContain(de.events.pests.warning)
     expect(active).not.toContain(de.events.pests.hint)
