@@ -26,6 +26,7 @@ function testState(money = 50000): GameState {
   return {
     ...state,
     world: testWorld(),
+    props: { hut: { x: 1, y: 1 }, market: { x: 1, y: 1 }, path: [{ x: 1, y: 1 }], trees: [] },
     money,
     time: { ...state.time, hour: 5 },
     farm: { ...state.farm, parcels: { 0: 0, 1: 0, 2: 0 }, fields: [{ id: 0, name: 'A' }] },
