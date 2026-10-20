@@ -17,7 +17,7 @@ export interface ProtectPests {
   parcels: Parcels
 }
 
-const cares = {
+export const cares = {
   Fertilize: { flag: 'fertilized', cost: 'fertilizer' },
   Irrigate: { flag: 'irrigated', cost: 'irrigation' },
   ProtectPests: { flag: 'pestProtected', cost: 'pestControl' },
@@ -25,12 +25,11 @@ const cares = {
 
 // The cost comes from varieties.*.careCost, not market.fertilizerPrice (see docs/open-questions.md).
 export function care(state: GameState, command: Fertilize | Irrigate | ProtectPests): GameState {
-  const { flag, cost: costKey } = cares[command.type]
+  const { flag } = cares[command.type]
   const { size } = state.world
   const cfg = balance()
   const plants = { ...state.farm.plants }
   const parcels = [...state.world.parcels]
-  let cost = 0
   for (const { x, y } of command.parcels) {
     const inside =
       Number.isInteger(x) && Number.isInteger(y) && x >= 0 && y >= 0 && x < size && y < size
@@ -43,7 +42,6 @@ export function care(state: GameState, command: Fertilize | Irrigate | ProtectPe
       throw new Error(`Plant on parcel ${x},${y} is ripe`)
     if (plant[flag]) throw new Error(`Parcel ${x},${y} already has ${flag} or is listed twice`)
     plants[index] = { ...plant, [flag]: true }
-    cost += Math.round(cfg.varieties[plant.variety].careCost[costKey] * 100)
 
     if (command.type === 'Fertilize') {
       const parcel = parcels[index]!
@@ -54,6 +52,7 @@ export function care(state: GameState, command: Fertilize | Irrigate | ProtectPe
     }
   }
 
+  const cost = quoteCare(state, command)
   if (cost > state.money) throw new Error(`Not enough money: cost ${cost}, balance ${state.money}`)
   return {
     ...state,
@@ -61,4 +60,14 @@ export function care(state: GameState, command: Fertilize | Irrigate | ProtectPe
     world: command.type === 'Fertilize' ? { ...state.world, parcels } : state.world,
     farm: { ...state.farm, plants },
   }
+}
+
+// Cost in hundredths of CC of one care for the plants on the parcels. A parcel without a plant costs nothing.
+export function quoteCare(state: GameState, command: Fertilize | Irrigate | ProtectPests): number {
+  const { cost } = cares[command.type]
+  const { varieties } = balance()
+  return command.parcels.reduce((sum, { x, y }) => {
+    const plant = state.farm.plants[y * state.world.size + x]
+    return plant ? sum + Math.round(varieties[plant.variety].careCost[cost] * 100) : sum
+  }, 0)
 }

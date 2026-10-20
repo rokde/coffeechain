@@ -1,6 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { dispatch } from '../sim/commands'
+import { balance } from '../sim/balance'
 import { isBuildable } from '../sim/farm/parcels'
 import { createState } from '../sim/state'
 import { useSelectionStore } from './selection'
@@ -69,5 +70,66 @@ describe('selection store, plant tool (S13)', () => {
     selection.toggle(state, at(land))
     selection.toggle(planted, at(other))
     expect(selection.parcels).toEqual([])
+  })
+})
+
+describe('selection store, farm tools (S18a)', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+  const lands = world.parcels.filter((p) => p.zone === 'tiefland' && isBuildable(world, p.x, p.y))
+  const [empty, young, done, fresh] = lands.map(at)
+  const owned = dispatch(
+    { ...state, money: 100000 },
+    {
+      type: 'CreateParcels',
+      parcels: [empty!, young!, done!],
+    },
+  )
+  const planted = dispatch(owned, { type: 'Plant', variety: 'robusta', parcels: [young!, done!] })
+  const { cycleDays } = balance().varieties.robusta
+  const ripeHour = planted.time.hour + cycleDays * balance().time.ticksPerGameDay
+  // In mixed, the plant on done is ripe. The plant on young is planted later and is not ripe.
+  const later = { ...planted, time: { ...planted.time, hour: ripeHour - 1 } }
+  const mixed = {
+    ...later,
+    time: { ...later.time, hour: ripeHour },
+    farm: {
+      ...later.farm,
+      plants: {
+        ...later.farm.plants,
+        [young!.y * world.size + young!.x]: { variety: 'robusta' as const, plantedHour: 1 },
+      },
+    },
+  }
+
+  it.each([
+    ['fertilize', 'Fertilize'],
+    ['irrigate', 'Irrigate'],
+    ['protect', 'ProtectPests'],
+  ] as const)(
+    'AC-2: %s adds only owned parcels with an unripe plant without this care',
+    (tool, type) => {
+      const selection = useSelectionStore()
+      selection.tool = tool
+      selection.toggle(mixed, empty!)
+      selection.toggle(mixed, done!)
+      selection.toggle(mixed, fresh!)
+      expect(selection.parcels).toEqual([])
+      selection.toggle(mixed, young!)
+      expect(selection.parcels).toEqual([young])
+      selection.parcels = []
+      const cared = dispatch(mixed, { type, parcels: [young!] })
+      selection.toggle(cared, young!)
+      expect(selection.parcels).toEqual([])
+    },
+  )
+
+  it('AC-4: harvest adds only owned parcels with a ripe plant', () => {
+    const selection = useSelectionStore()
+    selection.tool = 'harvest'
+    for (const p of [empty!, young!, fresh!]) selection.toggle(mixed, p)
+    selection.toggle(later, done!)
+    expect(selection.parcels).toEqual([])
+    selection.toggle(mixed, done!)
+    expect(selection.parcels).toEqual([done])
   })
 })
