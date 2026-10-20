@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useSelectionStore } from '../app/selection'
 import { useGameStore } from '../app/store'
 import { quotePlant } from '../sim/farm/plants'
+import type { GameState } from '../sim/state'
 import de from './i18n/de.json'
 import { formatMoney } from './money'
 import { plantSelected, plantVarieties } from './plantAction'
@@ -10,7 +11,10 @@ import { plantSelected, plantVarieties } from './plantAction'
 const t = de.plantTool
 const game = useGameStore()
 const selection = useSelectionStore()
-const cost = computed(() => quotePlant(selection.variety, selection.parcels.length))
+// quotePlant only reads the state, so the cast of the readonly snapshot is safe.
+const cost = computed(() =>
+  quotePlant(game.state as GameState, selection.variety, selection.parcels.length),
+)
 const tooExpensive = computed(() => cost.value > game.state.money)
 const disabled = computed(() => selection.parcels.length === 0 || tooExpensive.value)
 </script>

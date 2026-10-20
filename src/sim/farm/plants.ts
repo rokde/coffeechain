@@ -1,5 +1,6 @@
 import type { Balance } from '../../../config/balance.schema'
 import { balance } from '../balance'
+import { bankSellPrice, buy } from '../market/market'
 import type { GameState } from '../state'
 import type { Variety } from './yield'
 
@@ -42,14 +43,23 @@ export function plant(state: GameState, command: Plant): GameState {
     plants[index] = { variety: command.variety, plantedHour: state.time.hour }
   }
 
-  const cost = quotePlant(command.variety, command.parcels.length)
-  if (cost > state.money) throw new Error(`Not enough money: cost ${cost}, balance ${state.money}`)
-  return { ...state, money: state.money - cost, farm: { ...state.farm, plants } }
+  const count = command.parcels.length
+  const missing = missingSeeds(state, command.variety, count)
+  const bought =
+    missing > 0 ? buy(state, { type: 'Buy', variety: command.variety, units: missing }) : state
+  const seeds = {
+    ...bought.market.seeds,
+    [command.variety]: (bought.market.seeds[command.variety] ?? 0) - count,
+  }
+  return { ...bought, market: { ...bought.market, seeds }, farm: { ...state.farm, plants } }
 }
 
-// Seed cost in hundredths of CC for count parcels.
-export function quotePlant(variety: Variety, count: number): number {
-  return Math.round(balance().varieties[variety].seedCost * 100) * count
+const missingSeeds = (state: GameState, variety: Variety, count: number) =>
+  Math.max(0, count - (state.market.seeds[variety] ?? 0))
+
+// Cost in hundredths of CC of the seed that the stock lacks for count parcels, with the rounding of buy().
+export function quotePlant(state: GameState, variety: Variety, count: number): number {
+  return Math.round(missingSeeds(state, variety, count) * bankSellPrice(state, variety) * 100)
 }
 
 // Growth comes only from the game hours since planting, so it needs no per-tick state.
