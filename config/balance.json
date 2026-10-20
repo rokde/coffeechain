@@ -4,7 +4,7 @@
   "time": {
     "realSecondsPerGameDay": { "v": 240, "src": "PRD" },
     "ticksPerGameDay": { "v": 24, "src": "PRD" },
-    "speeds": { "v": [0, 1, 2, 4], "src": "PRD" },
+    "speeds": { "v": [0, 1, 2, 4, 8, 16], "src": "Robert 2026-10-20" },
     "daysPerWeek": { "v": 7, "src": "GDD 11.1" }
   },
 

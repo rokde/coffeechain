@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import raw from '../../../config/balance.json'
+import { balance } from '../balance'
 import { dispatch } from '../commands'
 import { createState, type GameState } from '../state'
 import { clock, step } from './time'
@@ -24,14 +26,19 @@ describe('step', () => {
 })
 
 describe('SetSpeed', () => {
-  it.each([0, 1, 2, 4])('sets speed %i', (speed) => {
+  it('uses the speeds that Robert set', () => {
+    expect(balance().time.speeds).toEqual([0, 1, 2, 4, 8, 16])
+    expect(raw.time.speeds.src).toBe('Robert 2026-10-20')
+  })
+
+  it.each([0, 1, 2, 4, 8, 16])('sets speed %i', (speed) => {
     const state = createState(1)
     const before = structuredClone(state)
     expect(dispatch(state, { type: 'SetSpeed', speed }).time.speed).toBe(speed)
     expect(state).toEqual(before)
   })
 
-  it.each([3, -1, 0.5, 8, NaN])('throws for speed %s', (speed) => {
+  it.each([3, 32, -1, 0.5, NaN])('throws for speed %s', (speed) => {
     const state: GameState = createState(1)
     const before = structuredClone(state)
     expect(() => dispatch(state, { type: 'SetSpeed', speed })).toThrow()
