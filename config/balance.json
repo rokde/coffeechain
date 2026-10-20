@@ -102,6 +102,7 @@
 
   "storage": {
     "startCapacity": { "v": 100, "src": "NEU" },
+    "harvestQuality": { "v": 100, "src": "NEU" },
     "upgrades": {
       "v": [
         { "capacity": 250, "cost": 150, "requiresPhase": 1 },

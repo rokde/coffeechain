@@ -74,6 +74,7 @@ export const balanceSchema = z.object({
   }),
   storage: z.object({
     startCapacity: val(num),
+    harvestQuality: val(num),
     upgrades: val(z.array(z.object({ capacity: num, cost: num, requiresPhase: int }))),
     costPerUnitPerDay: val(num),
     qualityLossPerDayRaw: val(num),
