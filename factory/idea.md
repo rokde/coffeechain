@@ -1,2 +1,7 @@
 # Idea
 lies dir @PRD.md und @CLAUDE.md durch und setz mal das komplette Spiel bis einschließlich M4 um, specen kannst du aber schon bis M7 - das verfeinern wir dann im dialog. Wir haben aktuell noch keinen remote, aber es wird das Projekt unter github.com/rokde/coffeechain dann erstmal liegen, also github actions für tests und build sollten integriert werden. wenn du schon das projekt auf github brauchst, gib mir sofort bescheid. ansonsten entscheide nach bestem wissen und gewissen. alle infos sind eigentlich da. mach es schön spielbar und unabhängig von der originalen spielidee will ich es erstmal als singleplayer spielen können. es soll später im internet als multiplayer laufen. aber singleplayer ist geplant und direkt gewollt. multiplay ist mehr eine idee und ein wunsch.
+
+## Feedback 1
+- Plan M5, M6 and M7 too, as slices in a separate list ("Later slices", after M4). They stay in the plan only and do not go into the backlog yet: the build stops after M4 for the balancing decision. We refine them in dialog.
+- Rust is installed now via rustup (stable toolchain, `~/.cargo/bin`). Check `npm run tauri build` / `tauri dev` locally too, not only in CI.
+- Kenney models (CC0) already in M1: hut, market, path decoration and trees come from Kenney kits (Nature Kit, Survival Kit, City Kit Suburban, Fantasy Town Kit). Only the models used go into `assets/kenney/`, with the license file. Plants stay code-generated (PRD §11).
