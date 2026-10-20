@@ -92,4 +92,11 @@ describe('save format', () => {
     const v2 = JSON.stringify({ version: 2, state: { a: 1, b: 5 } })
     expect(deserialize(v2, { version: 3, migrations: [m1, m2] })).toEqual({ a: 1, b: 5, c: 5 })
   })
+
+  it('loads a version 1 save with the milestones default', () => {
+    const { milestones, ...old } = createState(1)
+    const loaded = deserialize(JSON.stringify({ version: 1, state: old }))
+    expect(milestones).toEqual({ harvested: 0 })
+    expect(loaded).toEqual(createState(1))
+  })
 })
