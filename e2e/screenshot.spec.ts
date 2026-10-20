@@ -250,12 +250,12 @@ test('S12: parcel tool and money', async ({ page }) => {
   await canvas.click({ position: { x: 640, y: 370 } })
   await canvas.click({ position: { x: 690, y: 400 } })
   await expect(page.getByTestId('parcel-tool-count')).toHaveText('2')
-  await expect(page.getByTestId('parcel-tool-total')).toHaveText('148 CC')
+  await expect(page.getByTestId('parcel-tool-total')).toHaveText('40,16 CC')
   await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
   await page.screenshot({ path: 'docs/progress/S12.png' })
 
   await page.getByTestId('parcel-tool-create').click()
-  await expect(money).toHaveText('352 CC')
+  await expect(money).toHaveText('459,84 CC')
   await expect(page.getByTestId('parcel-tool-count')).toHaveText('0')
   await expect(page.getByTestId('parcel-tool-create')).toBeDisabled()
 
@@ -322,7 +322,7 @@ test('S13: plant tool', async ({ page }) => {
   await page.getByTestId('tool-parcel').click()
   for (const position of clicks) await canvas.click({ position })
   await page.getByTestId('parcel-tool-create').click()
-  await expect(money).toHaveText('352 CC')
+  await expect(money).toHaveText('459,84 CC')
 
   await page.getByTestId('tool-plant').click()
   await expect(page.getByTestId('plant-tool')).toBeVisible()
@@ -330,18 +330,18 @@ test('S13: plant tool', async ({ page }) => {
   await expect(page.getByTestId('plant-tool-plant')).toBeDisabled()
   for (const position of clicks) await canvas.click({ position })
   await expect(page.getByTestId('plant-tool-count')).toHaveText('2')
-  await expect(page.getByTestId('plant-tool-total')).toHaveText('4 CC')
+  await expect(page.getByTestId('plant-tool-total')).toHaveText('4,01 CC')
   await page.getByTestId('plant-tool-variety-arabicaStandard').click()
   await expect(page.getByTestId('plant-tool-variety-arabicaStandard')).toHaveAttribute(
     'aria-pressed',
     'true',
   )
-  await expect(page.getByTestId('plant-tool-total')).toHaveText('8 CC')
+  await expect(page.getByTestId('plant-tool-total')).toHaveText('8,01 CC')
   await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
   await page.screenshot({ path: 'docs/progress/S13.png' })
 
   await page.getByTestId('plant-tool-plant').click()
-  await expect(money).toHaveText('344 CC')
+  await expect(money).toHaveText('451,83 CC')
   await expect(page.getByTestId('plant-tool-count')).toHaveText('0')
 
   // A parcel with a plant cannot be selected again.
@@ -453,7 +453,7 @@ test('S13b: plant meshes', async ({ page }) => {
   await page.getByTestId('tool-plant').click()
   for (const position of clicks) await canvas.click({ position })
   await page.getByTestId('plant-tool-plant').click()
-  await expect(page.getByTestId('money')).toHaveText('348 CC')
+  await expect(page.getByTestId('money')).toHaveText('455,83 CC')
   await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
   await page.screenshot({ path: 'docs/progress/S13b.png' })
   expect(errors).toEqual([])
@@ -484,7 +484,7 @@ test('S18a: care and harvest tools, storage chip', async ({ page }) => {
   await page.getByTestId('tool-plant').click()
   for (const position of clicks) await canvas.click({ position })
   await page.getByTestId('plant-tool-plant').click()
-  await expect(money).toHaveText('348 CC')
+  await expect(money).toHaveText('455,83 CC')
 
   const labels = await page.getByTestId('hud-toolbar').getByRole('button').allTextContents()
   expect(labels.map((l) => l.trim())).toEqual([
@@ -508,7 +508,7 @@ test('S18a: care and harvest tools, storage chip', async ({ page }) => {
   await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
   await page.screenshot({ path: 'docs/progress/S18a.png' })
   await page.getByTestId('farm-tool-apply').click()
-  await expect(money).toHaveText('346 CC')
+  await expect(money).toHaveText('453,83 CC')
   await expect(page.getByTestId('farm-tool-count')).toHaveText('0')
 
   // Robusta needs 72 ticks. One frame runs at most 24 ticks, so jump 4 times at speed 4.

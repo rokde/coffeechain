@@ -7,7 +7,7 @@ import { useGameStore } from '../app/store'
 import { balance } from '../sim/balance'
 import { dispatch } from '../sim/commands'
 import { forecastYield } from '../sim/farm/forecast'
-import { isBuildable } from '../sim/farm/parcels'
+import { isBuildable, isFree, quoteParcels } from '../sim/farm/parcels'
 import { fieldStatus } from '../sim/farm/status'
 import type { GameState } from '../sim/state'
 import { careParcel } from './farmAction'
@@ -132,5 +132,36 @@ describe('ParcelInspector field status (S21e)', () => {
     expect(() => careParcel('Irrigate', parcel)).not.toThrow()
     expect(game.state.money).toBe(before.money)
     expect(game.state).toStrictEqual(before)
+  })
+})
+
+describe('ParcelInspector price (S21d)', () => {
+  // Selects the first parcel that matches, with no parcel owned.
+  async function show(match: (state: GameState, x: number, y: number) => boolean) {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const state = useGameStore(pinia).state as GameState
+    const { x, y } = state.world.parcels.find((p) => match(state, p.x, p.y))!
+    useSelectionStore(pinia).parcel = { x, y }
+    const html = await renderToString(createSSRApp(ParcelInspector).use(pinia))
+    return { html, state, x, y }
+  }
+
+  it('AC-5: shows the price of a free parcel that the farm does not own', async () => {
+    const { html, state, x, y } = await show(isFree)
+    const price = formatMoney(quoteParcels(state, [{ x, y }]))
+    expect(html).toContain(de.inspector.price)
+    expect(html).toMatch(new RegExp(`data-testid="inspector-price"[^>]*>${price}<`))
+  })
+
+  it('AC-5: shows no price for a parcel that is not free', async () => {
+    const { html } = await show((s, x, y) => !isFree(s, x, y))
+    expect(html).not.toContain('inspector-price')
+  })
+
+  it('AC-5: shows no price for an owned parcel', async () => {
+    for (const planted of [false, true]) {
+      expect((await render(planted)).html).not.toContain('inspector-price')
+    }
   })
 })
