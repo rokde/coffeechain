@@ -18,6 +18,6 @@ export function createState(seed: number): GameState {
     time: { hour: 0, speed: 1 },
     world: generateWorld(seed, balance()),
     money: Math.round(balance().economy.startCapital * 100),
-    farm: { parcels: {}, fields: [], nextFieldId: 0 },
+    farm: { parcels: {}, fields: [], nextFieldId: 0, plants: {} },
   }
 }
