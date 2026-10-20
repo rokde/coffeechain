@@ -17,6 +17,7 @@ import { useViewStore } from './app/view'
 import { CAMERA, createCamera, gestureZoomDelta, startView, wheelZoomDelta } from './render/camera'
 import { createFieldMarks, FIELD_LABEL_STYLE, fieldAnchors, hoveredField } from './render/fields'
 import { loadModel, MODEL_IDS } from './render/models'
+import { createBuildings } from './render/buildings'
 import { createPlants, plantsKey } from './render/plants'
 import { createPath } from './render/path'
 import { createOutline, createOutlines, pickParcel, type ParcelPos } from './render/picking'
@@ -186,6 +187,7 @@ function start() {
     const outline = createOutline(terrain, world.size)
     const outlines = createOutlines(terrain, world.size)
     const plants = createPlants(world)
+    const buildings = createBuildings(world)
     const worldProps = store.state.props as GameState['props']
     scene.add(
       terrain,
@@ -193,12 +195,22 @@ function start() {
       outline.line,
       outlines.line,
       plants.group,
+      buildings.group,
     )
     const { target, zoom } = startView(world, worldProps, window.innerWidth / window.innerHeight)
     view.frame(target, zoom)
     watch(
       () => plantsKey(store.state.farm.plants, store.state.time.hour),
       () => plants.show(store.state.farm.plants, store.state.time.hour),
+      { immediate: true },
+    )
+    // A load reloads the page, so the immediate run also shows the loaded buildings.
+    watch(
+      () => store.state.buildings,
+      (list) => {
+        buildings.show(list)
+        canvas.dataset.buildings = String(buildings.group.children.length)
+      },
       { immediate: true },
     )
     watch(

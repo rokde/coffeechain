@@ -46,7 +46,7 @@ const BUSH_RADIUS = 0.13
 // Above the field mark lift of 0.05 in picking.ts.
 const LIFT = 0.06
 
-function colored(geometry: BufferGeometry, hex: number) {
+export function colored(geometry: BufferGeometry, hex: number) {
   const c = new Color(hex)
   const count = geometry.getAttribute('position').count
   const colors = new Float32Array(count * 3)
