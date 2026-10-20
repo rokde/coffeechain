@@ -1,5 +1,11 @@
 {
   "game": {
     "name": "CoffeeChain"
+  },
+  "time": {
+    "clock": "Tag {day} · {hour}:00",
+    "speeds": "Spielgeschwindigkeit",
+    "pause": "Pause",
+    "speed": "{speed}×"
   }
 }

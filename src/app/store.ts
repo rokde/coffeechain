@@ -1,9 +1,20 @@
 import { defineStore } from 'pinia'
 import { readonly, shallowRef } from 'vue'
-import { createState } from '../sim/state'
+import { dispatch as dispatchCommand, type Command } from '../sim/commands'
+import { createState, type GameState } from '../sim/state'
 
-// The HUD reads the sim state here. Only the game loop replaces the snapshot.
+// The HUD reads the sim state here. It changes the state only through commands.
 export const useGameStore = defineStore('game', () => {
   const snapshot = shallowRef(createState())
-  return { state: readonly(snapshot) }
+
+  // Only the game loop calls this.
+  function replace(next: GameState) {
+    snapshot.value = next
+  }
+
+  function dispatch(command: Command) {
+    snapshot.value = dispatchCommand(snapshot.value, command)
+  }
+
+  return { state: readonly(snapshot), replace, dispatch }
 })

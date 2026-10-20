@@ -1,16 +1,19 @@
 import type { GameState } from './state'
+import { setSpeed, type SetSpeed } from './time/time'
 
-export interface Command {
-  type: string
+// Later slices add their command types to this union.
+export type Command = SetSpeed
+
+type Handlers = {
+  [K in Command['type']]: (state: GameState, command: Extract<Command, { type: K }>) => GameState
 }
 
-type Handler = (state: GameState, command: Command) => GameState
-
 // Later slices register one handler per command type here.
-const handlers: Partial<Record<string, Handler>> = {}
+const handlers: Handlers = { SetSpeed: setSpeed }
 
 export function dispatch(state: GameState, command: Command): GameState {
-  const handler = handlers[command.type]
+  const handler = handlers[command.type] as
+    ((state: GameState, command: Command) => GameState) | undefined
   if (!handler) throw new Error(`Unknown command: ${command.type}`)
   return handler(state, command)
 }

@@ -20,3 +20,22 @@ test('M0: scene and empty HUD frame', async ({ page }) => {
   await page.screenshot({ path: 'docs/progress/M0.png' })
   expect(errors).toEqual([])
 })
+
+test('S9: clock and speed buttons', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.getByTestId('clock')).toHaveText('Tag 1 · 00:00')
+  const speeds = [0, 1, 2, 4]
+  const expectActive = async (active: number) => {
+    for (const s of speeds) {
+      await expect(page.getByTestId(`speed-${s}`)).toHaveAttribute(
+        'aria-pressed',
+        String(s === active),
+      )
+    }
+  }
+  await expectActive(1)
+  for (const speed of speeds) {
+    await page.getByTestId(`speed-${speed}`).click()
+    await expectActive(speed)
+  }
+})
