@@ -161,6 +161,21 @@
     "seedLine": "Saatgut, {days} Tage",
     "sell": "Verkaufen"
   },
+  "orders": {
+    "heading": "Aufträge",
+    "none": "Keine Aufträge",
+    "buyers": [
+      "Rösterei Nord",
+      "Café Hafen",
+      "Kaffeehaus Süd",
+      "Bohnenkontor West",
+      "Röstwerk Ost"
+    ],
+    "minQuality": "mind. Qualität",
+    "deadline": "bis Tag",
+    "price": "je Einheit",
+    "deliver": "Liefern"
+  },
   "toolNote": {
     "invalid": "Hier nicht möglich.",
     "money": "Nicht genug CC."

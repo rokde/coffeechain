@@ -1325,3 +1325,53 @@ test('S45: storage upgrade', async ({ page }) => {
   await page.screenshot({ path: 'docs/progress/S45.png' })
   expect(errors).toEqual([])
 })
+
+test('S56: deliver a buyer order in the market panel', async ({ page }) => {
+  const errors: string[] = []
+  page.on('console', (msg) => {
+    if (msg.type() === 'error') errors.push(msg.text())
+  })
+  page.on('pageerror', (error) => errors.push(error.message))
+
+  await page.goto('/?seed=48213')
+  await page.getByTestId('save-button').click()
+  await page.getByTestId('save-slot-1').getByTestId('save-slot-save').click()
+  await page.evaluate(() => {
+    const key = 'coffeechain.save.slot-1'
+    const save = JSON.parse(localStorage.getItem(key)!)
+    save.state.time = { ...save.state.time, hour: 8, speed: 0 }
+    save.state.storage = {
+      batches: [
+        { variety: 'robusta', units: 20, quality: 75 },
+        { variety: 'robusta', units: 40, quality: 90 },
+      ],
+    }
+    save.state.orders = {
+      open: [{ id: 0, variety: 'robusta', units: 30, minQuality: 80, price: 60, deadlineDay: 10 }],
+      nextId: 1,
+    }
+    localStorage.setItem(key, JSON.stringify(save))
+  })
+  await page.getByTestId('save-panel-close').click()
+  await page.getByTestId('save-button').click()
+  await page.getByTestId('save-slot-1').getByTestId('save-slot-load').click()
+  await page.getByTestId('first-steps-close').click()
+  await page.getByTestId('tool-market').click()
+
+  const order = page.getByTestId('order-0')
+  await expect(order).toContainText('Rösterei Nord')
+  await expect(order).toContainText('30 Robusta')
+  await expect(page.getByTestId('market-robusta').getByTestId('market-stock')).toHaveText('60')
+  await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
+  await page.screenshot({ path: 'docs/progress/orders.png' })
+
+  const money = page.getByTestId('money')
+  await expect(money).toHaveText('500 CC')
+  await order.getByTestId('order-deliver').click()
+  await expect(order).toHaveCount(0)
+  await expect(page.getByTestId('orders-panel')).toContainText('Keine Aufträge')
+  // 30 units at 0.60 CC.
+  await expect(money).toHaveText('518 CC')
+  await expect(page.getByTestId('market-robusta').getByTestId('market-stock')).toHaveText('30')
+  expect(errors).toEqual([])
+})
