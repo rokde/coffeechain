@@ -1,5 +1,6 @@
 import { balance } from '../balance'
 import type { GameState } from '../state'
+import { dailyUpkeep } from '../storage/daily'
 
 export interface TimeState {
   // Game hours since the start. One step adds one hour.
@@ -13,7 +14,9 @@ export interface SetSpeed {
 }
 
 export function step(state: GameState): GameState {
-  return { ...state, time: { ...state.time, hour: state.time.hour + 1 } }
+  const hour = state.time.hour + 1
+  const next = { ...state, time: { ...state.time, hour } }
+  return hour % balance().time.ticksPerGameDay === 0 ? dailyUpkeep(next) : next
 }
 
 export function clock(hour: number): { day: number; hourOfDay: number } {
