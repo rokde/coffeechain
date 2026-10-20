@@ -5,6 +5,7 @@ import { balance } from '../sim/balance'
 import { clock } from '../sim/time/time'
 import de from './i18n/de.json'
 import ParcelInspector from './ParcelInspector.vue'
+import OverlayPanel from './OverlayPanel.vue'
 import { tools } from './toolbar'
 
 const store = useGameStore()
@@ -48,6 +49,7 @@ const clockText = computed(() => {
       </div>
     </header>
     <aside class="frame left-panel" data-testid="hud-left-panel" />
+    <OverlayPanel />
     <aside class="frame right-panel" data-testid="hud-right-panel"><ParcelInspector /></aside>
     <nav class="frame toolbar" data-testid="hud-toolbar">
       <button v-for="tool in tools" :key="tool.id" type="button">{{ tool.label }}</button>

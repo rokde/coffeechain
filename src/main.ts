@@ -6,10 +6,12 @@ import { loadBalance } from '../config/balance.schema'
 import { advance } from './app/loop'
 import { useSelectionStore } from './app/selection'
 import { useGameStore } from './app/store'
+import { useViewStore } from './app/view'
 import { createCamera } from './render/camera'
 import { loadModel, MODEL_IDS } from './render/models'
 import { createOutline, pickParcel } from './render/picking'
 import { createProps } from './render/props'
+import { applyOverlay } from './render/overlays'
 import { createScene } from './render/scene'
 import { createTerrain } from './render/terrain'
 import { balance } from './sim/balance'
@@ -98,6 +100,11 @@ function start() {
     const terrain = createTerrain(world)
     const outline = createOutline(terrain, world.size)
     scene.add(terrain, outline.line)
+    const viewStore = useViewStore(pinia)
+    watch(
+      () => viewStore.overlay,
+      (mode) => applyOverlay(terrain, world, mode),
+    )
     createProps(world, loadModel)
       .then((props) => {
         scene.add(props)

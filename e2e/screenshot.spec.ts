@@ -111,3 +111,80 @@ test('S6: props on the island', async ({ page }) => {
   await page.screenshot({ path: 'docs/progress/S6.png' })
   expect(errors).toEqual([])
 })
+
+test('S7: soil and zone overlay switches', async ({ page }) => {
+  const errors: string[] = []
+  page.on('console', (msg) => {
+    if (msg.type() === 'error') errors.push(msg.text())
+  })
+  page.on('pageerror', (error) => errors.push(error.message))
+
+  await page.goto('/?seed=48213')
+  const soil = page.getByTestId('overlay-soil')
+  const zone = page.getByTestId('overlay-zone')
+  await expect(soil).toHaveAttribute('aria-checked', 'false')
+  await expect(zone).toHaveAttribute('aria-checked', 'false')
+
+  await zone.click()
+  await expect(zone).toHaveAttribute('aria-checked', 'true')
+  await expect(soil).toHaveAttribute('aria-checked', 'false')
+
+  await soil.click()
+  await expect(soil).toHaveAttribute('aria-checked', 'true')
+  await expect(zone).toHaveAttribute('aria-checked', 'false')
+  const legend = page.getByTestId('overlay-legend')
+  for (const name of ['Karg', 'Mittel', 'Gut', 'Sehr gut']) {
+    await expect(legend.getByText(name, { exact: true })).toBeVisible()
+  }
+  await page.screenshot({ path: 'docs/progress/S7.png', animations: 'disabled' })
+
+  await soil.click()
+  await expect(soil).toHaveAttribute('aria-checked', 'false')
+  await expect(legend).toHaveCount(0)
+  expect(errors).toEqual([])
+})
+
+test('S7: overlay panel fits a narrow window', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/')
+  const panel = page.getByTestId('hud-overlay-panel')
+  for (const mode of ['soil', 'zone']) {
+    await page.getByTestId(`overlay-${mode}`).click()
+    const track = page.getByTestId(`overlay-${mode}`).locator('.track')
+    const box = (await panel.boundingBox())!
+    const t = (await track.boundingBox())!
+    expect(t.width).toBe(46)
+    // The track must end at the inner edge of the panel, in line with the other switch.
+    const padding = await panel.evaluate((el) => parseFloat(getComputedStyle(el).paddingRight))
+    expect(t.x + t.width).toBeCloseTo(box.x + box.width - padding, 0)
+    for (const item of await page.getByTestId('overlay-legend').locator('li').all()) {
+      const fits = await item.evaluate((el) => el.scrollWidth <= el.clientWidth)
+      const b = (await item.boundingBox())!
+      expect(fits && b.x + b.width <= box.x + box.width).toBe(true)
+    }
+  }
+})
+
+for (const [width, height] of [
+  [1280, 800],
+  [390, 844],
+]) {
+  test(`S7: overlay panel and inspector do not overlap at ${width}x${height}`, async ({ page }) => {
+    await page.setViewportSize({ width, height })
+    await page.goto('/?seed=48213')
+    await page.getByTestId('overlay-soil').click()
+    // The screen centre shows the island centre, which is land.
+    await page.locator('canvas#scene').click({ position: { x: width / 2, y: height / 2 } })
+    await expect(page.getByTestId('parcel-inspector')).toBeVisible()
+    const a = (await page.getByTestId('hud-overlay-panel').boundingBox())!
+    for (const id of ['hud-right-panel', 'parcel-inspector']) {
+      const b = (await page.getByTestId(id).boundingBox())!
+      const apart =
+        a.x + a.width <= b.x ||
+        b.x + b.width <= a.x ||
+        a.y + a.height <= b.y ||
+        b.y + b.height <= a.y
+      expect(apart).toBe(true)
+    }
+  })
+}
