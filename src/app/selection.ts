@@ -89,11 +89,15 @@ export const addMarks = (marks: ParcelPos[], add: ParcelPos[]) => [
 ]
 
 // A toolbar click. A brush tool keeps only the marks that it can act on.
+// When no mark stays, the note tells the player why the marks are gone.
 export function pickTool(
   selection: ReturnType<typeof useSelectionStore>,
   state: GameState,
   id: string,
 ) {
+  const marked = selection.parcels.length > 0
   selection.tool = id
-  if (isBrushTool(id)) selection.parcels = selection.parcels.filter((p) => canSelect(state, id, p))
+  if (!isBrushTool(id)) return
+  selection.parcels = selection.parcels.filter((p) => canSelect(state, id, p))
+  if (marked && selection.parcels.length === 0) selection.note = 'invalid'
 }

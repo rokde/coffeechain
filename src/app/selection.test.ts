@@ -211,6 +211,21 @@ describe('selection first (S40c)', () => {
     expect(selection.parcels).toEqual([])
   })
 
+  it('Round 1: a brush tool that keeps no mark sets the note, a tool with kept marks does not', () => {
+    const selection = useSelectionStore()
+    selection.parcels = [free!]
+    pickTool(selection, planted, 'harvest')
+    expect(selection.parcels).toEqual([])
+    expect(selection.note).toBe('invalid')
+    selection.parcels = marks
+    pickTool(selection, planted, 'plant')
+    expect(selection.note).toBeNull()
+    pickTool(selection, planted, 'fertilize')
+    expect(selection.note).toBe('invalid')
+    pickTool(selection, planted, 'parcel')
+    expect(selection.note).toBeNull()
+  })
+
   it.each(['select', 'market'])('AC-2: %s clears the marks', (id) => {
     const selection = useSelectionStore()
     selection.tool = 'plant'
