@@ -16,6 +16,8 @@ export interface GameState {
   props: WorldProps
   // Hundredths of CC.
   money: number
+  // Hundredths of CC that the player paid for parcels and buildings.
+  invested: number
   farm: FarmState
   // Parcel index → building on it.
   buildings: Record<number, { kind: BuildingKind }>
@@ -34,6 +36,7 @@ export function createState(seed: number): GameState {
     world,
     props: placeProps(world, balance()),
     money: Math.round(balance().economy.startCapital * 100),
+    invested: 0,
     farm: { parcels: {}, fields: [], nextFieldId: 0, plants: {} },
     buildings: {},
     storage: { batches: [] },

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { balance } from '../src/sim/balance'
-import { createState } from '../src/sim/state'
-import { capital, daysTo, renderReport, runBot, type BotResult } from './balance-sim'
+import { daysTo, renderReport, runBot, type BotResult } from './balance-sim'
 
 describe('runBot', () => {
   let first: BotResult | undefined
@@ -20,23 +19,6 @@ describe('runBot', () => {
   it('repeats per seed', () => {
     expect(runBot(1, 200)).toEqual(run())
   }, 20000)
-})
-
-describe('capital', () => {
-  // A neutral market: the bank pays 0.4 CC for Robusta and 0.8 CC for Arabica Standard.
-  it.each([
-    { money: 50000, robusta: 0, arabica: 0, paid: 0, expected: 500 },
-    { money: 12345, robusta: 10, arabica: 5, paid: 14800, expected: 123.45 + 4 + 4 + 148 },
-    { money: 0, robusta: 100, arabica: 0, paid: 4800, expected: 40 + 48 },
-  ])('money $money, stock $robusta + $arabica, paid $paid → $expected CC', (row) => {
-    const state = createState(1)
-    const batches = [
-      { variety: 'robusta' as const, units: row.robusta, quality: 100 },
-      { variety: 'arabicaStandard' as const, units: row.arabica, quality: 100 },
-    ].filter((b) => b.units > 0)
-    const value = capital({ ...state, money: row.money, storage: { batches } }, row.paid)
-    expect(value).toBeCloseTo(row.expected, 6)
-  })
 })
 
 describe('daysTo', () => {

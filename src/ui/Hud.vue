@@ -6,6 +6,7 @@ import { useSavePanelStore } from '../app/savePanel'
 import { useGameStore } from '../app/store'
 import { useViewStore } from '../app/view'
 import { balance } from '../sim/balance'
+import { capital, phase, phaseProgress } from '../sim/progression/capital'
 import type { GameState } from '../sim/state'
 import { storageUsed } from '../sim/storage/storage'
 import { clock } from '../sim/time/time'
@@ -46,6 +47,22 @@ const storageText = computed(() =>
     .replace('{used}', String(storageUsed((store.state as GameState).storage)))
     .replace('{capacity}', String(balance().storage.startCapacity)),
 )
+const phaseText = computed(() => {
+  const state = store.state as GameState
+  const { next, share } = phaseProgress(state)
+  const name = de.phase.name.replace('{phase}', String(phase(state)))
+  // Round down, so the chip never shows 100 % before the next phase.
+  const progress =
+    next === null ? '' : de.phase.progress.replace('{percent}', String(Math.floor(share * 100)))
+  // Also the only progress at 480 px or less, where the percent is hidden.
+  const hint =
+    next === null
+      ? de.phase.lastHint
+      : de.phase.hint
+          .replace('{capital}', formatMoney(capital(state)))
+          .replace('{next}', formatMoney(next * 100))
+  return { name, progress, hint, label: `${[name, progress].filter(Boolean).join(' ')} · ${hint}` }
+})
 </script>
 
 <template>
@@ -84,6 +101,12 @@ const storageText = computed(() =>
       <div class="stats">
         <EventChips />
         <span class="chip" data-testid="storage">{{ storageText }}</span>
+        <span class="chip" data-testid="phase" :title="phaseText.hint" :aria-label="phaseText.label"
+          >{{ phaseText.name }}
+          <span v-if="phaseText.progress" class="phase-progress">{{
+            phaseText.progress
+          }}</span></span
+        >
         <span class="chip money" data-testid="money">{{ formatMoney(store.state.money) }}</span>
       </div>
       <button
@@ -265,8 +288,8 @@ const storageText = computed(() =>
   outline: 2px solid #f2c48d;
   outline-offset: 2px;
 }
-/* The bar holds about 980 px of content, so the stats hang below it as a tab. */
-@media (max-width: 1024px) {
+/* With the phase chip the bar holds about 1130 px of content, so the stats hang below it as a tab. */
+@media (max-width: 1279px) {
   .stats {
     position: absolute;
     top: 100%;
@@ -344,6 +367,18 @@ const storageText = computed(() =>
     margin-left: 2px;
   }
 }
+/* The stats tab must fit beside the seed tab, so it drops the progress and uses the seed tab font. */
+@media (max-width: 480px) {
+  .phase-progress {
+    display: none;
+  }
+  .stats {
+    padding: 1px 6px;
+  }
+  .stats .chip {
+    font-size: 11px;
+  }
+}
 .left-panel {
   top: 92px;
   left: 16px;
@@ -357,7 +392,7 @@ const storageText = computed(() =>
   max-height: 480px;
   overflow-y: auto;
 }
-@media (max-width: 1024px) {
+@media (max-width: 1279px) {
   /* Room for the event tab below the stats tab. */
   .left-panel {
     top: 108px;
