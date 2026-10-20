@@ -8,6 +8,7 @@ import { useViewStore } from '../app/view'
 import { balance } from '../sim/balance'
 import { capital, phase, phaseProgress } from '../sim/progression/capital'
 import type { GameState } from '../sim/state'
+import { storageCapacity } from '../sim/storage/capacity'
 import { storageUsed } from '../sim/storage/storage'
 import { clock } from '../sim/time/time'
 import de from './i18n/de.json'
@@ -40,12 +41,11 @@ const clockText = computed(() => {
     hour: de.time.hour.replace('{hour}', String(hourOfDay).padStart(2, '0')),
   }
 })
-// storageUsed only reads the state, so the cast of the readonly snapshot is safe.
-// shortcut: capacity is startCapacity, add the upgrades with S27.
+// The helpers only read the state, so the cast of the readonly snapshot is safe.
 const storageText = computed(() =>
   de.storage
     .replace('{used}', String(storageUsed((store.state as GameState).storage)))
-    .replace('{capacity}', String(balance().storage.startCapacity)),
+    .replace('{capacity}', String(storageCapacity(store.state as GameState))),
 )
 const phaseText = computed(() => {
   const state = store.state as GameState
