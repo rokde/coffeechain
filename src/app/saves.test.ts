@@ -4,7 +4,8 @@ import { invoke, isTauri } from '@tauri-apps/api/core'
 import { serialize } from '../sim/save/save'
 import { createState } from '../sim/state'
 import { loadSlot, readSlot, writeSlot } from './saves'
-import { useGameStore } from './store'
+import { startState } from './resume'
+import { setStartState, useGameStore } from './store'
 
 vi.mock('@tauri-apps/api/core', () => ({ isTauri: vi.fn(() => false), invoke: vi.fn() }))
 
@@ -35,6 +36,7 @@ beforeEach(() => {
   vi.stubGlobal('sessionStorage', session)
   vi.stubGlobal('location', { search: '?seed=42', reload })
   setActivePinia(createPinia())
+  setStartState(null)
   vi.mocked(isTauri).mockReturnValue(false)
   vi.mocked(invoke).mockReset()
 })
@@ -90,18 +92,20 @@ describe('save slots (S42)', () => {
     expect(reload).toHaveBeenCalledOnce()
   })
 
-  it('AC-5: the store starts with the pending save and removes the key', () => {
+  it('AC-5: the store starts with the pending save and removes the key', async () => {
     const state = { ...createState(7), money: 12345 }
     session.setItem(PENDING, serialize(state))
+    setStartState(await startState(location.search))
     const store = useGameStore()
     expect(store.state.world.seed).toBe(7)
     expect(store.state.money).toBe(12345)
     expect(session.getItem(PENDING)).toBeNull()
   })
 
-  it('AC-5: the store ignores an invalid pending save', () => {
+  it('AC-5: the store ignores an invalid pending save', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     session.setItem(PENDING, JSON.stringify({ version: 1, state: { money: 1 } }))
+    setStartState(await startState(location.search))
     const store = useGameStore()
     expect(store.state).toEqual(createState(42))
     expect(session.getItem(PENDING)).toBeNull()

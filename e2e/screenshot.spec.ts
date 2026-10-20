@@ -960,6 +960,55 @@ test('S43: the game writes the autosave at a new day, and the panel can load it'
   expect(errors).toEqual([])
 })
 
+test('S43b: the game resumes from the autosave, and "Neues Spiel" starts day 1', async ({
+  page,
+}) => {
+  test.setTimeout(60_000)
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+  const clock = page.getByTestId('clock')
+  await page.goto('/')
+  // At speed 16 one game day takes 15 real seconds.
+  await page.getByTestId('speed-16').click()
+  await expect(clock).toHaveText(/^Tag 2 /, { timeout: 30_000 })
+  await page.getByTestId('speed-0').click()
+  await page.reload()
+  await expect(clock).toHaveText(/^Tag 2 /)
+
+  await page.getByTestId('save-button').click()
+  await page.getByTestId('save-new-game').focus()
+  await page.keyboard.press('Enter')
+  await expect(page.getByTestId('save-new-game-cancel')).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect(page.getByTestId('save-new-game-confirm')).toHaveCount(0)
+  await expect(page.getByTestId('save-new-game')).toBeFocused()
+  await page.getByTestId('save-new-game').click()
+  await expect(page.getByTestId('save-new-game-confirm')).toHaveText('Ja, neues Spiel')
+  await expect(page.getByTestId('save-panel')).toContainText(
+    'Das laufende Spiel geht verloren. Neues Spiel beginnen?',
+  )
+  await expect(clock).toHaveText(/^Tag 2 /)
+  await page.screenshot({ path: 'docs/progress/save-panel-new-game.png' })
+  await page.getByTestId('save-new-game-confirm').click()
+  await expect(clock).toHaveText(/^Tag 1 /)
+  await expect(page.getByTestId('save-panel')).toHaveCount(0)
+  expect(errors).toEqual([])
+})
+
+test('S43b: a broken autosave gives a new game', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+  await page.addInitScript(() => localStorage.setItem('coffeechain.save.autosave', '{broken'))
+  await page.goto('/')
+  await expect(page.getByTestId('clock')).toHaveText(/^Tag 1 /)
+  const canvas = page.locator('canvas#scene')
+  await expect(canvas).toHaveAttribute('data-props', 'ready')
+  expect(await canvas.evaluate((c: HTMLCanvasElement) => c.getContext('webgl2') !== null)).toBe(
+    true,
+  )
+  expect(errors).toEqual([])
+})
+
 test('S40: tool brush paints, notes and disarms', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
