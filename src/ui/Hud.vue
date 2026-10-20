@@ -9,6 +9,7 @@ import { formatMoney } from './money'
 import ParcelInspector from './ParcelInspector.vue'
 import OverlayPanel from './OverlayPanel.vue'
 import ParcelTool from './ParcelTool.vue'
+import PlantTool from './PlantTool.vue'
 import { tools } from './toolbar'
 
 const store = useGameStore()
@@ -57,6 +58,7 @@ const clockText = computed(() => {
     <OverlayPanel />
     <aside class="frame right-panel" data-testid="hud-right-panel">
       <ParcelTool v-if="selection.tool === 'parcel'" />
+      <PlantTool v-else-if="selection.tool === 'plant'" />
       <ParcelInspector v-else />
     </aside>
     <nav class="frame toolbar" data-testid="hud-toolbar" :aria-label="de.tools.label">

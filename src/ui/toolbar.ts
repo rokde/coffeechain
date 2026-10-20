@@ -9,4 +9,5 @@ export interface Tool {
 export const tools: Tool[] = [
   { id: 'select', label: de.tools.select },
   { id: 'parcel', label: de.tools.parcel },
+  { id: 'plant', label: de.tools.plant },
 ]

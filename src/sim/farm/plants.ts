@@ -42,9 +42,14 @@ export function plant(state: GameState, command: Plant): GameState {
     plants[index] = { variety: command.variety, plantedHour: state.time.hour }
   }
 
-  const cost = Math.round(variety.seedCost * 100) * command.parcels.length
+  const cost = quotePlant(command.variety, command.parcels.length)
   if (cost > state.money) throw new Error(`Not enough money: cost ${cost}, balance ${state.money}`)
   return { ...state, money: state.money - cost, farm: { ...state.farm, plants } }
+}
+
+// Seed cost in hundredths of CC for count parcels.
+export function quotePlant(variety: Variety, count: number): number {
+  return Math.round(balance().varieties[variety].seedCost * 100) * count
 }
 
 // Growth comes only from the game hours since planting, so it needs no per-tick state.
