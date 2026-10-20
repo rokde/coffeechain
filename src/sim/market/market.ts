@@ -1,5 +1,6 @@
 import type { Balance } from '../../../config/balance.schema'
 import { balance } from '../balance'
+import { priceEventFactor } from '../events/effects'
 import type { Variety } from '../farm/yield'
 import type { GameState } from '../state'
 import { clock } from '../time/time'
@@ -43,12 +44,14 @@ function reference(good: Good, cfg: Balance): number {
 
 // Market price of a good on a game day, from the volumes in the window that ends on that day.
 // extra adds units to the volume of that day, for example half of a trade.
+// eventFactor comes from priceEventFactor (coffee only).
 export function marketPrice(
   market: MarketState,
   good: Good,
   day: number,
   cfg = balance(),
   extra = 0,
+  eventFactor = 1,
 ): number {
   const m = cfg.market
   const units = market.volumes
@@ -67,7 +70,7 @@ export function marketPrice(
           m.demandFactorRange,
         )
   const ref = reference(good, cfg)
-  return clamp(ref * factor, [m.priceFloor * ref, m.priceCeiling * ref])
+  return clamp(ref * eventFactor * factor, [m.priceFloor * ref, m.priceCeiling * ref])
 }
 
 // Price in CC per unit that the bank pays for raw coffee today.
@@ -76,7 +79,8 @@ export function bankBuyPrice(state: GameState, variety: Variety, units = 0): num
   const cfg = balance()
   const day = clock(state.time.hour).day
   const good: Good = { kind: 'coffee', variety }
-  return marketPrice(state.market, good, day, cfg, units / 2) * cfg.market.bankBuyFactor
+  const event = priceEventFactor(state, variety, day)
+  return marketPrice(state.market, good, day, cfg, units / 2, event) * cfg.market.bankBuyFactor
 }
 
 // Price in CC per unit that the bank asks for seed today.
@@ -91,9 +95,13 @@ export function priceHistory(state: GameState, good: Good): number[] {
   const cfg = balance()
   const today = clock(state.time.hour).day
   const days = cfg.market.historyDays
-  return Array.from({ length: days }, (_, i) =>
-    marketPrice(state.market, good, today - days + 1 + i, cfg),
-  )
+  return Array.from({ length: days }, (_, i) => {
+    const day = today - days + 1 + i
+    // shortcut: ended events leave state.events, so older days show no event factor.
+    // Store a factor per day when the chart must show past events.
+    const event = good.kind === 'coffee' ? priceEventFactor(state, good.variety, day) : 1
+    return marketPrice(state.market, good, day, cfg, 0, event)
+  })
 }
 
 function checkTrade(command: Sell | Buy, cfg: Balance) {

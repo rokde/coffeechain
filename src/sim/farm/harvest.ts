@@ -1,7 +1,9 @@
 import { balance } from '../balance'
+import { yieldEventFactor } from '../events/effects'
 import { mulberry32 } from '../rng'
 import type { GameState } from '../state'
 import { storageUsed, type Batch } from '../storage/storage'
+import { clock } from '../time/time'
 import { soilClassOf } from '../world/generate'
 import { overripeFactor } from './overripe'
 import { growth } from './plants'
@@ -49,6 +51,7 @@ export function harvest(state: GameState, command: Harvest): GameState {
           soilClass: parcel.soilClass,
           zoneMatches: parcel.zone === cfg.varieties[plant.variety].zone,
           fertilized: plant.fertilized ?? false,
+          eventFactor: yieldEventFactor(state, index, clock(hour).day),
           random: yieldRandom(mulberry32(harvestSeed(state.world.seed, hour, index)), cfg),
         },
         cfg,
