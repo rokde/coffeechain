@@ -2,6 +2,7 @@ import { balance } from '../balance'
 import { yieldEventFactor } from '../events/effects'
 import { mulberry32 } from '../rng'
 import type { GameState } from '../state'
+import { storageCapacity } from '../storage/capacity'
 import { storageUsed, type Batch } from '../storage/storage'
 import { clock } from '../time/time'
 import { soilClassOf } from '../world/generate'
@@ -32,7 +33,7 @@ export function harvest(state: GameState, command: Harvest): GameState {
   const cfg = balance()
   const plants = { ...state.farm.plants }
   const parcels = [...state.world.parcels]
-  let free = cfg.storage.startCapacity - storageUsed(state.storage)
+  let free = storageCapacity(state, cfg) - storageUsed(state.storage)
   const stored = new Map<Variety, number>()
   for (const { x, y } of command.parcels) {
     const inside =

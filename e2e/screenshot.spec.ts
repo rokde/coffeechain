@@ -1292,3 +1292,36 @@ for (const [width, height] of [
     expect((await panel.boundingBox())!.height).toBeLessThanOrEqual(464)
   })
 }
+
+test('S45: storage upgrade', async ({ page }) => {
+  const errors: string[] = []
+  page.on('console', (msg) => {
+    if (msg.type() === 'error') errors.push(msg.text())
+  })
+  page.on('pageerror', (error) => errors.push(error.message))
+
+  await page.goto('/?seed=48213')
+  const money = page.getByTestId('money')
+  const canvas = page.locator('canvas#scene')
+  const row = page.getByTestId('build-tool-storage')
+  // Buildable lowland parcel (32, 38) of seed 48213 at the start view.
+  const position = { x: 607, y: 357 }
+  await expect(page.getByTestId('storage')).toHaveText('Lager 0 / 100')
+  await page.getByTestId('tool-parcel').click()
+  await canvas.click({ position })
+  await expect(money).toHaveText('485 CC')
+
+  await page.getByTestId('tool-select').click()
+  await canvas.click({ position })
+  await page.getByTestId('tool-build').click()
+  await expect(row.getByTestId('build-tool-capacity')).toHaveText('Platz für 250 Einheiten')
+  await page.getByTestId('build-tool-build-storage').click()
+  await expect(money).toHaveText('335 CC')
+  await expect(page.getByTestId('storage')).toHaveText('Lager 0 / 250')
+  await expect(row.getByTestId('build-tool-capacity')).toHaveText('Platz für 600 Einheiten')
+  await expect(row.getByTestId('build-tool-locked')).toHaveText('ab Phase 2')
+  await expect(page.getByTestId('build-tool-build-storage')).toBeDisabled()
+  await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
+  await page.screenshot({ path: 'docs/progress/S45.png' })
+  expect(errors).toEqual([])
+})

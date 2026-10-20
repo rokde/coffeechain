@@ -147,7 +147,8 @@
     "maxed": "Schon gebaut",
     "first": "Das Gebäude kommt auf die erste markierte Parzelle.",
     "build": "Bauen",
-    "tooExpensive": "Nicht genug CC."
+    "tooExpensive": "Nicht genug CC.",
+    "capacity": "Platz für {capacity} Einheiten"
   },
   "marketPanel": {
     "heading": "Markt",

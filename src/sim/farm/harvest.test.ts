@@ -141,6 +141,17 @@ describe('capacity limit', () => {
     expect(next.storage).toEqual(state.storage)
     expect(next.farm.plants[0]!.pendingUnits).toBe(expectedYield(state, 0, false))
   })
+
+  it('S45 AC-2: a Lager-Ausbau raises the limit to the capacity of its stage', () => {
+    const upgraded = { ...full(240), buildings: { 3: { kind: 'storage' as const } } }
+    expect(balance().storage.upgrades[0]!.capacity).toBe(250)
+    const units = expectedYield(upgraded, 0, false)
+    expect(units).toBeGreaterThan(10)
+    const next = harvest(upgraded, [0, 0])
+    expect(next.storage.batches[1]).toEqual({ variety: 'robusta', units: 10, quality: 100 })
+    expect(storageUsed(next.storage)).toBe(250)
+    expect(next.farm.plants[0]!.pendingUnits).toBe(units - 10)
+  })
 })
 
 describe('rejected harvest', () => {
