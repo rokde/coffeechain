@@ -7,88 +7,24 @@ import { createState } from '../sim/state'
 import { generateWorld } from '../sim/world/generate'
 import { placeProps, type Place } from '../sim/world/props'
 import type { ModelId } from './models'
-import { createProps, pathPieces, syncTrees } from './props'
+import { createProps, syncTrees } from './props'
 import { parcelCenter } from './surface'
 
 const world = generateWorld(42, balance())
 const places = placeProps(world, balance())
-// The lowest seed from 1 upward with a corner in the path. The S6 e2e test uses it too.
-const CORNER_SEED = 7
 
-// Hut-like and tree-like boxes of different sizes. Path tiles have their top 0.05 below the origin.
+// Hut-like and tree-like boxes of different sizes.
 const fakeLoad = async (id: ModelId): Promise<Object3D> => {
-  if (id.startsWith('path')) return new Mesh(new BoxGeometry(1, 0.05, 1).translate(0, -0.075, 0))
   if (id.startsWith('tree')) return new Mesh(new BoxGeometry(0.5, 1.71, 0.5))
   return new Mesh(new BoxGeometry(2, 0.74, 2).translate(0.3, 0.2, -0.1))
 }
 const widths: Record<string, number> = {
   hut: 0.9,
   'market-stand': 0.8,
-  'path-straight': 1,
-  'path-corner': 1,
   'tree-a': 0.7,
   'tree-b': 0.7,
   'tree-c': 0.7,
 }
-
-describe('pathPieces', () => {
-  it('AC-2: gives no piece for a path of length 2', () => {
-    expect(
-      pathPieces([
-        { x: 0, y: 0 },
-        { x: 1, y: 0 },
-      ]),
-    ).toEqual([])
-  })
-
-  it('AC-2: turns straight pieces along x and along z by an odd number of quarters', () => {
-    const alongX = pathPieces([
-      { x: 0, y: 0 },
-      { x: 1, y: 0 },
-      { x: 2, y: 0 },
-      { x: 3, y: 0 },
-    ])
-    const alongZ = pathPieces([
-      { x: 5, y: 3 },
-      { x: 5, y: 2 },
-      { x: 5, y: 1 },
-    ])
-    expect(alongX.map((p) => [p.x, p.y, p.model])).toEqual([
-      [1, 0, 'path-straight'],
-      [2, 0, 'path-straight'],
-    ])
-    expect(alongZ.map((p) => [p.x, p.y, p.model])).toEqual([[5, 2, 'path-straight']])
-    expect(alongX[0]!.quarterTurns).toBe(alongX[1]!.quarterTurns)
-    expect(Math.abs(alongX[0]!.quarterTurns - alongZ[0]!.quarterTurns) % 2).toBe(1)
-  })
-
-  it('AC-2: gives four different turns for the four corner shapes', () => {
-    const corner = (dx: number, dy: number) => {
-      const pieces = pathPieces([
-        { x: 5 - dx, y: 5 },
-        { x: 5, y: 5 },
-        { x: 5, y: 5 + dy },
-      ])
-      expect(pieces).toHaveLength(1)
-      expect(pieces[0]).toMatchObject({ x: 5, y: 5, model: 'path-corner' })
-      return pieces[0]!.quarterTurns
-    }
-    const turns = [corner(1, 1), corner(1, -1), corner(-1, 1), corner(-1, -1)]
-    expect(new Set(turns).size).toBe(4)
-    // The reverse direction gives the same shape.
-    const back = pathPieces([
-      { x: 5, y: 6 },
-      { x: 5, y: 5 },
-      { x: 4, y: 5 },
-    ])
-    expect(back[0]!.quarterTurns).toBe(turns[0])
-  })
-
-  it('AC-2: gives at least one corner piece for the corner seed', () => {
-    const path = placeProps(generateWorld(CORNER_SEED, balance()), balance()).path
-    expect(pathPieces(path).some((p) => p.model === 'path-corner')).toBe(true)
-  })
-})
 
 const placesOf = (group: { children: Object3D[] }, pred: (id: string) => boolean) =>
   group.children
@@ -105,17 +41,29 @@ describe('createProps', () => {
     expect(placesOf(group, isTree)).not.toContainEqual(places.trees[0])
     expect(placesOf(group, (id) => id === 'hut')).toEqual([places.hut])
     expect(placesOf(group, (id) => id === 'market-stand')).toEqual([places.market])
-    expect(placesOf(group, (id) => id.startsWith('path'))).toEqual(places.path.slice(1, -1))
   })
 
-  it('AC-3: puts hut, market, path pieces and trees at the places for seed 42', async () => {
+  it('S40b AC-4: places no path model, but the hut, the market and the trees', async () => {
+    for (const seed of [42, 7]) {
+      const w = generateWorld(seed, balance())
+      const group = await createProps(w, placeProps(w, balance()), fakeLoad)
+      const ids = group.children.map((c) => (c.userData as { prop: string }).prop)
+      expect(ids).not.toContain('path-straight')
+      expect(ids).not.toContain('path-corner')
+      expect(ids.filter((id) => id === 'hut')).toHaveLength(1)
+      expect(ids.filter((id) => id === 'market-stand')).toHaveLength(1)
+      expect(ids.filter(isTree).length).toBeGreaterThan(0)
+    }
+  })
+
+  it('AC-3: puts hut, market and trees at the places for seed 42', async () => {
     const group = await createProps(world, places, fakeLoad)
     const data = group.children.map((c) => c.userData)
     const of = (pred: (id: string) => boolean) =>
       data.filter((d) => pred(d.prop as string)).map(({ x, y }) => ({ x, y }))
     expect(of((id) => id === 'hut')).toEqual([places.hut])
     expect(of((id) => id === 'market-stand')).toEqual([places.market])
-    expect(of((id) => id.startsWith('path'))).toEqual(places.path.slice(1, -1))
+    expect(of((id) => id.startsWith('path'))).toEqual([])
     expect(of((id) => id.startsWith('tree'))).toEqual(places.trees)
     expect(places.trees.length).toBeGreaterThan(0)
     for (const d of data.filter((d) => (d.prop as string).startsWith('tree'))) {

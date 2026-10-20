@@ -1,4 +1,8 @@
 import { OrthographicCamera, Plane, Raycaster, Vector3, type Vector2 } from 'three'
+import { balance } from '../sim/balance'
+import type { WorldProps } from '../sim/world/props'
+import type { World } from '../sim/world/types'
+import { cornerY, parcelCenter } from './surface'
 
 export const START_YAW = 45
 export const PITCH = 35
@@ -16,6 +20,9 @@ export const CAMERA = {
   // Ground units per second at zoom 1.
   keySpeed: 20,
 }
+
+// The start view keeps the start area inside this part of the screen (NDC), away from the HUD.
+export const START_FRAME = { x: 0.9, y: 0.75 }
 
 // Turns the yaw (degrees) by 90° per step. E is +1, Q is -1. Result is in [0, 360).
 export function rotateYaw(yaw: number, steps: number): number {
@@ -53,6 +60,47 @@ export function groundDirection(yaw: number, right: number, up: number) {
     x: right * Math.cos(y) - up * Math.sin(y),
     z: -right * Math.sin(y) - up * Math.cos(y),
   }
+}
+
+// Frames the hut, the market, the path and the start reach square for START_YAW.
+export function startView(world: World, props: WorldProps, aspect: number) {
+  const n = world.size
+  const { startReach } = balance().world
+  const lo = (v: number) => Math.max(0, v - startReach)
+  const hi = (v: number) => Math.min(n, v + startReach + 1)
+  const corners = [
+    [lo(world.start.x), lo(world.start.y)],
+    [hi(world.start.x), lo(world.start.y)],
+    [lo(world.start.x), hi(world.start.y)],
+    [hi(world.start.x), hi(world.start.y)],
+  ].map(([cx, cz]) => ({ x: cx! - n / 2, y: cornerY(world, cx!, cz!), z: cz! - n / 2 }))
+  const points = [props.hut, props.market, ...props.path]
+    .map((p) => parcelCenter(world, p.x, p.y))
+    .concat(corners)
+  const xs = points.map((p) => p.x)
+  const zs = points.map((p) => p.z)
+  const target = {
+    x: (Math.min(...xs) + Math.max(...xs)) / 2,
+    z: (Math.min(...zs) + Math.max(...zs)) / 2,
+  }
+  // The screen right and screen up axes of the camera in world space.
+  const y = (START_YAW * Math.PI) / 180
+  const p = (PITCH * Math.PI) / 180
+  const right = { x: Math.cos(y), z: -Math.sin(y) }
+  const up = { x: -Math.sin(p) * Math.sin(y), y: Math.cos(p), z: -Math.sin(p) * Math.cos(y) }
+  let zoom = Infinity
+  for (const q of points) {
+    const dx = q.x - target.x
+    const dz = q.z - target.z
+    const sx = Math.abs(dx * right.x + dz * right.z)
+    const sy = Math.abs(dx * up.x + q.y * up.y + dz * up.z)
+    zoom = Math.min(
+      zoom,
+      (START_FRAME.x * VIEW_HEIGHT * aspect) / 2 / sx,
+      (START_FRAME.y * VIEW_HEIGHT) / 2 / sy,
+    )
+  }
+  return { target, zoom: clampZoom(zoom) }
 }
 
 const ground = new Plane(new Vector3(0, 1, 0), 0)
@@ -123,7 +171,15 @@ export function createCamera(aspect: number, worldSize: number) {
     place()
   }
 
+  function frame(to: { x: number; z: number }, zoom: number) {
+    const { x, z } = clampTarget(to, worldSize)
+    target.set(x, 0, z)
+    camera.zoom = clampZoom(zoom)
+    camera.updateProjectionMatrix()
+    place()
+  }
+
   place()
   resize(aspect)
-  return { camera, target, resize, rotate, pan, panBy, zoomAt }
+  return { camera, target, resize, rotate, pan, panBy, zoomAt, frame }
 }

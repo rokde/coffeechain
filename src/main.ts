@@ -10,10 +10,11 @@ import { installHelpKeys } from './app/helpKeys'
 import { installSpeedKeys } from './app/speedKeys'
 import { useGameStore } from './app/store'
 import { useViewStore } from './app/view'
-import { CAMERA, createCamera, gestureZoomDelta, wheelZoomDelta } from './render/camera'
+import { CAMERA, createCamera, gestureZoomDelta, startView, wheelZoomDelta } from './render/camera'
 import { createFieldMarks, FIELD_LABEL_STYLE, fieldAnchors, hoveredField } from './render/fields'
 import { loadModel, MODEL_IDS } from './render/models'
 import { createPlants, plantsKey } from './render/plants'
+import { createPath } from './render/path'
 import { createOutline, createOutlines, pickParcel } from './render/picking'
 import { createProps, syncTrees } from './render/props'
 import { applyOverlay } from './render/overlays'
@@ -177,7 +178,16 @@ function start() {
     const outline = createOutline(terrain, world.size)
     const outlines = createOutlines(terrain, world.size)
     const plants = createPlants(world)
-    scene.add(terrain, outline.line, outlines.line, plants.group)
+    const worldProps = store.state.props as GameState['props']
+    scene.add(
+      terrain,
+      createPath(world, worldProps.path),
+      outline.line,
+      outlines.line,
+      plants.group,
+    )
+    const { target, zoom } = startView(world, worldProps, window.innerWidth / window.innerHeight)
+    view.frame(target, zoom)
     watch(
       () => plantsKey(store.state.farm.plants, store.state.time.hour),
       () => plants.show(store.state.farm.plants, store.state.time.hour),
@@ -188,7 +198,7 @@ function start() {
       () => viewStore.overlay,
       (mode) => applyOverlay(terrain, world, mode),
     )
-    createProps(world, store.state.props as GameState['props'], loadModel)
+    createProps(world, worldProps, loadModel)
       .then((props) => {
         scene.add(props)
         watch(

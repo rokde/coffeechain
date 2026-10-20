@@ -111,7 +111,7 @@ test('S8: parcel inspector', async ({ page }) => {
   const inspector = page.getByTestId('parcel-inspector')
   await expect(inspector).toHaveCount(0)
 
-  // The screen centre shows the island centre, which is land.
+  // The screen centre shows the hut parcel (35, 39) at the start view, which is land.
   await page.locator('canvas#scene').click({ position: { x: 720, y: 450 } })
   await expect(inspector).toBeVisible()
   await expect(page.getByTestId('hud-right-panel')).toContainText('Parzelle')
@@ -143,7 +143,7 @@ test('S6: props on the island', async ({ page }) => {
   })
   page.on('pageerror', (error) => errors.push(error.message))
 
-  // Seed 7 has a corner in the path, see CORNER_SEED in src/render/props.test.ts.
+  // Seed 7 has a corner in the path.
   await page.goto('/?seed=7')
   await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
   await page.screenshot({ path: 'docs/progress/S6.png' })
@@ -211,7 +211,7 @@ for (const [width, height] of [
     await page.setViewportSize({ width, height })
     await page.goto('/?seed=48213')
     await page.getByTestId('overlay-soil').click()
-    // The screen centre shows the island centre, which is land.
+    // The screen centre shows the hut parcel (35, 39) at the start view, which is land.
     await page.locator('canvas#scene').click({ position: { x: width / 2, y: height / 2 } })
     await expect(page.getByTestId('parcel-inspector')).toBeVisible()
     const a = (await page.getByTestId('hud-overlay-panel').boundingBox())!
@@ -245,22 +245,22 @@ test('S12: parcel tool and money', async ({ page }) => {
   await expect(page.getByTestId('parcel-tool')).toBeVisible()
   await expect(page.getByTestId('parcel-inspector')).toHaveCount(0)
 
-  // Buildable lowland parcels (18, 23) and (21, 23) of seed 48213 at the start camera.
+  // Buildable lowland parcels (32, 38) and (35, 37) of seed 48213 at the start view.
   const canvas = page.locator('canvas#scene')
-  await canvas.click({ position: { x: 640, y: 370 } })
-  await canvas.click({ position: { x: 690, y: 400 } })
+  await canvas.click({ position: { x: 638, y: 326 } })
+  await canvas.click({ position: { x: 802, y: 391 } })
   await expect(page.getByTestId('parcel-tool-count')).toHaveText('2')
-  await expect(page.getByTestId('parcel-tool-total')).toHaveText('40,16 CC')
+  await expect(page.getByTestId('parcel-tool-total')).toHaveText('42,8 CC')
   await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
   await page.screenshot({ path: 'docs/progress/S12.png' })
 
   await page.getByTestId('parcel-tool-create').click()
-  await expect(money).toHaveText('459,84 CC')
+  await expect(money).toHaveText('457,2 CC')
   await expect(page.getByTestId('parcel-tool-count')).toHaveText('0')
   await expect(page.getByTestId('parcel-tool-create')).toBeDisabled()
 
   // An owned parcel cannot be selected again.
-  await canvas.click({ position: { x: 640, y: 370 } })
+  await canvas.click({ position: { x: 638, y: 326 } })
   await expect(page.getByTestId('parcel-tool-count')).toHaveText('0')
 
   await page.getByTestId('tool-select').click()
@@ -314,15 +314,15 @@ test('S13: plant tool', async ({ page }) => {
   await page.goto('/?seed=48213')
   const money = page.getByTestId('money')
   const canvas = page.locator('canvas#scene')
-  // Buildable lowland parcels (18, 23) and (21, 23) of seed 48213 at the start camera.
+  // Buildable lowland parcels (32, 38) and (35, 37) of seed 48213 at the start view.
   const clicks = [
-    { x: 640, y: 370 },
-    { x: 690, y: 400 },
+    { x: 638, y: 326 },
+    { x: 802, y: 391 },
   ]
   await page.getByTestId('tool-parcel').click()
   for (const position of clicks) await canvas.click({ position })
   await page.getByTestId('parcel-tool-create').click()
-  await expect(money).toHaveText('459,84 CC')
+  await expect(money).toHaveText('457,2 CC')
 
   await page.getByTestId('tool-plant').click()
   await expect(page.getByTestId('plant-tool')).toBeVisible()
@@ -341,7 +341,7 @@ test('S13: plant tool', async ({ page }) => {
   await page.screenshot({ path: 'docs/progress/S13.png' })
 
   await page.getByTestId('plant-tool-plant').click()
-  await expect(money).toHaveText('451,83 CC')
+  await expect(money).toHaveText('449,19 CC')
   await expect(page.getByTestId('plant-tool-count')).toHaveText('0')
 
   // A parcel with a plant cannot be selected again.
@@ -362,11 +362,11 @@ test('S12b: owned parcel marks and field labels', async ({ page }) => {
   await expect(page.getByTestId('hud-top-bar')).toBeVisible()
   await expect(labels).toHaveCount(0)
 
-  // Buildable lowland parcels (18, 23) and (21, 23) of seed 48213 at the start camera.
+  // Buildable lowland parcels (32, 38) and (35, 37) of seed 48213 at the start view.
   await page.getByTestId('tool-parcel').click()
   const canvas = page.locator('canvas#scene')
-  await canvas.click({ position: { x: 640, y: 370 } })
-  await canvas.click({ position: { x: 690, y: 400 } })
+  await canvas.click({ position: { x: 638, y: 326 } })
+  await canvas.click({ position: { x: 802, y: 391 } })
   await page.getByTestId('parcel-tool-create').click()
 
   await expect(page.getByTestId('field-label-A')).toHaveText('Feld A')
@@ -411,12 +411,48 @@ test('S20: market panel from the toolbar and the market stand', async ({ page })
   await page.getByTestId('tool-select').click()
   await canvas.click({ position: { x: 720, y: 450 } })
   await expect(page.getByTestId('parcel-inspector')).toBeVisible()
-  // The market stand parcel (34, 39) of seed 48213 at the start camera.
-  await canvas.click({ position: { x: 640, y: 686 } })
+  // The market stand parcel (34, 39) of seed 48213 at the start view.
+  await canvas.click({ position: { x: 679, y: 423 } })
   await expect(page.getByTestId('tool-market')).toHaveAttribute('aria-pressed', 'true')
   await expect(panel).toBeVisible()
   await page.getByTestId('tool-select').click()
   await expect(page.getByTestId('parcel-inspector')).toHaveCount(0)
+  expect(errors).toEqual([])
+})
+
+test('S40b: start view frames the hut, the market stand and the path', async ({ page }) => {
+  const errors: string[] = []
+  page.on('console', (msg) => {
+    if (msg.type() === 'error') errors.push(msg.text())
+  })
+  page.on('pageerror', (error) => errors.push(error.message))
+
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.goto('/?seed=48213')
+  const canvas = page.locator('canvas#scene')
+  await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
+  await page.getByTestId('speed-0').click()
+  await page.screenshot({ path: 'docs/progress/S40b.png' })
+
+  // The projected screen point of the market stand parcel (34, 39) at 1280 x 900.
+  await canvas.click({ position: { x: 599, y: 423 } })
+  await expect(page.getByTestId('market-panel')).toBeVisible()
+  await page.getByTestId('tool-select').click()
+
+  await page.getByTestId('overlay-soil').click()
+  await page.screenshot({ path: 'docs/progress/S40b-soil.png', animations: 'disabled' })
+  await page.getByTestId('overlay-soil').click()
+
+  // One large wheel step clamps the zoom to CAMERA.minZoom. The cursor stays on the hut.
+  await page.mouse.move(640, 445)
+  await page.mouse.wheel(0, 10_000)
+  await page.screenshot({ path: 'docs/progress/S40b-far.png' })
+
+  // Seed 48213 has a path of one step. Seed 60 has the longest climb of seeds 1 to 60.
+  await page.goto('/?seed=60')
+  await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
+  await page.getByTestId('speed-0').click()
+  await page.screenshot({ path: 'docs/progress/S40b-slope.png' })
   expect(errors).toEqual([])
 })
 
@@ -442,10 +478,10 @@ test('S13b: plant meshes', async ({ page }) => {
 
   await page.goto('/?seed=48213')
   const canvas = page.locator('canvas#scene')
-  // Buildable lowland parcels (18, 23) and (21, 23) of seed 48213 at the start camera.
+  // Buildable lowland parcels (32, 38) and (35, 37) of seed 48213 at the start view.
   const clicks = [
-    { x: 640, y: 370 },
-    { x: 690, y: 400 },
+    { x: 638, y: 326 },
+    { x: 802, y: 391 },
   ]
   await page.getByTestId('tool-parcel').click()
   for (const position of clicks) await canvas.click({ position })
@@ -453,7 +489,7 @@ test('S13b: plant meshes', async ({ page }) => {
   await page.getByTestId('tool-plant').click()
   for (const position of clicks) await canvas.click({ position })
   await page.getByTestId('plant-tool-plant').click()
-  await expect(page.getByTestId('money')).toHaveText('455,83 CC')
+  await expect(page.getByTestId('money')).toHaveText('453,19 CC')
   await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
   await page.screenshot({ path: 'docs/progress/S13b.png' })
   expect(errors).toEqual([])
@@ -473,10 +509,10 @@ test('S18a: care and harvest tools, storage chip', async ({ page }) => {
   const storage = page.getByTestId('storage')
   const canvas = page.locator('canvas#scene')
   await expect(storage).toHaveText('Lager 0 / 100')
-  // Buildable lowland parcels (18, 23) and (21, 23) of seed 48213 at the start camera.
+  // Buildable lowland parcels (32, 38) and (35, 37) of seed 48213 at the start view.
   const clicks = [
-    { x: 640, y: 370 },
-    { x: 690, y: 400 },
+    { x: 638, y: 326 },
+    { x: 802, y: 391 },
   ]
   await page.getByTestId('tool-parcel').click()
   for (const position of clicks) await canvas.click({ position })
@@ -484,7 +520,7 @@ test('S18a: care and harvest tools, storage chip', async ({ page }) => {
   await page.getByTestId('tool-plant').click()
   for (const position of clicks) await canvas.click({ position })
   await page.getByTestId('plant-tool-plant').click()
-  await expect(money).toHaveText('455,83 CC')
+  await expect(money).toHaveText('453,19 CC')
 
   const labels = await page.getByTestId('hud-toolbar').getByRole('button').allTextContents()
   expect(labels.map((l) => l.trim())).toEqual([
@@ -508,7 +544,7 @@ test('S18a: care and harvest tools, storage chip', async ({ page }) => {
   await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
   await page.screenshot({ path: 'docs/progress/S18a.png' })
   await page.getByTestId('farm-tool-apply').click()
-  await expect(money).toHaveText('453,83 CC')
+  await expect(money).toHaveText('451,19 CC')
   await expect(page.getByTestId('farm-tool-count')).toHaveText('0')
 
   // Robusta needs 72 ticks. One frame runs at most 24 ticks, so jump 4 times at speed 4.
@@ -546,8 +582,8 @@ test('S18c: inspector yield forecast', async ({ page }) => {
 
   await page.goto('/?seed=48213')
   const canvas = page.locator('canvas#scene')
-  // Buildable lowland parcel (18, 23) of seed 48213 at the start camera.
-  const position = { x: 640, y: 370 }
+  // Buildable lowland parcel (32, 38) of seed 48213 at the start view.
+  const position = { x: 638, y: 326 }
   await page.getByTestId('tool-parcel').click()
   await canvas.click({ position })
   await page.getByTestId('parcel-tool-create').click()
@@ -574,8 +610,8 @@ test('S21e: field status and care buttons in the inspector', async ({ page }) =>
   await page.goto('/?seed=48213')
   await page.getByTestId('first-steps-close').click()
   const canvas = page.locator('canvas#scene')
-  // Buildable lowland parcel (18, 23) of seed 48213 at the start camera.
-  const position = { x: 640, y: 370 }
+  // Buildable lowland parcel (32, 38) of seed 48213 at the start view.
+  const position = { x: 638, y: 326 }
   await page.getByTestId('tool-parcel').click()
   await canvas.click({ position })
   await page.getByTestId('parcel-tool-create').click()
@@ -630,11 +666,11 @@ test('S23: field labels fade on hover', async ({ page }) => {
   page.on('pageerror', (error) => errors.push(error.message))
 
   await page.goto('/?seed=48213')
-  // Buildable lowland parcels (18, 23) and (21, 23) of seed 48213 at the start camera.
+  // Buildable lowland parcels (32, 38) and (35, 37) of seed 48213 at the start view.
   await page.getByTestId('tool-parcel').click()
   const canvas = page.locator('canvas#scene')
-  await canvas.click({ position: { x: 640, y: 370 } })
-  await canvas.click({ position: { x: 690, y: 400 } })
+  await canvas.click({ position: { x: 638, y: 326 } })
+  await canvas.click({ position: { x: 802, y: 391 } })
   await page.getByTestId('parcel-tool-create').click()
   await page.getByTestId('tool-select').click()
 
@@ -644,15 +680,16 @@ test('S23: field labels fade on hover', async ({ page }) => {
   await expect(labelA).not.toHaveAttribute('style', /^((?!left).)*$/)
   expect(await labelA.evaluate((el) => getComputedStyle(el).pointerEvents)).toBe('none')
 
-  // Field A: the parcel at (640, 370).
-  await canvas.hover({ position: { x: 640, y: 370 } })
+  // Field A: the parcel at (638, 326).
+  await canvas.hover({ position: { x: 638, y: 326 } })
   await expect.poll(() => opacity(labelA)).toBe('0')
   expect(await opacity(labelB)).toBe('1')
 
   // A new field under the still mouse rebuilds the labels. Label A stays faded.
+  // Buildable lowland parcel (36, 40) below the hut.
   await page.getByTestId('tool-parcel').click()
-  await canvas.click({ position: { x: 720, y: 450 } })
-  await canvas.hover({ position: { x: 640, y: 370 } })
+  await canvas.click({ position: { x: 720, y: 497 } })
+  await canvas.hover({ position: { x: 638, y: 326 } })
   await expect.poll(() => opacity(labelA)).toBe('0')
   await page.getByTestId('parcel-tool-create').focus()
   await page.keyboard.press('Enter')
@@ -660,7 +697,7 @@ test('S23: field labels fade on hover', async ({ page }) => {
   expect(await opacity(labelA)).toBe('0')
   await page.getByTestId('tool-select').click()
 
-  // The island centre is land with no field.
+  // The screen centre shows the hut parcel, which is land with no field.
   await canvas.hover({ position: { x: 720, y: 450 } })
   await expect.poll(() => opacity(labelA)).toBe('1')
   await expect.poll(() => opacity(labelB)).toBe('1')

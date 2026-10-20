@@ -2,6 +2,7 @@ import { Plane, Raycaster, Vector2, Vector3, type Camera } from 'three'
 import { describe, expect, it } from 'vitest'
 import { balance } from '../sim/balance'
 import { generateWorld } from '../sim/world/generate'
+import { placeProps } from '../sim/world/props'
 import {
   CAMERA,
   clampTarget,
@@ -10,10 +11,13 @@ import {
   gestureZoomDelta,
   nextZoom,
   rotateYaw,
+  START_FRAME,
   START_YAW,
+  startView,
   wheelZoomDelta,
 } from './camera'
 import { parcelAt, pickParcel } from './picking'
+import { terrainHeightAt } from './surface'
 import { createTerrain } from './terrain'
 
 describe('rotateYaw', () => {
@@ -210,5 +214,54 @@ describe('picking after zoom and pan (S22)', () => {
       view.zoomAt(cursor, -400)
       expect(pickParcel(cursor, view.camera, terrain, world.size)).toEqual(before)
     }
+  })
+})
+
+describe('startView (S40b)', () => {
+  const aspect = 1280 / 900
+  const zoomOf = (seed: number) => {
+    const world = generateWorld(seed, balance())
+    const props = placeProps(world, balance())
+    const view = startView(world, props, aspect)
+    expect(view.zoom).toBeGreaterThanOrEqual(CAMERA.minZoom)
+    expect(view.zoom).toBeLessThanOrEqual(CAMERA.maxZoom)
+
+    const camera = createCamera(aspect, world.size)
+    camera.frame(view.target, view.zoom)
+    expect(camera.camera.zoom).toBe(view.zoom)
+    const { startReach } = balance().world
+    const n = world.size
+    const clip = (v: number) => Math.min(n, Math.max(0, v))
+    const square = [-startReach, startReach + 1].flatMap((dx) =>
+      [-startReach, startReach + 1].map((dz) => ({
+        x: clip(world.start.x + dx) - n / 2,
+        z: clip(world.start.y + dz) - n / 2,
+      })),
+    )
+    const centre = (p: { x: number; y: number }) => ({
+      x: p.x + 0.5 - n / 2,
+      z: p.y + 0.5 - n / 2,
+    })
+    const points = [props.hut, props.market, ...props.path].map(centre).concat(square)
+    expect(points.length).toBe(props.path.length + 6)
+    for (const { x, z } of points) {
+      const q = new Vector3(x, terrainHeightAt(world, x, z), z).project(camera.camera)
+      expect(Math.abs(q.x)).toBeLessThanOrEqual(START_FRAME.x + 1e-9)
+      expect(Math.abs(q.y)).toBeLessThanOrEqual(START_FRAME.y + 1e-9)
+    }
+    return view.zoom
+  }
+
+  it('AC-1: frames the start area inside the frame region for seed 48213 and 20 more seeds', () => {
+    expect(START_FRAME).toEqual({ x: 0.9, y: 0.75 })
+    expect(zoomOf(48213)).toBeGreaterThanOrEqual(2)
+    for (let seed = 1; seed <= 20; seed++) zoomOf(seed)
+  })
+
+  it('AC-1: frame keeps the target inside the world and the zoom inside the limits', () => {
+    const view = createCamera(aspect, SIZE)
+    view.frame({ x: 100, z: -3 }, 50)
+    expect([view.target.x, view.target.z]).toEqual([SIZE / 2, -3])
+    expect(view.camera.zoom).toBe(CAMERA.maxZoom)
   })
 })
