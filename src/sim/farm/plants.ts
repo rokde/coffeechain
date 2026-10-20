@@ -12,6 +12,9 @@ export interface Plant {
 export interface PlantState {
   variety: Variety
   plantedHour: number
+  fertilized?: boolean
+  irrigated?: boolean
+  pestProtected?: boolean
 }
 
 export type Stage = keyof Balance['farm']['visualStages'] | 'reif'
