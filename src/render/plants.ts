@@ -22,8 +22,8 @@ export const STAGES: readonly Stage[] = ['setzling', 'wachstum', 'bluete', 'fruc
 
 // Render constants, not balancing numbers.
 const STAGE_SIZE: Record<Stage, number> = {
-  setzling: 0.35,
-  wachstum: 0.6,
+  setzling: 0.6,
+  wachstum: 0.75,
   bluete: 0.8,
   fruchtansatz: 0.9,
   reif: 1,
