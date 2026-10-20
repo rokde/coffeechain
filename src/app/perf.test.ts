@@ -1,5 +1,7 @@
-import { InstancedMesh, Mesh, Scene } from 'three'
+import { BoxGeometry, Group, InstancedMesh, Mesh, Scene, type Object3D } from 'three'
 import { describe, expect, it } from 'vitest'
+import type { ModelId } from '../render/models'
+import { createProps } from '../render/props'
 import { createPlants, plantsKey, plantVariants, STAGES } from '../render/plants'
 import { createTerrain } from '../render/terrain'
 import { balance } from '../sim/balance'
@@ -80,5 +82,21 @@ describe('performance on a full farm (S54)', () => {
     const instanced = drawn.filter((m) => m instanceof InstancedMesh)
     expect(instanced).toHaveLength(drawn.length - 1)
     expect(instanced.reduce((sum, m) => sum + m.count, 0)).toBe(PERF_PLANTS)
+  })
+
+  it('S54b AC-5: trees need at most one draw call per tree model and mesh part', async () => {
+    const PARTS = 2
+    const load = async (id: ModelId): Promise<Object3D> =>
+      id.startsWith('tree')
+        ? new Group().add(new Mesh(new BoxGeometry(0.1, 0.6, 0.1)), new Mesh(new BoxGeometry()))
+        : new Mesh(new BoxGeometry())
+    const props = await createProps(state.world, state.props, load)
+    const trees = props.children.filter(
+      (c): c is InstancedMesh => c instanceof InstancedMesh && c.count > 0,
+    )
+    expect(state.props.trees.length).toBeGreaterThan(3)
+    expect(trees.length).toBeGreaterThan(0)
+    expect(trees.length).toBeLessThanOrEqual(3 * PARTS)
+    expect(trees.reduce((sum, m) => sum + m.count, 0)).toBe(PARTS * state.props.trees.length)
   })
 })
