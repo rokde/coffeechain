@@ -47,6 +47,9 @@ function lockText(v: Variety) {
       >
         {{ de.inspector.varieties[v] }}
         <small v-if="lockText(v)" :data-testid="`plant-tool-locked-${v}`">{{ lockText(v) }}</small>
+        <small v-if="v === 'specialty'" data-testid="plant-tool-zone-specialty">
+          {{ t.specialtyZone }}
+        </small>
       </button>
     </div>
     <p v-if="selection.note" class="short" data-testid="tool-note">
@@ -163,6 +166,12 @@ dd {
   color: inherit;
   opacity: 0.6;
   cursor: not-allowed;
+}
+@media (max-width: 480px) {
+  .varieties button {
+    padding: 4px 2px;
+    font-size: 13px;
+  }
 }
 button:focus-visible {
   outline: 2px solid #f2c48d;

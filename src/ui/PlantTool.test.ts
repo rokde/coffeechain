@@ -150,6 +150,15 @@ describe('PlantTool locked varieties (S48)', () => {
     expect(html).toContain('plant-tool-locked-specialty')
   })
 
+  it('UX: Spezialität says "nur auf Vulkanboden", locked or not', async () => {
+    for (const money of [0, 1000000]) {
+      const specialty = button(await renderNew(money), 'specialty')
+      expect(specialty).toMatch(/plant-tool-zone-specialty[^>]*>\s*nur auf Vulkanboden\s*</)
+      expect(specialty.includes('plant-tool-locked-specialty')).toBe(money === 0)
+    }
+    expect(button(await renderNew(0), 'robusta')).not.toContain('Vulkanboden')
+  })
+
   it('AC-4: with Specialty the count and the plant action use only the volcano parcels', async () => {
     const pinia = createPinia()
     setActivePinia(pinia)

@@ -135,7 +135,8 @@
     "total": "Saatgut",
     "plant": "Pflanzen",
     "tooExpensive": "Nicht genug CC.",
-    "locked": "ab Phase {phase} · Kapital {capital}"
+    "locked": "ab Phase {phase} · Kapital {capital}",
+    "specialtyZone": "nur auf Vulkanboden"
   },
   "buildTool": {
     "heading": "Bauen",
