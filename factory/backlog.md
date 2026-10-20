@@ -15,7 +15,7 @@ Example: `- [ ] PROJ-1 a hello CLI command that greets a name passed as an argum
 - [x] S3b World prop places: `src/sim/world/props.ts` adds the market place on a shore parcel next to water, a path of 4-connected land parcels from the hut to the market, and tree places on `karg` land parcels outside the start guarantee area. Tests check this for 200 seeds. Needs 003-world-generation. → 008-world-props
 - [x] S4 Kenney models: the used models (hut, market stand, path pieces, trees, rocks) from the four Kenney kits are in `assets/kenney/` with the license file; `src/render/models.ts` loads and caches them, and a debug view shows each one. Needs S1. → 004-kenney-models
 - [x] S5 Terrain mesh: the island renders as one low-poly mesh with vertex colors per zone, and the top bar shows "Welt #<seed>". This job adds the `world` field to `GameState` (from `generateWorld`). Needs S3. → 007-terrain-mesh
-- [ ] S6 World props: the scene places the Kenney hut at the start, the market on the shore, path pieces between them and trees on poor parcels, at the places from S3. Needs S3, S3b, S4.
+- [x] S6 World props: the scene places the Kenney hut at the start, the market on the shore, path pieces between them and trees on poor parcels, at the places from S3. Needs S3, S3b, S4. → 010-scene-objects
 - [ ] S7 Overlays: buttons switch a soil overlay (light = poor, dark = very good) and a zone overlay on and off. Needs S5.
 - [ ] S8 Parcel picking and inspector: a click selects a parcel and the right panel shows zone, soil class, matching variety and buildable state. Needs S5.
 - [x] S9 Game time: the sim ticks one game hour per step; the top bar shows day and time and has pause, 1×, 2×, 4×; tests check ticks per day at each speed. Needs S1. → 005-game-time
