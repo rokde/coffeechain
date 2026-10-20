@@ -56,7 +56,8 @@
     "label": "Werkzeuge",
     "select": "Auswählen",
     "parcel": "Parzelle",
-    "plant": "Pflanzen"
+    "plant": "Pflanzen",
+    "market": "Markt"
   },
   "parcelTool": {
     "heading": "Parzellen anlegen",
@@ -74,5 +75,16 @@
     "total": "Saatgut",
     "plant": "Pflanzen",
     "tooExpensive": "Nicht genug CC."
+  },
+  "marketPanel": {
+    "heading": "Markt",
+    "hint": "Die Bank kauft Rohkaffee und verkauft Saatgut. Verkäufe senken den Preis, Käufe heben ihn.",
+    "stock": "Im Lager",
+    "seeds": "Saatgut",
+    "sellPrice": "Bank zahlt",
+    "buyPrice": "Saatgut kostet",
+    "coffeeLine": "Kaffee, {days} Tage",
+    "seedLine": "Saatgut, {days} Tage",
+    "sell": "Verkaufen"
   }
 }

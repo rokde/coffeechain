@@ -6,6 +6,7 @@ import { balance } from '../sim/balance'
 import { clock } from '../sim/time/time'
 import de from './i18n/de.json'
 import { formatMoney } from './money'
+import MarketPanel from './MarketPanel.vue'
 import ParcelInspector from './ParcelInspector.vue'
 import OverlayPanel from './OverlayPanel.vue'
 import ParcelTool from './ParcelTool.vue'
@@ -59,6 +60,7 @@ const clockText = computed(() => {
     <aside class="frame right-panel" data-testid="hud-right-panel">
       <ParcelTool v-if="selection.tool === 'parcel'" />
       <PlantTool v-else-if="selection.tool === 'plant'" />
+      <MarketPanel v-else-if="selection.tool === 'market'" />
       <ParcelInspector v-else />
     </aside>
     <nav class="frame toolbar" data-testid="hud-toolbar" :aria-label="de.tools.label">
@@ -233,5 +235,12 @@ const clockText = computed(() => {
 .toolbar button:focus-visible {
   outline: 2px solid #f2c48d;
   outline-offset: 2px;
+}
+@media (max-width: 480px) {
+  /* Four tools do not fit at 96 px each. */
+  .toolbar button {
+    flex: 1;
+    min-width: 0;
+  }
 }
 </style>

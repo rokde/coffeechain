@@ -4,6 +4,7 @@ import { createApp, watch } from 'vue'
 import raw from '../config/balance.json'
 import { loadBalance } from '../config/balance.schema'
 import { advance } from './app/loop'
+import { selectParcel } from './app/market'
 import { useSelectionStore } from './app/selection'
 import { useGameStore } from './app/store'
 import { useViewStore } from './app/view'
@@ -168,7 +169,7 @@ function start() {
       // toggle only reads the state, so the cast of the readonly snapshot is safe.
       if (selection.tool === 'parcel' || selection.tool === 'plant') {
         if (parcel) selection.toggle(store.state as GameState, parcel)
-      } else selection.parcel = parcel
+      } else selectParcel(selection, store.state as GameState, parcel)
     })
   }
   const { realSecondsPerGameDay, ticksPerGameDay } = balance().time
