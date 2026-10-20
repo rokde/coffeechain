@@ -12,6 +12,7 @@ import de from './i18n/de.json'
 import { formatMoney } from './money'
 import FirstSteps from './FirstSteps.vue'
 import FarmTool from './FarmTool.vue'
+import FpsMeter from './FpsMeter.vue'
 import HelpOverlay from './HelpOverlay.vue'
 import MarketPanel from './MarketPanel.vue'
 import MessagePanel from './MessagePanel.vue'
@@ -108,6 +109,7 @@ const storageText = computed(() =>
         {{ tool.label }}
       </button>
     </nav>
+    <FpsMeter v-if="view.fpsVisible" />
     <HelpOverlay v-if="view.helpOpen" />
   </div>
 </template>
