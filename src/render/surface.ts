@@ -28,3 +28,22 @@ export function parcelCenter(world: World, x: number, y: number) {
     z: y - half,
   }
 }
+
+// The terrain height at a world point, on the same two triangles per quad as buildTerrainGeometry.
+export function terrainHeightAt(world: World, x: number, z: number): number {
+  const n = world.size
+  const gx = x + n / 2
+  const gz = z + n / 2
+  const cx = Math.min(n - 1, Math.max(0, Math.floor(gx)))
+  const cz = Math.min(n - 1, Math.max(0, Math.floor(gz)))
+  const fx = gx - cx
+  const fz = gz - cz
+  const h00 = cornerY(world, cx, cz)
+  const h11 = cornerY(world, cx + 1, cz + 1)
+  if (fz >= fx) {
+    const h01 = cornerY(world, cx, cz + 1)
+    return h00 + fx * (h11 - h01) + fz * (h01 - h00)
+  }
+  const h10 = cornerY(world, cx + 1, cz)
+  return h00 + fx * (h10 - h00) + fz * (h11 - h10)
+}
