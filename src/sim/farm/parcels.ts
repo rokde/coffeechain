@@ -1,5 +1,6 @@
 import { balance } from '../balance'
 import type { GameState } from '../state'
+import type { World, Zone } from '../world/types'
 import type { PlantState } from './plants'
 
 export interface FarmState {
@@ -20,9 +21,31 @@ export interface CreateParcels {
 const fieldName = (id: number): string =>
   (id >= 26 ? fieldName(Math.floor(id / 26) - 1) : '') + String.fromCharCode(65 + (id % 26))
 
+// Indices of the 4-neighbours of (x, y) inside the map.
+const neighbours = (size: number, x: number, y: number): number[] =>
+  [
+    [x + 1, y],
+    [x - 1, y],
+    [x, y + 1],
+    [x, y - 1],
+  ]
+    .filter(([nx, ny]) => nx! >= 0 && ny! >= 0 && nx! < size && ny! < size)
+    .map(([nx, ny]) => ny! * size + nx!)
+
+// The terrain rule only: not water, and no 4-neighbour height step above parcels.maxSlope.
+export function isBuildable(world: World, x: number, y: number): boolean {
+  const { size, parcels } = world
+  const parcel = parcels[y * size + x]!
+  const { maxSlope } = balance().parcels
+  return (
+    parcel.zone !== 'wasser' &&
+    neighbours(size, x, y).every((n) => Math.abs(parcels[n]!.height - parcel.height) <= maxSlope)
+  )
+}
+
 export function createParcels(state: GameState, command: CreateParcels): GameState {
   const { size, parcels } = state.world
-  const { firstCost, baseCost, zoneMultiplier, maxSlope } = balance().parcels
+  const { firstCost, baseCost, zoneMultiplier } = balance().parcels
   const owned = { ...state.farm.parcels }
   let fields = [...state.farm.fields]
   let nextFieldId = state.farm.nextFieldId
@@ -30,29 +53,26 @@ export function createParcels(state: GameState, command: CreateParcels): GameSta
   let cost = 0
 
   for (const { x, y } of command.parcels) {
-    const inside = (x: number, y: number) =>
+    const inside =
       Number.isInteger(x) && Number.isInteger(y) && x >= 0 && y >= 0 && x < size && y < size
-    if (!inside(x, y)) throw new Error(`Parcel ${x},${y} is outside the map`)
+    if (!inside) throw new Error(`Parcel ${x},${y} is outside the map`)
     const index = y * size + x
     if (index in owned) throw new Error(`Parcel ${x},${y} is already owned or listed twice`)
-    const parcel = parcels[index]!
-    if (parcel.zone === 'wasser') throw new Error(`Parcel ${x},${y} is water`)
-    const neighbours = [
-      [x + 1, y],
-      [x - 1, y],
-      [x, y + 1],
-      [x, y - 1],
-    ]
-      .filter(([nx, ny]) => inside(nx!, ny!))
-      .map(([nx, ny]) => ny! * size + nx!)
-    if (neighbours.some((n) => Math.abs(parcels[n]!.height - parcel.height) > maxSlope)) {
-      throw new Error(`Parcel ${x},${y} is too steep`)
+    if (!isBuildable(state.world, x, y)) {
+      throw new Error(`Parcel ${x},${y} is water or too steep`)
     }
-
-    cost += Math.round((count === 0 ? firstCost : baseCost) * zoneMultiplier[parcel.zone] * 100)
+    // isBuildable rejects water, so the zone is a land zone.
+    const zone = parcels[index]!.zone as Exclude<Zone, 'wasser'>
+    cost += Math.round((count === 0 ? firstCost : baseCost) * zoneMultiplier[zone] * 100)
     count++
 
-    const touched = [...new Set(neighbours.filter((n) => n in owned).map((n) => owned[n]!))]
+    const touched = [
+      ...new Set(
+        neighbours(size, x, y)
+          .filter((n) => n in owned)
+          .map((n) => owned[n]!),
+      ),
+    ]
     let id: number
     if (touched.length === 0) {
       id = nextFieldId++
