@@ -10,7 +10,7 @@ import {
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import type { BuildingKind } from '../sim/buildings/build'
 import type { World } from '../sim/world/types'
-import { colored } from './plants'
+import { colored, LIFT } from './plants'
 import { parcelCenter } from './surface'
 
 type Buildings = Readonly<Record<number, Readonly<{ kind: BuildingKind }>>>
@@ -20,8 +20,6 @@ const WALL = 0xd9c7a3
 const ROOF = 0x9a3b2a
 const SILO = 0xc8ccd0
 const SILO_TOP = 0x6f7880
-// Above the field mark lift of 0.05 in picking.ts.
-const LIFT = 0.06
 
 // The base is at y = 0, the footprint stays inside one parcel.
 export function buildingGeometry(kind: BuildingKind): BufferGeometry {
@@ -38,6 +36,13 @@ export function buildingGeometry(kind: BuildingKind): BufferGeometry {
   const silo = new CylinderGeometry(0.2, 0.2, 0.6, 10).translate(0, 0.3, 0)
   const top = new ConeGeometry(0.22, 0.18, 10).translate(0, 0.69, 0)
   return mergeGeometries([colored(silo, SILO), colored(top, SILO_TOP)])
+}
+
+// The height of the building top above the parcel center.
+export function buildingTop(kind: BuildingKind): number {
+  const geometry = buildingGeometry(kind)
+  geometry.computeBoundingBox()
+  return geometry.boundingBox!.max.y + LIFT
 }
 
 export function createBuildings(world: World) {

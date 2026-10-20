@@ -243,17 +243,19 @@ function start() {
       for (const { id, label } of fieldLabels) label.style.opacity = id === fadedField ? '0' : '1'
     }
     watch(
-      () => store.state.farm,
-      (farm) => {
+      () => [store.state.farm, store.state.buildings] as const,
+      ([farm, built]) => {
         // show and fieldAnchors only read the farm, so the cast of the readonly snapshot is safe.
         marks.show(farm as FarmState)
-        fieldLabels = fieldAnchors(world, farm as FarmState).map(({ id, name, position }) => {
-          const label = document.createElement('div')
-          label.dataset.testid = `field-label-${name}`
-          label.textContent = de.field.label.replace('{name}', name)
-          label.style.cssText = FIELD_LABEL_STYLE
-          return { id, label, at: new Vector3(position.x, position.y, position.z) }
-        })
+        fieldLabels = fieldAnchors(world, farm as FarmState, built).map(
+          ({ id, name, position }) => {
+            const label = document.createElement('div')
+            label.dataset.testid = `field-label-${name}`
+            label.textContent = de.field.label.replace('{name}', name)
+            label.style.cssText = FIELD_LABEL_STYLE
+            return { id, label, at: new Vector3(position.x, position.y, position.z) }
+          },
+        )
         fadeLabels()
         fieldLayer.replaceChildren(...fieldLabels.map(({ label }) => label))
       },
