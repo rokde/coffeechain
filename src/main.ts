@@ -2,8 +2,13 @@ import { createPinia } from 'pinia'
 import { createApp } from 'vue'
 import raw from '../config/balance.json'
 import { loadBalance } from '../config/balance.schema'
+import { advance } from './app/loop'
+import { useGameStore } from './app/store'
 import { createCamera } from './render/camera'
 import { createScene } from './render/scene'
+import { balance } from './sim/balance'
+import type { GameState } from './sim/state'
+import { step } from './sim/time/time'
 import Hud from './ui/Hud.vue'
 
 function configIsValid(): boolean {
@@ -39,8 +44,25 @@ function start() {
     if (key === 'e') view.rotate(1)
   })
 
-  renderer.setAnimationLoop(() => renderer.render(scene, view.camera))
-  createApp(Hud).use(createPinia()).mount('#hud')
+  const pinia = createPinia()
+  const store = useGameStore(pinia)
+  const { realSecondsPerGameDay, ticksPerGameDay } = balance().time
+  const msPerTick = (realSecondsPerGameDay * 1000) / ticksPerGameDay
+  let carryMs = 0
+  let last: number | undefined
+
+  // setAnimationLoop runs on requestAnimationFrame.
+  renderer.setAnimationLoop((now) => {
+    const due = advance(carryMs, now - (last ?? now), store.state.time.speed, msPerTick)
+    last = now
+    carryMs = due.carryMs
+    // step never changes its input, so the cast of the readonly snapshot is safe.
+    let state = store.state as GameState
+    for (let i = 0; i < due.ticks; i++) state = step(state)
+    if (due.ticks > 0) store.replace(state)
+    renderer.render(scene, view.camera)
+  })
+  createApp(Hud).use(pinia).mount('#hud')
 }
 
 if (configIsValid()) start()
