@@ -13,3 +13,13 @@ it('starts with no overlay and keeps only one overlay on', () => {
   view.toggle('zone')
   expect(view.overlay).toBe('none')
 })
+
+it('AC-2: the help starts closed and toggles', () => {
+  setActivePinia(createPinia())
+  const view = useViewStore()
+  expect(view.helpOpen).toBe(false)
+  view.toggleHelp()
+  expect(view.helpOpen).toBe(true)
+  view.toggleHelp()
+  expect(view.helpOpen).toBe(false)
+})

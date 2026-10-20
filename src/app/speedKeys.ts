@@ -15,6 +15,14 @@ export function speedForKey(
   return speeds.filter((speed) => speed > 0)[Number(key) - 1]
 }
 
+// True when the key goes to a text field and not to the game.
+export function isTyping(target: EventTarget | null): boolean {
+  return (
+    target instanceof HTMLElement &&
+    (target.isContentEditable || target.matches('input, textarea, select'))
+  )
+}
+
 export function installSpeedKeys(store: ReturnType<typeof useGameStore>) {
   let lastRunning: number | undefined
   watch(
@@ -26,12 +34,7 @@ export function installSpeedKeys(store: ReturnType<typeof useGameStore>) {
   )
   window.addEventListener('keydown', (event) => {
     if (event.repeat || event.metaKey || event.ctrlKey || event.altKey) return
-    const target = event.target
-    if (
-      target instanceof HTMLElement &&
-      (target.isContentEditable || target.matches('input, textarea, select'))
-    )
-      return
+    if (isTyping(event.target)) return
     const speed = speedForKey(event.key, store.state.time.speed, lastRunning, balance().time.speeds)
     if (speed === undefined) return
     // Stops the click that Space gives on a focused button.

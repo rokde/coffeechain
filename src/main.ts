@@ -6,6 +6,7 @@ import { loadBalance } from '../config/balance.schema'
 import { advance } from './app/loop'
 import { selectParcel } from './app/market'
 import { isFarmTool, useSelectionStore } from './app/selection'
+import { installHelpKeys } from './app/helpKeys'
 import { installSpeedKeys } from './app/speedKeys'
 import { useGameStore } from './app/store'
 import { useViewStore } from './app/view'
@@ -167,6 +168,7 @@ function start() {
   const pinia = createPinia()
   const store = useGameStore(pinia)
   installSpeedKeys(store)
+  installHelpKeys(useViewStore(pinia))
   // The model row lies at the origin, so the debug view has no terrain.
   // createTerrain only reads the world, so the cast of the readonly snapshot is safe.
   if (!debugModels) {
