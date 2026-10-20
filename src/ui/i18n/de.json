@@ -225,6 +225,7 @@
     "heading": "Spielstand",
     "close": "Spielstand schließen",
     "slot": "Platz {n}",
+    "autosave": "Automatisch",
     "save": "Speichern",
     "load": "Laden",
     "day": "Tag {day}",

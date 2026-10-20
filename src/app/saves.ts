@@ -11,10 +11,18 @@ function key(slot: string): string {
   return `coffeechain.save.${slot}`
 }
 
+// The last write per slot. A new write starts only after it ends, so writes keep their order.
+const queues = new Map<string, Promise<unknown>>()
+
 export async function writeSlot(slot: string, text: string): Promise<void> {
   const k = key(slot)
-  if (isTauri()) await invoke('save_write', { slot, text })
-  else localStorage.setItem(k, text)
+  const write = async () => {
+    if (isTauri()) await invoke('save_write', { slot, text })
+    else localStorage.setItem(k, text)
+  }
+  const next = (queues.get(slot) ?? Promise.resolve()).then(write, write)
+  queues.set(slot, next)
+  await next
 }
 
 export async function readSlot(slot: string): Promise<string | null> {

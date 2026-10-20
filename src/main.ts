@@ -3,6 +3,7 @@ import { Vector2, Vector3, type Camera, type Scene } from 'three'
 import { createApp, watch } from 'vue'
 import raw from '../config/balance.json'
 import { loadBalance } from '../config/balance.schema'
+import { installAutosave } from './app/autosave'
 import { advance } from './app/loop'
 import { selectParcel } from './app/market'
 import { isBrushTool, isClick, strokeParcel } from './app/brush'
@@ -170,6 +171,7 @@ function start() {
   const pinia = createPinia()
   const store = useGameStore(pinia)
   installSpeedKeys(store)
+  installAutosave(store)
   installHelpKeys(useViewStore(pinia), useSelectionStore(pinia))
   // The model row lies at the origin, so the debug view has no terrain.
   // createTerrain only reads the world, so the cast of the readonly snapshot is safe.
