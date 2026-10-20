@@ -16,6 +16,9 @@ Values in `config/balance.json` with `src: "NEU"` that the world generation (S3)
 | `progression.harvestProMessageDays` | 1 | How many game days does the Ernte-Profi message stay in the message panel? |
 | `events.researchMaxCount` | 1 | How many research breakthroughs can the game give? See "Research stacking" below. |
 | `progression.harvestProQualityBonus` | 0.05 | The bonus has no visible effect: `storage.harvestQuality` is 100 and the cap is 100. It needs a quality formula (PRD §12 point 4). |
+| `processing.washed.durationDays` | 1 | How many game days does one washed batch take? The washed units are ready 24 game hours after `Process`. |
+| `processing.washed.batchCapacity` | 50 | How many raw units can one washed batch take? The farm runs one batch at a time. |
+| `processing.washed.buildCost` | 150 | How many CC does the "Aufbereitung" building cost? The value is based on GDD 11.6. |
 
 `soilQuality` is the mean of `fertility` and `waterRetention`, divided by 100. Both have the same weight.
 

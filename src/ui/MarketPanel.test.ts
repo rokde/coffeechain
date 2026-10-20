@@ -2,7 +2,7 @@ import { createPinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { createSSRApp, h } from 'vue'
 import { renderToString } from 'vue/server-renderer'
-import { sellAll } from '../app/market'
+import { processAll, sellAll, sellAllWashed } from '../app/market'
 import { useSelectionStore } from '../app/selection'
 import { useGameStore } from '../app/store'
 import { balance } from '../sim/balance'
@@ -100,5 +100,65 @@ describe('MarketPanel (S20)', () => {
     sellAll(game, 'robusta')
     expect(game.state.storage.batches.filter((b) => b.variety === 'robusta')).toEqual([])
     expect(game.state.money).toBe(before + income)
+  })
+})
+
+describe('MarketPanel processing (S46)', () => {
+  // A farm with 60 raw Arabica Standard units, with or without a processing building.
+  function processing(building: boolean) {
+    const pinia = createPinia()
+    const game = useGameStore(pinia)
+    const state = game.state as GameState
+    game.replace({
+      ...state,
+      buildings: building ? { 0: { kind: 'processing' } } : {},
+      storage: { batches: [{ variety: 'arabicaStandard', units: 60, quality: 100 }] },
+    })
+    return { pinia, game }
+  }
+  const render = async (pinia: ReturnType<typeof createPinia>) =>
+    block(await renderToString(createSSRApp(MarketPanel).use(pinia)), 'arabicaStandard')
+  const button = (html: string, id: string) =>
+    html.match(new RegExp(`<button[^>]*data-testid="market-${id}"[^>]*>`))![0]
+
+  it('AC-5: "Aufbereiten" processes 50 units, then shows the running line and disables the button', async () => {
+    const { pinia, game } = processing(true)
+    let html = await render(pinia)
+    expect(button(html, 'process')).not.toContain('disabled')
+    expect(button(html, 'sell-washed')).toContain('disabled')
+    expect(html).not.toContain('market-processing')
+    const dispatch = vi.spyOn(game, 'dispatch')
+    processAll(game, 'arabicaStandard')
+    expect(dispatch).toHaveBeenCalledWith({
+      type: 'Process',
+      variety: 'arabicaStandard',
+      units: 50,
+    })
+    html = await render(pinia)
+    expect(field(html, 'stock')).toBe('10')
+    expect(field(html, 'washed-stock')).toBe('0')
+    expect(field(html, 'processing')!.trim()).toBe('Aufbereitung läuft bis Tag 2')
+    expect(button(html, 'process')).toContain('disabled')
+    expect(button(html, 'sell-washed')).toContain('disabled')
+  })
+
+  it('AC-5: after one day the washed units show and sell at the washed price', async () => {
+    const { pinia, game } = processing(true)
+    processAll(game, 'arabicaStandard')
+    game.replace({ ...(game.state as GameState), time: { hour: 24, speed: 1 } })
+    const html = await render(pinia)
+    expect(field(html, 'washed-stock')).toBe('50')
+    expect(field(html, 'washed-sell-price')).toBe('1,2 CC')
+    expect(html).not.toContain('market-processing')
+    expect(button(html, 'sell-washed')).not.toContain('disabled')
+    sellAllWashed(game, 'arabicaStandard')
+    expect(game.state.storage.batches).toEqual([
+      { variety: 'arabicaStandard', units: 10, quality: 100 },
+    ])
+  })
+
+  it('AC-5: disables "Aufbereiten" without a processing building', async () => {
+    const { pinia } = processing(false)
+    expect(button(await render(pinia), 'process')).toContain('disabled')
   })
 })

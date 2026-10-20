@@ -176,3 +176,30 @@ describe('research migration', () => {
     expect(() => deserialize(bad)).toThrow(/research/)
   })
 })
+
+describe('washed batches (S46)', () => {
+  it('AC-4: round-trips washed batches and loads a version 5 save without them', () => {
+    const base = createState(5)
+    const state: GameState = {
+      ...base,
+      storage: {
+        batches: [
+          { variety: 'robusta', units: 3, quality: 80 },
+          { variety: 'robusta', units: 7, quality: 80, washed: true, readyHour: 24 },
+        ],
+      },
+      market: {
+        ...base.market,
+        volumes: [{ kind: 'washed', variety: 'robusta', day: 1, units: 2 }],
+      },
+    }
+    expect(deserialize(serialize(state))).toEqual(state)
+    const old = JSON.stringify({
+      version: 5,
+      state: { ...base, storage: { batches: [{ variety: 'robusta', units: 3, quality: 80 }] } },
+    })
+    expect(deserialize(old).storage.batches).toEqual([
+      { variety: 'robusta', units: 3, quality: 80 },
+    ])
+  })
+})
