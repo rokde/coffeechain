@@ -3,6 +3,7 @@ import { mulberry32 } from '../rng'
 import type { GameState } from '../state'
 import { storageUsed, type Batch } from '../storage/storage'
 import { soilClassOf } from '../world/generate'
+import { overripeFactor } from './overripe'
 import { growth } from './plants'
 import { computeYield, yieldRandom, type Variety } from './yield'
 
@@ -35,10 +36,14 @@ export function harvest(state: GameState, command: Harvest): GameState {
     if (growth(plant, hour, cfg).progress < 1)
       throw new Error(`Plant on parcel ${x},${y} is not ripe`)
 
-    let units = plant.pendingUnits
-    if (units === undefined) {
+    const factor = overripeFactor(plant, hour, cfg)
+    let units: number
+    if (plant.pendingUnits !== undefined) {
+      const stored = plant.overripeFactor ?? 1
+      units = stored > 0 ? Math.floor((plant.pendingUnits * factor) / stored + 1e-9) : 0
+    } else {
       const parcel = parcels[index]!
-      units = computeYield(
+      const full = computeYield(
         {
           variety: plant.variety,
           soilClass: parcel.soilClass,
@@ -48,6 +53,7 @@ export function harvest(state: GameState, command: Harvest): GameState {
         },
         cfg,
       )
+      units = Math.floor(full * factor + 1e-9)
       const fertility = Math.max(0, parcel.fertility - cfg.soil.fertilityLossPerHarvest)
       const soilQuality = (fertility + parcel.waterRetention) / 200
       const soilClass = soilClassOf(soilQuality, cfg.soil.classMinQuality)
@@ -58,7 +64,12 @@ export function harvest(state: GameState, command: Harvest): GameState {
     free -= take
     if (take > 0) stored.set(plant.variety, (stored.get(plant.variety) ?? 0) + take)
     if (take === units) delete plants[index]
-    else plants[index] = { ...plant, pendingUnits: units - take }
+    else
+      plants[index] = {
+        ...plant,
+        pendingUnits: units - take,
+        overripeFactor: factor < 1 ? factor : undefined,
+      }
   }
 
   const quality = cfg.storage.harvestQuality
