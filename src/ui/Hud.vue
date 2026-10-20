@@ -129,16 +129,25 @@ const clockText = computed(() => {
 }
 @media (max-width: 480px) {
   .top-bar {
-    padding: 0 12px;
+    padding: 0 8px;
+    gap: 6px;
   }
-  .name {
+  .name strong {
     display: none;
   }
+  .name {
+    min-width: 0;
+  }
+  .name small {
+    font-size: 11px;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
   .time {
-    gap: 8px;
+    gap: 4px;
   }
   .chip {
-    padding: 8px 10px;
+    padding: 8px;
   }
   .speeds {
     gap: 2px;
