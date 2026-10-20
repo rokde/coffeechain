@@ -122,7 +122,7 @@ function start() {
     watch(() => (selection.tool === 'select' ? selection.parcel : null), outline.show)
     watch(() => selection.parcels, outlines.show)
     // Select tool: a click on the terrain selects its parcel, a click beside it clears the selection.
-    // Parcel tool: a click on the terrain adds or removes its parcel.
+    // Parcel and plant tool: a click on the terrain adds or removes its parcel.
     canvas.addEventListener('click', (event) => {
       const ndc = new Vector2(
         (event.offsetX / canvas.clientWidth) * 2 - 1,
@@ -130,7 +130,7 @@ function start() {
       )
       const parcel = pickParcel(ndc, view.camera, terrain, world.size)
       // toggle only reads the state, so the cast of the readonly snapshot is safe.
-      if (selection.tool === 'parcel') {
+      if (selection.tool === 'parcel' || selection.tool === 'plant') {
         if (parcel) selection.toggle(store.state as GameState, parcel)
       } else selection.parcel = parcel
     })

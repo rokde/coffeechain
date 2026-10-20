@@ -4,7 +4,7 @@ import { dispatch } from '../commands'
 import { createState, type GameState } from '../state'
 import { step } from '../time/time'
 import type { Parcel, World } from '../world/types'
-import { growth } from './plants'
+import { growth, quotePlant } from './plants'
 import type { Variety } from './yield'
 
 const size = 4
@@ -170,5 +170,13 @@ describe('growth stages', () => {
     expect(growth(robusta, 36, test).stage).toBe('wachstum')
     expect(growth(robusta, 54, test).stage).toBe('bluete')
     expect(growth(robusta, 69, test).stage).toBe('fruchtansatz')
+  })
+})
+
+describe('quotePlant (S13)', () => {
+  it('AC-3: gives the seed cost in hundredths of CC', () => {
+    expect(quotePlant('robusta', 2)).toBe(400)
+    expect(quotePlant('arabicaStandard', 2)).toBe(800)
+    expect(quotePlant('robusta', 0)).toBe(0)
   })
 })

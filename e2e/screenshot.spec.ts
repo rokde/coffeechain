@@ -263,3 +263,49 @@ for (const [width, height] of [
     }
   })
 }
+
+test('S13: plant tool', async ({ page }) => {
+  const errors: string[] = []
+  page.on('console', (msg) => {
+    if (msg.type() === 'error') errors.push(msg.text())
+  })
+  page.on('pageerror', (error) => errors.push(error.message))
+
+  await page.goto('/?seed=48213')
+  const money = page.getByTestId('money')
+  const canvas = page.locator('canvas#scene')
+  // Buildable lowland parcels (18, 23) and (21, 23) of seed 48213 at the start camera.
+  const clicks = [
+    { x: 640, y: 370 },
+    { x: 690, y: 400 },
+  ]
+  await page.getByTestId('tool-parcel').click()
+  for (const position of clicks) await canvas.click({ position })
+  await page.getByTestId('parcel-tool-create').click()
+  await expect(money).toHaveText('352 CC')
+
+  await page.getByTestId('tool-plant').click()
+  await expect(page.getByTestId('plant-tool')).toBeVisible()
+  await expect(page.getByTestId('parcel-inspector')).toHaveCount(0)
+  await expect(page.getByTestId('plant-tool-plant')).toBeDisabled()
+  for (const position of clicks) await canvas.click({ position })
+  await expect(page.getByTestId('plant-tool-count')).toHaveText('2')
+  await expect(page.getByTestId('plant-tool-total')).toHaveText('4 CC')
+  await page.getByTestId('plant-tool-variety-arabicaStandard').click()
+  await expect(page.getByTestId('plant-tool-variety-arabicaStandard')).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+  await expect(page.getByTestId('plant-tool-total')).toHaveText('8 CC')
+  await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
+  await page.screenshot({ path: 'docs/progress/S13.png' })
+
+  await page.getByTestId('plant-tool-plant').click()
+  await expect(money).toHaveText('344 CC')
+  await expect(page.getByTestId('plant-tool-count')).toHaveText('0')
+
+  // A parcel with a plant cannot be selected again.
+  await canvas.click({ position: clicks[0] })
+  await expect(page.getByTestId('plant-tool-count')).toHaveText('0')
+  expect(errors).toEqual([])
+})

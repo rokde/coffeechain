@@ -52,7 +52,8 @@
   "tools": {
     "label": "Werkzeuge",
     "select": "Auswählen",
-    "parcel": "Parzelle"
+    "parcel": "Parzelle",
+    "plant": "Pflanzen"
   },
   "parcelTool": {
     "heading": "Parzellen anlegen",
@@ -60,6 +61,15 @@
     "total": "Kosten",
     "create": "Anlegen",
     "hint": "Klicke bebaubare Parzellen an, um sie auszuwählen. Ein zweiter Klick entfernt sie. Wasser, zu steile und eigene Parzellen sind nicht wählbar.",
+    "tooExpensive": "Nicht genug CC."
+  },
+  "plantTool": {
+    "heading": "Pflanzen",
+    "hint": "Klicke eigene, leere Parzellen an, um sie auszuwählen. Ein zweiter Klick entfernt sie. Wähle dann die Sorte.",
+    "variety": "Sorte",
+    "count": "Ausgewählt",
+    "total": "Saatgut",
+    "plant": "Pflanzen",
     "tooExpensive": "Nicht genug CC."
   }
 }

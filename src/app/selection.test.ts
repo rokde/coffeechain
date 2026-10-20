@@ -47,3 +47,27 @@ describe('selection store (S12)', () => {
     expect(selection.parcels).toEqual([])
   })
 })
+
+describe('selection store, plant tool (S13)', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+  const other = find((p) => p.zone === 'tiefland' && isBuildable(world, p.x, p.y) && p !== land)
+  const owned = dispatch(state, { type: 'CreateParcels', parcels: [at(land), at(other)] })
+  const planted = dispatch(owned, { type: 'Plant', variety: 'robusta', parcels: [at(other)] })
+
+  it('AC-2: adds an owned parcel without a plant, and a second toggle removes it', () => {
+    const selection = useSelectionStore()
+    selection.tool = 'plant'
+    selection.toggle(planted, at(land))
+    expect(selection.parcels).toEqual([at(land)])
+    selection.toggle(planted, at(land))
+    expect(selection.parcels).toEqual([])
+  })
+
+  it('AC-2: does not add an unowned parcel or a parcel with a plant', () => {
+    const selection = useSelectionStore()
+    selection.tool = 'plant'
+    selection.toggle(state, at(land))
+    selection.toggle(planted, at(other))
+    expect(selection.parcels).toEqual([])
+  })
+})
