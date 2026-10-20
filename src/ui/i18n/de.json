@@ -9,7 +9,9 @@
     "seed": "Welt #{seed}"
   },
   "time": {
-    "clock": "Tag {day} · {hour}:00",
+    "day": "Tag {day}",
+    "separator": " · ",
+    "hour": "{hour}:00",
     "speeds": "Spielgeschwindigkeit",
     "pause": "Pause",
     "speed": "{speed}×"

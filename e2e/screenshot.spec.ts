@@ -831,6 +831,29 @@ for (const width of [360, 390]) {
   })
 }
 
+test('S42b: top bar fits a narrow window at day 9999', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 640 })
+  await page.goto('/?seed=4294967295')
+  await page.getByTestId('save-button').click()
+  await page.getByTestId('save-slot-1').getByTestId('save-slot-save').click()
+  await expect(page.getByTestId('save-slot-1').getByTestId('save-slot-load')).toBeEnabled()
+  await page.evaluate(() => {
+    const key = 'coffeechain.save.slot-1'
+    const save = JSON.parse(localStorage.getItem(key)!)
+    save.state.time = { ...save.state.time, hour: 9998 * 24 + 23, speed: 0 }
+    localStorage.setItem(key, JSON.stringify(save))
+  })
+  await page.getByTestId('save-panel-close').click()
+  await page.getByTestId('save-button').click()
+  await page.getByTestId('save-slot-1').getByTestId('save-slot-load').click()
+  await expect(page.getByTestId('clock')).toHaveText('Tag 9999 · 23:00')
+  const bar = page.getByTestId('hud-top-bar')
+  expect(await bar.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+  for (const id of ['clock', 'speed-0', 'speed-16', 'save-button', 'help-button'])
+    await expect(page.getByTestId(id)).toBeInViewport({ ratio: 1 })
+  await page.screenshot({ path: 'docs/progress/save-panel-day-9999.png' })
+})
+
 test('S40: tool brush paints, notes and disarms', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))

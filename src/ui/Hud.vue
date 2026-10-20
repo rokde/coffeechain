@@ -31,9 +31,10 @@ const savePanel = useSavePanelStore()
 const speeds = balance().time.speeds
 const clockText = computed(() => {
   const { day, hourOfDay } = clock(store.state.time.hour)
-  return de.time.clock
-    .replace('{day}', String(day))
-    .replace('{hour}', String(hourOfDay).padStart(2, '0'))
+  return {
+    day: de.time.day.replace('{day}', String(day)),
+    hour: de.time.hour.replace('{hour}', String(hourOfDay).padStart(2, '0')),
+  }
 })
 // storageUsed only reads the state, so the cast of the readonly snapshot is safe.
 // shortcut: capacity is startCapacity, add the upgrades with S27.
@@ -54,7 +55,11 @@ const storageText = computed(() =>
         }}</small>
       </div>
       <div class="time">
-        <span class="chip" data-testid="clock">{{ clockText }}</span>
+        <span class="chip clock" data-testid="clock"
+          ><span>{{ clockText.day }}</span
+          ><span class="clock-separator">{{ de.time.separator }}</span
+          ><span>{{ clockText.hour }}</span></span
+        >
         <div class="speeds" role="group" :aria-label="de.time.speeds">
           <button
             v-for="speed in speeds"
@@ -293,9 +298,17 @@ const storageText = computed(() =>
     padding: 8px 4px;
     font-size: 14px;
   }
-  .time .chip {
-    padding: 8px 2px;
-    font-size: 13px;
+  /* Day and hour in two lines, so a long day number still fits. */
+  .clock {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 4px 6px;
+    font-size: 12px;
+    line-height: 15px;
+  }
+  .clock-separator {
+    display: none;
   }
   .speeds {
     gap: 0;
