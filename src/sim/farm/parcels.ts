@@ -2,6 +2,7 @@ import { balance } from '../balance'
 import type { GameState } from '../state'
 import type { World, Zone } from '../world/types'
 import type { PlantState } from './plants'
+import { parcelPrice } from './price'
 
 export interface FarmState {
   // Parcel index (y * size + x) → field id.
@@ -22,7 +23,7 @@ const fieldName = (id: number): string =>
   (id >= 26 ? fieldName(Math.floor(id / 26) - 1) : '') + String.fromCharCode(65 + (id % 26))
 
 // Indices of the 4-neighbours of (x, y) inside the map.
-const neighbours = (size: number, x: number, y: number): number[] =>
+export const neighbours = (size: number, x: number, y: number): number[] =>
   [
     [x + 1, y],
     [x - 1, y],
@@ -53,13 +54,14 @@ export function isFree(state: GameState, x: number, y: number): boolean {
 // Cost in hundredths of CC. It does not validate the list.
 // The caller must give only buildable parcels that the farm does not own, each one time.
 export function quoteParcels(state: GameState, list: { x: number; y: number }[]): number {
-  const { size, parcels } = state.world
-  const { firstCost, baseCost, zoneMultiplier } = balance().parcels
+  const { world } = state
+  const { firstCost, zoneMultiplier } = balance().parcels
   const owned = Object.keys(state.farm.parcels).length
   return list.reduce((cost, { x, y }, i) => {
+    if (owned + i > 0) return cost + parcelPrice(world, x, y)
     // Buildable parcels are never water, so the zone is a land zone.
-    const zone = parcels[y * size + x]!.zone as Exclude<Zone, 'wasser'>
-    return cost + Math.round((owned + i === 0 ? firstCost : baseCost) * zoneMultiplier[zone] * 100)
+    const zone = world.parcels[y * world.size + x]!.zone as Exclude<Zone, 'wasser'>
+    return cost + Math.round(firstCost * zoneMultiplier[zone] * 100)
   }, 0)
 }
 

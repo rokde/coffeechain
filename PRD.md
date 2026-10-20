@@ -152,7 +152,8 @@ Hütte am Startpunkt, ein Markt am Ufer, ein Weg dazwischen, Bäume auf ungünst
 - Mehrere benachbarte Parzellen bilden ein benanntes Feld (Feld A, B, …). Das dient nur der Übersicht und gemeinsamen Aktionen.
 - Parzelle anlegen kostet CC, abhängig vom Landpreis der Lage, und entfernt Bäume.
   - GDD-Anker (11.6): erstes Feld inkl. Robusta ca. 50 CC, zweites Feld 100 CC.
-  - Startwerte (`parcels.baseCost` und `parcels.zoneMultiplier`): Tiefland 48 CC für die erste, danach 100 CC je Parzelle; Hochland ×1,5, kühles Hochland ×2, Vulkanboden ×4. Die Multiplikatoren sind `NEU`.
+  - Startwerte (`parcels.firstCost`, `parcels.baseCost`, `parcels.zoneMultiplier`): Tiefland 15 CC für die erste Parzelle, danach Grundpreis 25 CC je Parzelle (Robert 2026-10-20, vorher 48 und 100 CC); Hochland ×1,5, kühles Hochland ×2, Vulkanboden ×4. Die Multiplikatoren sind `NEU`.
+  - Ab der zweiten Parzelle hängt der Preis von der Bodengüte ab (Faktor 0,5–1,5, `parcels.qualityFactor`). Die Güte mischt die eigene Bodenqualität zur Hälfte mit dem Mittel der vier Nachbarn (`parcels.neighborWeight`), höchstens `parcels.worseGap` über der eigenen. So kosten Nachbarn ähnlich viel, eine deutlich schlechtere Parzelle bleibt billig.
 - Der Anbau läuft in **Zyklen** wie im GDD (5.4): pflanzen → wachsen → ernten. Nach der Ernte ist die Parzelle leer und wird neu bepflanzt (Saatgut kostet erneut).
 
 ### Sorten (GDD 5.2, 11.1, 11.2)
@@ -340,7 +341,7 @@ Jeder Meilenstein endet mit: grünen Tests, `npm run build` ohne Fehler, Screens
 - Parzellen anlegen (Einzel- und Mehrfachauswahl), Kosten nach Lage, Felder benennen.
 - Pflanzen von Robusta und Arabica Standard, sichtbare Wachstumsphasen.
 - ✅ Test: Robusta ist nach exakt 3 Spieltagen reif, bei 1× und bei 4×.
-- ✅ Test: Die ersten beiden Tiefland-Parzellen kosten 48 und 100 CC.
+- ✅ Test: Die erste Tiefland-Parzelle kostet 15 CC, jede weitere 25 CC × Bodenfaktor (S21d).
 
 ### M3: Pflege, Ernte und Lager
 - Düngen, Wässern, Schädlingsschutz, Ernten, Ertragsformel, Bodenverbrauch.
