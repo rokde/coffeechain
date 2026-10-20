@@ -11,6 +11,7 @@ import { storageUsed } from '../sim/storage/storage'
 import { clock } from '../sim/time/time'
 import de from './i18n/de.json'
 import { formatMoney } from './money'
+import EventChips from './EventChips.vue'
 import FirstSteps from './FirstSteps.vue'
 import FarmTool from './FarmTool.vue'
 import FpsMeter from './FpsMeter.vue'
@@ -81,6 +82,7 @@ const storageText = computed(() =>
         </div>
       </div>
       <div class="stats">
+        <EventChips />
         <span class="chip" data-testid="storage">{{ storageText }}</span>
         <span class="chip money" data-testid="money">{{ formatMoney(store.state.money) }}</span>
       </div>
@@ -261,7 +263,35 @@ const storageText = computed(() =>
   outline: 2px solid #f2c48d;
   outline-offset: 2px;
 }
-@media (max-width: 480px) {
+/* The bar holds about 980 px of content, so the stats hang below it as a tab. */
+@media (max-width: 1024px) {
+  .stats {
+    position: absolute;
+    top: 100%;
+    right: 12px;
+    padding: 1px 8px;
+    border-radius: 0 0 6px 6px;
+    background: var(--hud-bg);
+    font-size: 11px;
+    line-height: 13px;
+  }
+  .stats .chip {
+    padding: 0;
+    background: none;
+    font-size: 14px;
+  }
+  /* Only the icon fits, the aria-label keeps the name. */
+  .save-button {
+    width: 36px;
+    margin-left: 2px;
+    padding: 0;
+    justify-content: center;
+  }
+  .save-button span {
+    display: none;
+  }
+}
+@media (max-width: 760px) {
   .top-bar {
     padding: 0 4px;
   }
@@ -279,21 +309,6 @@ const storageText = computed(() =>
     font-size: 11px;
     line-height: 13px;
     white-space: nowrap;
-  }
-  /* Same tab as the seed, on the right. */
-  .stats {
-    position: absolute;
-    top: 100%;
-    right: 12px;
-    padding: 1px 8px;
-    border-radius: 0 0 6px 6px;
-    background: var(--hud-bg);
-    font-size: 11px;
-    line-height: 13px;
-  }
-  .stats .chip {
-    padding: 0;
-    background: none;
   }
   .time {
     gap: 4px;
@@ -326,16 +341,6 @@ const storageText = computed(() =>
     width: 36px;
     margin-left: 2px;
   }
-  /* Only the icon fits, the aria-label keeps the name. */
-  .save-button {
-    width: 36px;
-    margin-left: 2px;
-    padding: 0;
-    justify-content: center;
-  }
-  .save-button span {
-    display: none;
-  }
 }
 .left-panel {
   top: 92px;
@@ -349,6 +354,17 @@ const storageText = computed(() =>
   width: min(330px, calc(50vw - 24px));
   height: 480px;
   overflow-y: auto;
+}
+@media (max-width: 1024px) {
+  /* Room for the event tab below the stats tab. */
+  .left-panel {
+    top: 108px;
+    height: 204px;
+  }
+  .right-panel {
+    top: 108px;
+    height: 464px;
+  }
 }
 .toolbar {
   bottom: 16px;

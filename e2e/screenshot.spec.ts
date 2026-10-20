@@ -1102,3 +1102,83 @@ for (const [width, height] of [
     await page.screenshot({ path: `docs/progress/S40-${width}.png` })
   })
 }
+
+const activeAndWarned = [
+  { type: 'frost', announcedDay: 3, startDay: 5, endDay: 8 },
+  { type: 'boom', announcedDay: 2, startDay: 4, endDay: 7 },
+  { type: 'monsoon', announcedDay: 5, startDay: 7, endDay: 10 },
+  { type: 'pests', announcedDay: 5, startDay: 6, endDay: 9 },
+]
+const fourActive = ['frost', 'boom', 'crisis', 'pests'].map((type) => ({
+  type,
+  announcedDay: 3,
+  startDay: 5,
+  endDay: 8,
+}))
+
+for (const [width, height, events] of [
+  [1440, 900, activeAndWarned],
+  [1280, 800, fourActive],
+  [1024, 768, fourActive],
+  [800, 600, fourActive],
+  [481, 800, fourActive],
+  [390, 844, activeAndWarned],
+  [360, 640, activeAndWarned],
+] as const) {
+  test(`S52: event chips and warnings at ${width} px (${events === fourActive ? 'four active' : 'active and warned'})`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height })
+    await page.goto('/?seed=4294967295')
+    await page.getByTestId('save-button').click()
+    await page.getByTestId('save-slot-1').getByTestId('save-slot-save').click()
+    await page.evaluate((events) => {
+      const key = 'coffeechain.save.slot-1'
+      const save = JSON.parse(localStorage.getItem(key)!)
+      save.state.time = { ...save.state.time, hour: 4 * 24 + 8, speed: 0 }
+      save.state.events = events
+      localStorage.setItem(key, JSON.stringify(save))
+    }, events)
+    await page.getByTestId('save-panel-close').click()
+    await page.getByTestId('save-button').click()
+    await page.getByTestId('save-slot-1').getByTestId('save-slot-load').click()
+    await page.getByTestId('first-steps-close').click()
+    const chips = page.getByTestId('active-event')
+    if (events === fourActive) {
+      await expect(chips).toHaveText(['Frost', 'Marktboom', 'Marktkrise', 'Schädlinge'])
+    } else {
+      await expect(chips).toHaveText(['Frost', 'Marktboom'])
+      // Sorted by start day: pests (day 6) before monsoon (day 7).
+      const messages = page.getByTestId('message')
+      await expect(messages.nth(0)).toContainText('Schädlings-Warnung ab morgen')
+      await expect(messages.nth(1)).toContainText('Monsun-Warnung ab Tag 7')
+    }
+
+    const bar = page.getByTestId('hud-top-bar')
+    expect(await bar.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+    const parts = [
+      page.getByTestId('world-seed'),
+      page.getByTestId('clock'),
+      page.getByRole('group', { name: 'Spielgeschwindigkeit' }),
+      page.getByTestId('storage'),
+      page.getByTestId('money'),
+      page.getByTestId('save-button'),
+      page.getByTestId('help-button'),
+      ...(await chips.all()),
+    ]
+    const boxes: { x: number; y: number; width: number; height: number }[] = []
+    for (const part of parts) {
+      await expect(part).toBeInViewport({ ratio: 1 })
+      boxes.push((await part.boundingBox())!)
+    }
+    const apart = (a: (typeof boxes)[0], b: (typeof boxes)[0]) =>
+      a.x + a.width <= b.x || b.x + b.width <= a.x || a.y + a.height <= b.y || b.y + b.height <= a.y
+    for (const [i, a] of boxes.entries())
+      for (const b of boxes.slice(i + 1)) expect(apart(a, b), JSON.stringify([a, b])).toBe(true)
+    for (const id of ['hud-left-panel', 'hud-right-panel']) {
+      const panel = (await page.getByTestId(id).boundingBox())!
+      for (const box of boxes) expect(apart(box, panel), JSON.stringify([box, panel])).toBe(true)
+    }
+    await page.screenshot({ path: `docs/progress/S52-${width}.png` })
+  })
+}
