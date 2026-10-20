@@ -1,7 +1,7 @@
 import { balance } from '../sim/balance'
 import type { World } from '../sim/world/types'
 
-// Render constant, not a balancing number. Keep in sync with the S5 terrain mesh.
+// Render constant, not a balancing number. The terrain mesh in terrain.ts uses this formula too.
 export const HEIGHT_SCALE = 6
 
 // A corner gets the mean height of the 1 to 4 parcels that touch it. The sea level is at y = 0.

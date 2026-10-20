@@ -9,6 +9,7 @@ import { useGameStore } from './app/store'
 import { createCamera } from './render/camera'
 import { loadModel, MODEL_IDS } from './render/models'
 import { createOutline, pickParcel } from './render/picking'
+import { createProps } from './render/props'
 import { createScene } from './render/scene'
 import { createTerrain } from './render/terrain'
 import { balance } from './sim/balance'
@@ -97,6 +98,12 @@ function start() {
     const terrain = createTerrain(world)
     const outline = createOutline(terrain, world.size)
     scene.add(terrain, outline.line)
+    createProps(world, loadModel)
+      .then((props) => {
+        scene.add(props)
+        canvas.dataset.props = 'ready'
+      })
+      .catch((error: unknown) => console.error('Props did not load:', error))
     const selection = useSelectionStore(pinia)
     watch(() => selection.parcel, outline.show)
     // A click on the terrain selects its parcel. A click beside the terrain clears the selection.

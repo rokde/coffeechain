@@ -97,3 +97,17 @@ test('S8: parcel inspector', async ({ page }) => {
   await expect(inspector).toHaveCount(0)
   expect(errors).toEqual([])
 })
+
+test('S6: props on the island', async ({ page }) => {
+  const errors: string[] = []
+  page.on('console', (msg) => {
+    if (msg.type() === 'error') errors.push(msg.text())
+  })
+  page.on('pageerror', (error) => errors.push(error.message))
+
+  // Seed 7 has a corner in the path, see CORNER_SEED in src/render/props.test.ts.
+  await page.goto('/?seed=7')
+  await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
+  await page.screenshot({ path: 'docs/progress/S6.png' })
+  expect(errors).toEqual([])
+})

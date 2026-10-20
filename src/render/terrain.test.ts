@@ -2,6 +2,7 @@ import { Color } from 'three'
 import { describe, expect, it } from 'vitest'
 import { balance } from '../sim/balance'
 import { generateWorld } from '../sim/world/generate'
+import { cornerY } from './surface'
 import { buildTerrainGeometry, ZONE_COLORS } from './terrain'
 
 const world = generateWorld(42, balance())
@@ -63,5 +64,12 @@ describe('buildTerrainGeometry', () => {
       expect(x).toBeCloseTo(p.x - (n - 1) / 2)
       expect(z).toBeCloseTo(p.y - (n - 1) / 2)
     })
+  })
+  it('AC-1: puts each vertex at the cornerY height of surface.ts', () => {
+    for (let v = 0; v < position.count; v++) {
+      const cx = position.getX(v) + n / 2
+      const cz = position.getZ(v) + n / 2
+      expect(position.getY(v)).toBeCloseTo(cornerY(world, cx, cz), 3)
+    }
   })
 })
