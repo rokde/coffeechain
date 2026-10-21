@@ -199,3 +199,46 @@ describe('market', () => {
     }
   })
 })
+
+describe('washed coffee (S46)', () => {
+  // 10 washed Arabica Standard units from a Process at hour 0, and 5 raw units.
+  function washedState(): GameState {
+    const state = createState(1)
+    const raw = { variety: 'arabicaStandard' as const, units: 15, quality: 90 }
+    return dispatch(
+      { ...state, buildings: { 0: { kind: 'processing' } }, storage: { batches: [raw] } },
+      { type: 'Process', variety: 'arabicaStandard', units: 10 },
+    )
+  }
+  const sell = (units: number, washed?: true) =>
+    ({ type: 'Sell', variety: 'arabicaStandard', units, ...(washed && { washed }) }) as const
+
+  it('AC-3: sells washed units only after 24 game hours, at the washed price', () => {
+    const fresh = washedState()
+    expect(() => dispatch(fresh, sell(1, true))).toThrow(/Not enough/)
+    const state = { ...fresh, time: { ...fresh.time, hour: 24 } }
+    const price = bankBuyPrice(state, 'arabicaStandard', 10, true)
+    expect(price).toBeCloseTo(1.5 * m.bankBuyFactor * (1 - 0.3 * (5 / 300)))
+    const next = dispatch(state, sell(10, true))
+    expect(next.money).toBe(state.money + Math.round(10 * price * 100))
+    expect(next.storage.batches).toEqual([{ variety: 'arabicaStandard', units: 5, quality: 90 }])
+    expect(next.market.volumes).toEqual([
+      { kind: 'washed', variety: 'arabicaStandard', day: 2, units: 10 },
+    ])
+    // Washed sales do not lower the raw price.
+    expect(bankBuyPrice(next, 'arabicaStandard')).toBeCloseTo(
+      bankBuyPrice(state, 'arabicaStandard'),
+    )
+  })
+
+  it('AC-3: a raw sale never takes washed units, a washed sale never takes raw units', () => {
+    const state = { ...washedState(), time: { hour: 24, speed: 1 } }
+    expect(() => dispatch(state, sell(6))).toThrow(/Not enough/)
+    const rawSold = dispatch(state, sell(5))
+    expect(rawSold.storage.batches.every((b) => b.washed)).toBe(true)
+    expect(rawSold.market.volumes.map((v) => v.kind)).toEqual(['coffee'])
+    expect(() => dispatch(state, sell(11, true))).toThrow(/Not enough/)
+    const washedSold = dispatch(state, sell(10, true))
+    expect(washedSold.storage.batches.every((b) => !b.washed)).toBe(true)
+  })
+})

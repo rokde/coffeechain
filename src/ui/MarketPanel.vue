@@ -1,12 +1,21 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { sellAll, storedUnits } from '../app/market'
+import {
+  processAll,
+  processUnits,
+  sellAll,
+  sellAllWashed,
+  storedUnits,
+  washedUnits,
+} from '../app/market'
 import { useGameStore } from '../app/store'
 import { balance } from '../sim/balance'
 import type { Variety } from '../sim/farm/yield'
 import { bankBuyPrice, bankSellPrice, priceHistory } from '../sim/market/market'
 import { isVarietyUnlocked } from '../sim/progression/capital'
+import { hasProcessing, isRunning, runningUntil } from '../sim/processing/process'
 import type { GameState } from '../sim/state'
+import { clock } from '../sim/time/time'
 import de from './i18n/de.json'
 import { formatMoney } from './money'
 import OrdersPanel from './OrdersPanel.vue'
@@ -18,7 +27,8 @@ const cfg = balance()
 const varieties = computed(() =>
   (Object.keys(cfg.varieties) as Variety[]).filter(
     (v) =>
-      isVarietyUnlocked(game.state as GameState, v) || storedUnits(game.state as GameState, v) > 0,
+      isVarietyUnlocked(game.state as GameState, v) ||
+      game.state.storage.batches.some((b) => b.variety === v),
   ),
 )
 const price = (cc: number) => formatMoney(Math.round(cc * 100))
@@ -41,17 +51,43 @@ function points(prices: number[]) {
 const blocks = computed(() => {
   // The sim functions only read the state, so the cast of the readonly snapshot is safe.
   const state = game.state as GameState
-  return varieties.value.map((variety) => ({
-    variety,
-    stock: storedUnits(state, variety),
-    seeds: state.market.seeds[variety] ?? 0,
-    sellPrice: bankBuyPrice(state, variety),
-    buyPrice: bankSellPrice(state, variety),
-    coffeeLine: points(
-      priceHistory(state, { kind: 'coffee', variety }).map((p) => p * cfg.market.bankBuyFactor),
-    ),
-    seedLine: points(priceHistory(state, { kind: 'seed', variety })),
-  }))
+  const busy = state.storage.batches.some((b) => isRunning(b, state.time.hour))
+  return varieties.value.map((variety) => {
+    const units = processUnits(state, variety)
+    const until = runningUntil(state, variety)
+    const cost = Math.round(units * cfg.processing.washed.costPerUnit * 100)
+    return {
+      variety,
+      stock: storedUnits(state, variety),
+      washed: washedUnits(state, variety),
+      washedPrice: bankBuyPrice(state, variety, 0, true),
+      processLabel:
+        units > 0
+          ? t.processAmount
+              .replace('{units}', String(units))
+              .replace('{cost}', formatMoney(cost).replace(' ', '\u00a0'))
+          : t.process,
+      // The first reason that blocks "Aufbereiten". The money check keeps a click from a throw.
+      processWhy: !hasProcessing(state)
+        ? t.processWhy.building
+        : busy
+          ? t.processWhy.running
+          : units === 0
+            ? t.processWhy.stock
+            : cost > state.money
+              ? t.processWhy.money
+              : null,
+      runningUntil:
+        until === undefined ? null : t.processing.replace('{day}', String(clock(until).day)),
+      seeds: state.market.seeds[variety] ?? 0,
+      sellPrice: bankBuyPrice(state, variety),
+      buyPrice: bankSellPrice(state, variety),
+      coffeeLine: points(
+        priceHistory(state, { kind: 'coffee', variety }).map((p) => p * cfg.market.bankBuyFactor),
+      ),
+      seedLine: points(priceHistory(state, { kind: 'seed', variety })),
+    }
+  })
 })
 </script>
 
@@ -71,6 +107,10 @@ const blocks = computed(() => {
         <dd data-testid="market-sell-price">{{ price(b.sellPrice) }}</dd>
         <dt>{{ t.buyPrice }}</dt>
         <dd data-testid="market-buy-price">{{ price(b.buyPrice) }}</dd>
+        <dt>{{ t.washedStock }}</dt>
+        <dd data-testid="market-washed-stock">{{ b.washed }}</dd>
+        <dt>{{ t.washedSellPrice }}</dt>
+        <dd data-testid="market-washed-sell-price">{{ price(b.washedPrice) }}</dd>
       </dl>
       <div class="lines">
         <figure v-for="line in ['coffee', 'seed'] as const" :key="line">
@@ -99,6 +139,27 @@ const blocks = computed(() => {
         @click="sellAll(game, b.variety)"
       >
         {{ t.sell }}
+      </button>
+      <button
+        type="button"
+        data-testid="market-process"
+        :disabled="b.processWhy !== null"
+        :title="b.processWhy ?? undefined"
+        :aria-label="b.processWhy ? `${b.processLabel}. ${b.processWhy}` : undefined"
+        @click="processAll(game, b.variety)"
+      >
+        {{ b.processLabel }}
+      </button>
+      <p v-if="b.runningUntil" class="running" data-testid="market-processing">
+        {{ b.runningUntil }}
+      </p>
+      <button
+        type="button"
+        data-testid="market-sell-washed"
+        :disabled="b.washed === 0"
+        @click="sellAllWashed(game, b.variety)"
+      >
+        {{ t.sellWashed }}
       </button>
     </article>
   </section>
@@ -149,6 +210,10 @@ dd {
   text-align: right;
   white-space: nowrap;
 }
+.running {
+  margin: 8px 0;
+  font-size: 13px;
+}
 .lines {
   display: flex;
   gap: 12px;
@@ -168,9 +233,13 @@ svg {
   height: 28px;
   border-bottom: 1px solid rgb(255 255 255 / 12%);
 }
+button + button {
+  margin-top: 8px;
+}
 button {
   width: 100%;
-  height: 34px;
+  min-height: 34px;
+  padding: 6px 10px;
   border: 0;
   border-radius: 8px;
   background: #f2c48d;
@@ -193,8 +262,13 @@ button:focus-visible {
   .tool {
     padding: 12px;
   }
+  /* Room for the label "(gewaschen)" without a hyphen. */
+  .good {
+    padding: 10px 8px;
+  }
   dl {
     grid-template-columns: auto 1fr;
+    column-gap: 6px;
   }
   .lines {
     flex-direction: column;

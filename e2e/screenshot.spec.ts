@@ -492,8 +492,10 @@ test('S20: market panel from the toolbar and the market stand', async ({ page })
   await expect(page.getByTestId('parcel-inspector')).toHaveCount(0)
   await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
   await page.screenshot({ path: 'docs/progress/S20.png' })
-  // The panel fits the right panel without a scroll bar.
-  expect(await panel.evaluate((el) => el.scrollHeight <= el.clientHeight)).toBe(true)
+  // The right panel keeps its max height and can scroll down, but never sideways.
+  const right = page.getByTestId('hud-right-panel')
+  expect((await right.boundingBox())!.height).toBeLessThanOrEqual(480)
+  expect(await panel.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
 
   // Select a land parcel first: the market click must clear it.
   const canvas = page.locator('canvas#scene')
@@ -1261,6 +1263,62 @@ for (const [width, height, events] of [
     await page.screenshot({ path: `docs/progress/S52-${width}.png` })
   })
 }
+
+test('S46: process raw coffee and sell washed coffee in the market panel', async ({ page }) => {
+  const errors: string[] = []
+  page.on('console', (msg) => {
+    if (msg.type() === 'error') errors.push(msg.text())
+  })
+  page.on('pageerror', (error) => errors.push(error.message))
+
+  // A fake clock lets the test jump over the processing day.
+  await page.clock.install()
+  await page.goto('/?seed=48213')
+  await page.getByTestId('save-button').click()
+  await page.getByTestId('save-slot-1').getByTestId('save-slot-save').click()
+  await page.evaluate(() => {
+    const key = 'coffeechain.save.slot-1'
+    const save = JSON.parse(localStorage.getItem(key)!)
+    const { start, size } = save.state.world
+    save.state.time = { hour: 8, speed: 0 }
+    save.state.farm.parcels = { [start.y * size + start.x]: 0 }
+    save.state.buildings = { [start.y * size + start.x]: { kind: 'processing' } }
+    save.state.storage.batches = [{ variety: 'arabicaStandard', units: 60, quality: 100 }]
+    localStorage.setItem(key, JSON.stringify(save))
+  })
+  await page.getByTestId('save-panel-close').click()
+  await page.getByTestId('save-button').click()
+  await page.getByTestId('save-slot-1').getByTestId('save-slot-load').click()
+  await page.getByTestId('first-steps-close').click()
+
+  await page.getByTestId('tool-market').click()
+  const block = page.getByTestId('market-arabicaStandard')
+  const process = block.getByTestId('market-process')
+  const sellWashed = block.getByTestId('market-sell-washed')
+  await expect(block.getByTestId('market-stock')).toHaveText('60')
+  await expect(sellWashed).toBeDisabled()
+  await process.click()
+  await expect(block.getByTestId('market-stock')).toHaveText('10')
+  await expect(block.getByTestId('market-processing')).toHaveText('Aufbereitung läuft bis Tag 2')
+  await expect(process).toBeDisabled()
+  await expect(page.getByTestId('money')).toHaveText('485 CC')
+
+  // One frame runs at most 24 ticks: one jump at speed 16 ends the processing day.
+  await page.getByTestId('speed-16').click()
+  await page.clock.fastForward(60_000)
+  await page.getByTestId('speed-0').click()
+  await expect(page.getByTestId('clock')).toHaveText('Tag 2 · 08:00')
+  await expect(block.getByTestId('market-washed-stock')).toHaveText('50')
+  await expect(block.getByTestId('market-processing')).toHaveCount(0)
+  await expect(process).toBeEnabled()
+  await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
+  await page.screenshot({ path: 'docs/progress/processing.png' })
+
+  await sellWashed.click()
+  await expect(block.getByTestId('market-washed-stock')).toHaveText('0')
+  await expect(sellWashed).toBeDisabled()
+  expect(errors).toEqual([])
+})
 
 for (const [width, height] of [
   [1440, 900],

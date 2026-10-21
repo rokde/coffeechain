@@ -1,4 +1,6 @@
+import { balance } from '../sim/balance'
 import type { Variety } from '../sim/farm/yield'
+import { isRunning } from '../sim/processing/process'
 import type { GameState } from '../sim/state'
 import type { useSelectionStore } from './selection'
 import type { useGameStore } from './store'
@@ -20,13 +22,37 @@ export function selectParcel(
   selection.parcel = market ? null : parcel
 }
 
-// Units of one variety in storage.
-export const storedUnits = (state: GameState, variety: Variety) =>
-  state.storage.batches.filter((b) => b.variety === variety).reduce((sum, b) => sum + b.units, 0)
+const unitsOf = (state: GameState, variety: Variety, washed: boolean) =>
+  state.storage.batches
+    .filter((b) => b.variety === variety && (b.washed === true) === washed)
+    .filter((b) => !isRunning(b, state.time.hour))
+    .reduce((sum, b) => sum + b.units, 0)
+
+// Raw units of one variety in storage.
+export const storedUnits = (state: GameState, variety: Variety) => unitsOf(state, variety, false)
+
+// Ready washed units of one variety in storage.
+export const washedUnits = (state: GameState, variety: Variety) => unitsOf(state, variety, true)
 
 // Sells all stored units of one variety to the bank.
 export function sellAll(game: ReturnType<typeof useGameStore>, variety: Variety) {
   // storedUnits only reads the state, so the cast of the readonly snapshot is safe.
   const units = storedUnits(game.state as GameState, variety)
   if (units > 0) game.dispatch({ type: 'Sell', variety, units })
+}
+
+// Sells all ready washed units of one variety to the bank.
+export function sellAllWashed(game: ReturnType<typeof useGameStore>, variety: Variety) {
+  const units = washedUnits(game.state as GameState, variety)
+  if (units > 0) game.dispatch({ type: 'Sell', variety, units, washed: true })
+}
+
+// Units that "Aufbereiten" processes: the raw stock, at most one full batch.
+export const processUnits = (state: GameState, variety: Variety) =>
+  Math.min(storedUnits(state, variety), balance().processing.washed.batchCapacity)
+
+// Washes raw units of one variety, at most one full batch.
+export function processAll(game: ReturnType<typeof useGameStore>, variety: Variety) {
+  const units = processUnits(game.state as GameState, variety)
+  if (units > 0) game.dispatch({ type: 'Process', variety, units })
 }

@@ -5,6 +5,7 @@ import { createParcels, type CreateParcels } from './farm/parcels'
 import { plant, type Plant } from './farm/plants'
 import { buy, sell, type Buy, type Sell } from './market/market'
 import { deliverOrder, type DeliverOrder } from './market/orders'
+import { process, type Process } from './processing/process'
 import type { GameState } from './state'
 import { setSpeed, type SetSpeed } from './time/time'
 
@@ -20,6 +21,7 @@ export type Command =
   | Sell
   | Buy
   | Build
+  | Process
   | DeliverOrder
 
 type Handlers = {
@@ -38,6 +40,7 @@ const handlers: Handlers = {
   Sell: sell,
   Buy: buy,
   Build: build,
+  Process: process,
   DeliverOrder: deliverOrder,
 }
 

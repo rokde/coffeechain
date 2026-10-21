@@ -104,6 +104,17 @@ describe('orders (S56)', () => {
     expect(next.storage.batches).toEqual([batches[1], { ...batches[2], units: 20 }])
   })
 
+  it('S46: never takes washed batches', () => {
+    const state = withOrder()
+    const washed = { variety: 'robusta' as const, units: 25, quality: 95, washed: true as const }
+    const batches = [washed, { variety: 'robusta' as const, units: 30, quality: 95 }]
+    const next = dispatch({ ...state, storage: { batches } }, { type: 'DeliverOrder', id: 4 })
+    expect(deliverableUnits({ ...state, storage: { batches } }, order)).toBe(30)
+    expect(next.storage.batches).toEqual([washed])
+    const few = { ...state, storage: { batches: [{ ...washed, units: 100 }] } }
+    expect(() => dispatch(few, { type: 'DeliverOrder', id: 4 })).toThrow(/Not enough/)
+  })
+
   it('AC-3: throws and keeps the state for a bad delivery', () => {
     const state = withOrder()
     const copy = structuredClone(state)

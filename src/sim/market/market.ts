@@ -2,12 +2,14 @@ import type { Balance } from '../../../config/balance.schema'
 import { balance } from '../balance'
 import { priceEventFactor } from '../events/effects'
 import type { Variety } from '../farm/yield'
+import { isRunning } from '../processing/process'
 import type { GameState } from '../state'
+import type { Batch } from '../storage/storage'
 import { clock } from '../time/time'
 
-// The bank buys raw coffee and sells seed.
+// The bank buys raw and washed coffee and sells seed.
 export interface Good {
-  kind: 'coffee' | 'seed'
+  kind: 'coffee' | 'washed' | 'seed'
   variety: Variety
 }
 
@@ -26,6 +28,7 @@ export interface Sell {
   type: 'Sell'
   variety: Variety
   units: number
+  washed?: true
 }
 
 export interface Buy {
@@ -39,12 +42,14 @@ const clamp = (value: number, [min, max]: readonly number[]) =>
 
 function reference(good: Good, cfg: Balance): number {
   const variety = cfg.varieties[good.variety]
-  return good.kind === 'coffee' ? variety.referencePrice : variety.seedCost
+  if (good.kind === 'seed') return variety.seedCost
+  const washed = good.kind === 'washed' ? cfg.processing.washed.valueMultiplier : 1
+  return variety.referencePrice * washed
 }
 
 // Market price of a good on a game day, from the volumes in the window that ends on that day.
 // extra adds units to the volume of that day, for example half of a trade.
-// eventFactor comes from priceEventFactor (coffee only).
+// eventFactor comes from priceEventFactor (raw and washed coffee only).
 export function marketPrice(
   market: MarketState,
   good: Good,
@@ -60,7 +65,7 @@ export function marketPrice(
     .reduce((sum, v) => sum + v.units, extra)
   // The factor moves linearly from 1.0 to the far end of its range: supply goes down, demand up.
   const factor =
-    good.kind === 'coffee'
+    good.kind !== 'seed'
       ? clamp(
           1 - (1 - m.supplyFactorRange[0]) * Math.min(1, units / m.supplyUnitsForMinFactor),
           m.supplyFactorRange,
@@ -73,12 +78,17 @@ export function marketPrice(
   return clamp(ref * eventFactor * factor, [m.priceFloor * ref, m.priceCeiling * ref])
 }
 
-// Price in CC per unit that the bank pays for raw coffee today.
+// Price in CC per unit that the bank pays for raw (or washed) coffee today.
 // With units, it is the price for each unit of a sale of that size, at the mid volume of the sale.
-export function bankBuyPrice(state: GameState, variety: Variety, units = 0): number {
+export function bankBuyPrice(
+  state: GameState,
+  variety: Variety,
+  units = 0,
+  washed = false,
+): number {
   const cfg = balance()
   const day = clock(state.time.hour).day
-  const good: Good = { kind: 'coffee', variety }
+  const good: Good = { kind: washed ? 'washed' : 'coffee', variety }
   const event = priceEventFactor(state, variety, day)
   return marketPrice(state.market, good, day, cfg, units / 2, event) * cfg.market.bankBuyFactor
 }
@@ -99,7 +109,7 @@ export function priceHistory(state: GameState, good: Good): number[] {
     const day = today - days + 1 + i
     // shortcut: ended events leave state.events, so older days show no event factor.
     // Store a factor per day when the chart must show past events.
-    const event = good.kind === 'coffee' ? priceEventFactor(state, good.variety, day) : 1
+    const event = good.kind !== 'seed' ? priceEventFactor(state, good.variety, day) : 1
     return marketPrice(state.market, good, day, cfg, 0, event)
   })
 }
@@ -127,17 +137,20 @@ export function sell(state: GameState, command: Sell): GameState {
   const cfg = balance()
   checkTrade(command, cfg)
   const { variety, units } = command
-  const stored = state.storage.batches
-    .filter((b) => b.variety === variety)
-    .reduce((sum, b) => sum + b.units, 0)
+  const washed = command.washed === true
+  // A washed sale takes only ready washed batches. A raw sale takes only raw batches.
+  const sellable = (b: Batch) =>
+    b.variety === variety &&
+    (washed ? b.washed === true && !isRunning(b, state.time.hour) : !b.washed)
+  const stored = state.storage.batches.filter(sellable).reduce((sum, b) => sum + b.units, 0)
   if (units > stored) throw new Error(`Not enough ${variety} in storage: ${stored} < ${units}`)
 
-  const income = Math.round(units * bankBuyPrice(state, variety, units) * 100)
+  const income = Math.round(units * bankBuyPrice(state, variety, units, washed) * 100)
   // Batches are in harvest order, so the first batches are the oldest.
   let rest = units
   const batches = state.storage.batches
     .map((b) => {
-      if (b.variety !== variety || rest === 0) return b
+      if (!sellable(b) || rest === 0) return b
       const take = Math.min(rest, b.units)
       rest -= take
       return { ...b, units: b.units - take }
@@ -145,7 +158,13 @@ export function sell(state: GameState, command: Sell): GameState {
     .filter((b) => b.units > 0)
 
   const day = clock(state.time.hour).day
-  const volumes = record(state.market, { kind: 'coffee', variety }, units, day, cfg)
+  const volumes = record(
+    state.market,
+    { kind: washed ? 'washed' : 'coffee', variety },
+    units,
+    day,
+    cfg,
+  )
   return {
     ...state,
     money: state.money + income,

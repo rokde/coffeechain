@@ -154,14 +154,26 @@
   },
   "marketPanel": {
     "heading": "Markt",
-    "hint": "Die Bank kauft Rohkaffee und verkauft Saatgut. Verkäufe senken den Preis, Käufe heben ihn.",
+    "hint": "Die Bank kauft Roh- und gewaschenen Kaffee und verkauft Saatgut. Verkäufe senken den Preis, Käufe heben ihn.",
     "stock": "Im Lager",
     "seeds": "Saatgut",
     "sellPrice": "Bank zahlt",
     "buyPrice": "Saatgut kostet",
     "coffeeLine": "Kaffee, {days} Tage",
     "seedLine": "Saatgut, {days} Tage",
-    "sell": "Verkaufen"
+    "sell": "Verkaufen",
+    "washedStock": "Gewaschen bereit",
+    "washedSellPrice": "Bank zahlt (gewaschen)",
+    "process": "Aufbereiten",
+    "processAmount": "Aufbereiten ({units}\u00a0Einh., {cost})",
+    "processWhy": {
+      "building": "Baue zuerst eine Aufbereitung.",
+      "running": "Es läuft schon eine Aufbereitung.",
+      "stock": "Kein Rohkaffee im Lager.",
+      "money": "Zu wenig Geld."
+    },
+    "sellWashed": "Gewaschen verkaufen",
+    "processing": "Aufbereitung läuft bis Tag {day}"
   },
   "orders": {
     "heading": "Aufträge",

@@ -31,8 +31,9 @@ export interface DeliverOrder {
 // Harvest seeds use indexes >= 0 and research uses -1.
 export const ORDERS_STREAM = -2
 
+// Orders take raw coffee only. Washed coffee sells to the bank.
 const qualifies = (order: Order) => (b: Batch) =>
-  b.variety === order.variety && b.quality >= order.minQuality
+  b.variety === order.variety && !b.washed && b.quality >= order.minQuality
 
 export const deliverableUnits = (state: GameState, order: Order): number =>
   state.storage.batches.filter(qualifies(order)).reduce((sum, b) => sum + b.units, 0)
