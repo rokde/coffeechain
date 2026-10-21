@@ -99,16 +99,40 @@ const phaseText = computed(() => {
         </div>
       </div>
       <div class="stats">
-        <EventChips />
-        <span class="chip" data-testid="storage">{{ storageText }}</span>
+        <div class="money-group" data-testid="money-group">
+          <span class="money" data-testid="money"
+            ><svg viewBox="0 0 16 16" width="22" height="22" aria-hidden="true">
+              <circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5" />
+              <circle
+                cx="8"
+                cy="8"
+                r="3.5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              /></svg
+            >{{ formatMoney(store.state.money) }}</span
+          >
+          <span data-testid="storage"
+            ><svg viewBox="0 0 16 16" width="22" height="22" aria-hidden="true">
+              <path
+                d="M2 5h12v9H2z M2 5l1.5-3h9L14 5 M6 8h4"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linejoin="round"
+              /></svg
+            >{{ storageText }}</span
+          >
+        </div>
         <span class="chip" data-testid="phase" :title="phaseText.hint" :aria-label="phaseText.label"
           >{{ phaseText.name }}
           <span v-if="phaseText.progress" class="phase-progress">{{
             phaseText.progress
           }}</span></span
         >
-        <span class="chip money" data-testid="money">{{ formatMoney(store.state.money) }}</span>
       </div>
+      <EventChips />
       <button
         type="button"
         class="save-button"
@@ -220,9 +244,22 @@ const phaseText = computed(() => {
 }
 .stats {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: 16px;
   font-size: 15px;
   font-weight: 600;
+}
+.money-group {
+  display: flex;
+  gap: 16px;
+  font-size: 20px;
+  font-weight: 700;
+}
+.money-group span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
 }
 .save-button {
   flex: none;
@@ -288,21 +325,22 @@ const phaseText = computed(() => {
   outline: 2px solid #f2c48d;
   outline-offset: 2px;
 }
-/* With the phase chip the bar holds about 1130 px of content, so the stats hang below it as a tab. */
+/* The bar holds about 1200 px of content, so the money group and the phase get a second row. */
 @media (max-width: 1279px) {
+  .top-bar {
+    height: 94px;
+    flex-wrap: wrap;
+    align-content: space-between;
+    padding: 8px 20px 6px;
+  }
   .stats {
-    position: absolute;
-    top: 100%;
-    right: 12px;
-    padding: 1px 8px;
-    border-radius: 0 0 6px 6px;
-    background: var(--hud-bg);
-    font-size: 11px;
-    line-height: 13px;
+    order: 1;
+    flex-basis: 100%;
+    justify-content: center;
+    height: 32px;
   }
   .stats .chip {
-    padding: 0;
-    background: none;
+    padding: 4px 12px;
     font-size: 14px;
   }
   /* Only the icon fits, the aria-label keeps the name. */
@@ -318,7 +356,7 @@ const phaseText = computed(() => {
 }
 @media (max-width: 760px) {
   .top-bar {
-    padding: 0 4px;
+    padding: 8px 4px 6px;
   }
   .name strong {
     display: none;
@@ -326,10 +364,10 @@ const phaseText = computed(() => {
   /* The bar has no room for the seed, so it hangs below the bar as a tab. */
   .name small {
     position: absolute;
-    top: 100%;
+    top: calc(100% + 4px);
     left: 12px;
     padding: 1px 8px;
-    border-radius: 0 0 6px 6px;
+    border-radius: 6px;
     background: var(--hud-bg);
     font-size: 11px;
     line-height: 13px;
@@ -367,16 +405,20 @@ const phaseText = computed(() => {
     margin-left: 2px;
   }
 }
-/* The stats tab must fit beside the seed tab, so it drops the progress and uses the seed tab font. */
+/* The second row must fit the money group, so the phase drops the progress. */
 @media (max-width: 480px) {
   .phase-progress {
     display: none;
   }
-  .stats {
-    padding: 1px 6px;
+  .stats,
+  .money-group {
+    gap: 6px;
+  }
+  .money-group span {
+    gap: 4px;
   }
   .stats .chip {
-    font-size: 11px;
+    padding: 4px;
   }
 }
 .left-panel {
@@ -392,15 +434,26 @@ const phaseText = computed(() => {
   max-height: 480px;
   overflow-y: auto;
 }
+/* The panels start 4 px below the event tab, and keep their bottom edge. */
 @media (max-width: 1279px) {
-  /* Room for the event tab below the stats tab. */
   .left-panel {
-    top: 108px;
-    height: 204px;
+    top: 134px;
+    height: 178px;
   }
   .right-panel {
-    top: 108px;
-    max-height: 464px;
+    top: 134px;
+    max-height: 438px;
+  }
+}
+/* Room for a second line of the event tab. */
+@media (max-width: 480px) {
+  .left-panel {
+    top: 148px;
+    height: 164px;
+  }
+  .right-panel {
+    top: 148px;
+    max-height: 424px;
   }
 }
 .toolbar {

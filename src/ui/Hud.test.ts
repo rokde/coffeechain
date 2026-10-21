@@ -61,3 +61,28 @@ describe('Hud phase chip (S47)', () => {
     })
   })
 })
+
+describe('Hud money group (S58c)', () => {
+  it('AC-1: holds money and storage, each with one hidden icon', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const html = await renderToString(createSSRApp(Hud).use(pinia))
+    const group = html.match(/<div[^>]*data-testid="money-group"[^>]*>(.*?)<\/div>/)![1]!
+    const item = (id: string) => {
+      const inner = group.match(new RegExp(`data-testid="${id}"[^>]*>(.*?)</span>`))![1]!
+      const svgs = inner.match(/<svg[^>]*>/g) ?? []
+      return {
+        icons: svgs.length,
+        hidden: svgs.every((tag) => tag.includes('aria-hidden="true"')),
+        text: inner
+          .replace(/<svg.*<\/svg>/, '')
+          .replace(/<[^>]*>/g, '')
+          .trim(),
+      }
+    }
+    expect(item('storage')).toEqual({ icons: 1, hidden: true, text: 'Lager 0 / 100' })
+    // 069-whole-cc can drop the decimals, so both forms pass.
+    expect(item('money')).toMatchObject({ icons: 1, hidden: true })
+    expect(item('money').text).toMatch(/^500(,00)? CC$/)
+  })
+})

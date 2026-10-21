@@ -36,7 +36,7 @@ function setup(stages: number, used = 0) {
 
 const render = async (pinia: ReturnType<typeof createPinia>) => {
   const html = await renderToString(createSSRApp(Hud).use(pinia))
-  const chip = html.match(/data-testid="storage"[^>]*>([^<]*)</)![1]
+  const chip = html.match(/data-testid="storage"[^>]*>.*?<\/svg>([^<]*)</)![1]
   const panel = await renderToString(createSSRApp(MessagePanel).use(pinia))
   const messages = [...panel.matchAll(/data-testid="message"[^>]*>([^<]*)</g)].map((m) => m[1])
   return { chip, messages }
