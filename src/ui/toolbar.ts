@@ -21,7 +21,20 @@ export const tools: Tool[] = [
 ]
 
 // The overlay toggles after the tools. The label is short, the title is the full name.
+// The icon is the path of a 16 x 16 SVG.
 export const overlays = [
-  { id: 'soil', label: de.overlay.short.soil, title: de.overlay.soil, key: 'O' },
-  { id: 'zone', label: de.overlay.short.zone, title: de.overlay.zone, key: 'Z' },
+  {
+    id: 'soil',
+    label: de.overlay.short.soil,
+    title: de.overlay.soil,
+    key: 'O',
+    icon: 'M1 9h14 M1 12h14 M1 15h14 M8 9V3 M8 5c-2.5 0-3.5-1.5-3.5-3 2 0 3.5 1 3.5 3 0-2 1.5-3 3.5-3 0 1.5-1 3-3.5 3',
+  },
+  {
+    id: 'zone',
+    label: de.overlay.short.zone,
+    title: de.overlay.zone,
+    key: 'Z',
+    icon: 'M1 14l5-9 3 5 2-3 4 7z',
+  },
 ] as const

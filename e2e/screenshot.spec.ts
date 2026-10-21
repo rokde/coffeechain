@@ -1713,6 +1713,11 @@ for (const [width, height, events] of [
         b.y + b.height <= t.y
       expect(apart, JSON.stringify([t, b])).toBe(true)
     }
+    // S60: the toast does not cover the legend. Zone has the widest legend, soil the highest.
+    for (const mode of ['zone', 'soil']) {
+      await page.getByTestId(`overlay-${mode}`).click()
+      expect(apart(t, await box('hud-overlay-panel')), mode).toBe(true)
+    }
     await page.screenshot({ path: `docs/progress/S58-${width}.png` })
   })
 }

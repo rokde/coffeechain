@@ -180,11 +180,7 @@ const phaseText = computed(() => {
         >
           <svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true">
             <path
-              :d="
-                overlay.id === 'soil'
-                  ? 'M1 9h14 M1 12h14 M1 15h14 M8 9V3 M8 5c-2.5 0-3.5-1.5-3.5-3 2 0 3.5 1 3.5 3 0-2 1.5-3 3.5-3 0 1.5-1 3-3.5 3'
-                  : 'M1 14l5-9 3 5 2-3 4 7z'
-              "
+              :d="overlay.icon"
               fill="none"
               stroke="currentColor"
               stroke-width="1.5"

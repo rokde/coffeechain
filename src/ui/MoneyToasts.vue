@@ -23,7 +23,7 @@ const text = (t: Toast) =>
 </template>
 
 <style scoped>
-/* 12 px above the toolbar. At 640 px or less the toolbar has three rows. */
+/* 12 px above the toolbar. At 640 px or less it clears the three-row toolbar and the overlay legend. */
 .money-toasts {
   position: absolute;
   right: 16px;
@@ -36,7 +36,7 @@ const text = (t: Toast) =>
 }
 @media (max-width: 640px) {
   .money-toasts {
-    bottom: 189px;
+    bottom: 255px;
   }
 }
 .toast {
