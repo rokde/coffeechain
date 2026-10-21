@@ -3,6 +3,7 @@ import raw from '../../../config/balance.json'
 import { loadBalance } from '../../../config/balance.schema'
 import { balance } from '../balance'
 import { dispatch } from '../commands'
+import { roundCost } from '../money'
 import { createState, type GameState } from '../state'
 import type { Parcel, World, Zone } from '../world/types'
 import { quoteParcels } from './parcels'
@@ -113,10 +114,12 @@ describe('quoteParcels with parcelPrice (S21d)', () => {
 
   it('AC-3: charges firstCost for the first parcel and parcelPrice for the others', () => {
     const s = state()
-    const expected =
+    // S57: the total of the command rounds up to whole CC.
+    const expected = roundCost(
       Math.round(cfg.firstCost * cfg.zoneMultiplier.tiefland * 100) +
-      parcelPrice(s.world, 3, 2) +
-      parcelPrice(s.world, 1, 3)
+        parcelPrice(s.world, 3, 2) +
+        parcelPrice(s.world, 1, 3),
+    )
     expect(quoteParcels(s, list)).toBe(expected)
     const after = dispatch(s, { type: 'CreateParcels', parcels: list })
     expect(s.money - after.money).toBe(expected)
@@ -124,7 +127,7 @@ describe('quoteParcels with parcelPrice (S21d)', () => {
 
   it('AC-3: charges parcelPrice for the first listed parcel when the farm owns one', () => {
     const s = dispatch(state(), { type: 'CreateParcels', parcels: [{ x: 1, y: 1 }] })
-    expect(quoteParcels(s, [list[0]!])).toBe(parcelPrice(s.world, 2, 2))
+    expect(quoteParcels(s, [list[0]!])).toBe(roundCost(parcelPrice(s.world, 2, 2)))
   })
 })
 

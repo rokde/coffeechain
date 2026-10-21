@@ -55,9 +55,9 @@ describe('ParcelTool (S12)', () => {
     expect(selection.note).toBeNull()
   })
 
-  it('formats hundredths of CC with at most 2 decimals', () => {
+  it('S57: formats hundredths of CC as whole CC, rounded down', () => {
     expect(formatMoney(50000)).toBe('500 CC')
-    expect(formatMoney(123456789)).toBe('1.234.567,89 CC')
-    expect(formatMoney(4850)).toBe('48,5 CC')
+    expect(formatMoney(123456789)).toBe('1.234.567 CC')
+    expect(formatMoney(4850)).toBe('48 CC')
   })
 })

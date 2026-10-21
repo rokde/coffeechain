@@ -33,7 +33,7 @@ Values in `config/balance.json` with `src: "NEU"` that the world generation (S3)
 
 ## Other questions
 
-- **Whole CC (decided 2026-10-21):** the balance and every booking are whole CC. Each booking (sale, purchase, care, build, order) rounds to whole CC. Unit prices may still show decimals.
+- **Whole CC (decided 2026-10-21):** the balance and every booking are whole CC. Each booking (sale, purchase, care, build, order) rounds to whole CC. Unit prices may still show decimals. **S57 rule:** costs round up and income rounds down, once per booking (one command, or one game day for the storage cost). A command for many parcels rounds once for the total. The sim keeps hundredths of CC as its unit, so `money` and `invested` are always a multiple of 100. The save migration 7 → 8 rounds `money` and `invested` of an old save down to whole CC. The HUD shows balances and totals as whole CC, rounded down.
 
 - **Fertilizer cost (S15):** PRD §6 says that the game buys fertilizer "at the bank price". The PRD table gives a care cost for each variety. The `Fertilize` command uses `varieties.*.careCost.fertilizer` (1 / 2 / 4 / 6 CC). `market.fertilizerPrice` stays unused. Robert must decide which price applies.
 - **Monsoon cycle time (S51):** GDD 11.8 gives the monsoon a cycle time of +50 % in the Tiefland (`events.types.monsoon.cycleTime`). PRD §9 says that each event effect stays between −30 % and +30 %. Which rule wins: +50 % (GDD) or a cap at +30 % (PRD)? **Decided 2026-10-21: PRD wins, the monsoon cycle time is capped at +30 % (`events.maxEffect`).** S51c applies it.

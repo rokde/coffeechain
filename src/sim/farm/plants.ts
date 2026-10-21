@@ -1,6 +1,7 @@
 import type { Balance } from '../../../config/balance.schema'
 import { balance } from '../balance'
 import { bankSellPrice, buy } from '../market/market'
+import { roundCost } from '../money'
 import { isVarietyUnlocked } from '../progression/capital'
 import type { GameState } from '../state'
 import type { Variety } from './yield'
@@ -72,7 +73,7 @@ const missingSeeds = (state: GameState, variety: Variety, count: number) =>
 // Cost in hundredths of CC of the seed that the stock lacks for count parcels, with the rounding of buy().
 export function quotePlant(state: GameState, variety: Variety, count: number): number {
   const missing = missingSeeds(state, variety, count)
-  return Math.round(missing * bankSellPrice(state, variety, missing) * 100)
+  return roundCost(Math.round(missing * bankSellPrice(state, variety, missing) * 100))
 }
 
 export const ripeHour = (plant: PlantState, cfg: Balance = balance()): number =>

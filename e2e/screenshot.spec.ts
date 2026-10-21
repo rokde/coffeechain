@@ -276,7 +276,7 @@ test('S12: parcel tool and money', async ({ page }) => {
   // S40: each click buys its parcel at once. No confirm button is necessary.
   await canvas.click({ position: { x: 607, y: 357 } })
   await canvas.click({ position: { x: 758, y: 417 } })
-  await expect(money).toHaveText('457,2 CC')
+  await expect(money).toHaveText('457 CC')
   await expect(page.getByTestId('parcel-tool-create')).toHaveCount(0)
   await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
   await page.screenshot({ path: 'docs/progress/S12.png' })
@@ -284,7 +284,7 @@ test('S12: parcel tool and money', async ({ page }) => {
   // An owned parcel cannot be bought again.
   await canvas.click({ position: { x: 607, y: 357 } })
   await expect(page.getByTestId('tool-note')).toHaveText('Hier nicht möglich.')
-  await expect(money).toHaveText('457,2 CC')
+  await expect(money).toHaveText('457 CC')
 
   await page.getByTestId('tool-select').click()
   await expect(page.getByTestId('parcel-tool')).toHaveCount(0)
@@ -344,7 +344,7 @@ test('S13: plant tool', async ({ page }) => {
   ]
   await page.getByTestId('tool-parcel').click()
   for (const position of clicks) await canvas.click({ position })
-  await expect(money).toHaveText('457,2 CC')
+  await expect(money).toHaveText('457 CC')
 
   await page.getByTestId('tool-plant').click()
   await expect(page.getByTestId('plant-tool')).toBeVisible()
@@ -358,17 +358,17 @@ test('S13: plant tool', async ({ page }) => {
   // S40 AC-3: one click plants Arabica Standard at once, and the tool stays armed.
   // One Arabica seed costs 4 CC, one Robusta seed 2 CC.
   await canvas.click({ position: clicks[0] })
-  await expect(money).toHaveText('453,2 CC')
+  await expect(money).toHaveText('453 CC')
   await expect(page.getByTestId('tool-plant')).toHaveAttribute('aria-pressed', 'true')
   await canvas.click({ position: clicks[1] })
-  await expect(money).toHaveText('449,19 CC')
+  await expect(money).toHaveText('448 CC')
   await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
   await page.screenshot({ path: 'docs/progress/S13.png' })
 
   // A parcel with a plant cannot be planted again.
   await canvas.click({ position: clicks[0] })
   await expect(page.getByTestId('tool-note')).toHaveText('Hier nicht möglich.')
-  await expect(money).toHaveText('449,19 CC')
+  await expect(money).toHaveText('448 CC')
   expect(errors).toEqual([])
 })
 
@@ -580,7 +580,7 @@ test('S13b: plant meshes', async ({ page }) => {
   for (const position of clicks) await canvas.click({ position })
   await page.getByTestId('tool-plant').click()
   for (const position of clicks) await canvas.click({ position })
-  await expect(page.getByTestId('money')).toHaveText('453,2 CC')
+  await expect(page.getByTestId('money')).toHaveText('453 CC')
   await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
   await page.screenshot({ path: 'docs/progress/S13b.png' })
   expect(errors).toEqual([])
@@ -609,7 +609,7 @@ test('S18a: care and harvest tools, storage chip', async ({ page }) => {
   for (const position of clicks) await canvas.click({ position })
   await page.getByTestId('tool-plant').click()
   for (const position of clicks) await canvas.click({ position })
-  await expect(money).toHaveText('453,2 CC')
+  await expect(money).toHaveText('453 CC')
 
   const labels = await page.getByTestId('hud-toolbar').getByRole('button').allTextContents()
   expect(labels.map((l) => l.trim())).toEqual([
@@ -629,7 +629,7 @@ test('S18a: care and harvest tools, storage chip', async ({ page }) => {
   await expect(page.getByTestId('parcel-inspector')).toHaveCount(0)
   await expect(page.getByTestId('farm-tool-apply')).toHaveCount(0)
   for (const position of clicks) await canvas.click({ position })
-  await expect(money).toHaveText('451,2 CC')
+  await expect(money).toHaveText('451 CC')
   await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
   await page.screenshot({ path: 'docs/progress/S18a.png' })
 

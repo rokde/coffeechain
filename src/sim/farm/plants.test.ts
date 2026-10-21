@@ -40,8 +40,8 @@ describe('Plant', () => {
     const state = testState()
     const before = structuredClone(state)
     const next = plant(state, 'robusta', [0, 0], [1, 0])
-    // 2 seeds at the mid volume of 1 unit: 2 × 2 × (1 + 0.3 × 1 / 200) = 4.006 CC.
-    expect(next.money).toBe(50000 - 401)
+    // 2 seeds at the mid volume of 1 unit: 2 × 2 × (1 + 0.3 × 1 / 200) = 4.006 CC → 5 CC (S57).
+    expect(next.money).toBe(50000 - 500)
     expect(next.farm.plants).toEqual({
       0: { variety: 'robusta', plantedHour: 5 },
       1: { variety: 'robusta', plantedHour: 5 },
@@ -92,7 +92,7 @@ describe('Plant', () => {
     ['a locked variety', testState(), 'arabicaPremium', [[0, 0]]],
     [
       'a total cost above the money',
-      testState(400),
+      testState(499),
       'robusta',
       [
         [0, 0],
@@ -106,7 +106,7 @@ describe('Plant', () => {
   })
 
   it('AC-2: accepts a total cost equal to the money', () => {
-    expect(plant(testState(401), 'robusta', [0, 0], [1, 0]).money).toBe(0)
+    expect(plant(testState(500), 'robusta', [0, 0], [1, 0]).money).toBe(0)
   })
 
   it.each(['constructor', 'toString', 'hasOwnProperty'])(
@@ -184,9 +184,9 @@ describe('growth stages', () => {
 })
 
 describe('quotePlant (S13)', () => {
-  it('AC-3: gives the seed cost in hundredths of CC', () => {
-    expect(quotePlant(testState(), 'robusta', 2)).toBe(401)
-    expect(quotePlant(testState(), 'arabicaStandard', 2)).toBe(801)
+  it('AC-3: gives the seed cost in hundredths of CC, rounded up to whole CC', () => {
+    expect(quotePlant(testState(), 'robusta', 2)).toBe(500)
+    expect(quotePlant(testState(), 'arabicaStandard', 2)).toBe(900)
     expect(quotePlant(testState(), 'robusta', 0)).toBe(0)
   })
 })
@@ -226,7 +226,7 @@ describe('Plant with bought seed (S19b)', () => {
     const price = bankSellPrice(state, 'robusta')
     const seedCents = balance().varieties.robusta.seedCost * 100
     const next = plant(state, 'robusta', [0, 0], [1, 0], [2, 0])
-    expect(state.money - next.money).toBe(Math.round(3 * bankSellPrice(state, 'robusta', 3) * 100))
+    expect(state.money - next.money).toBe(Math.ceil(3 * bankSellPrice(state, 'robusta', 3)) * 100)
     expect(state.money - next.money).toBeGreaterThan(3 * seedCents)
     expect(bankSellPrice(next, 'robusta')).toBeGreaterThan(price)
   })
@@ -274,9 +274,9 @@ describe('Plant with bought seed (S19b)', () => {
 
   it('AC-5: costs the seed cost at the mid volume of a neutral market with no stock', () => {
     const state = testState()
-    expect(quotePlant(state, 'robusta', 2)).toBe(401)
+    expect(quotePlant(state, 'robusta', 2)).toBe(500)
     const next = plant(state, 'robusta', [0, 0], [1, 0])
-    expect(state.money - next.money).toBe(401)
+    expect(state.money - next.money).toBe(500)
     expect(next.market.seeds.robusta).toBe(0)
   })
 

@@ -89,11 +89,14 @@ describe('save format', () => {
     const state = createState(1)
     const text = JSON.stringify({ version: 1, state: { ...state, a: 1 } })
     const m1 = (s: Record<string, unknown>) => ({ ...s, b: 2 })
-    const m2 = (s: Record<string, unknown>) => ({ ...s, money: Number(s.a) * 10 + Number(s.b) })
+    const m2 = (s: Record<string, unknown>) => ({
+      ...s,
+      money: Number(s.a) * 1000 + Number(s.b) * 100,
+    })
     const format = { version: 3, migrations: [m1, m2] }
-    expect(deserialize(text, format).money).toBe(12)
+    expect(deserialize(text, format).money).toBe(1200)
     const v2 = JSON.stringify({ version: 2, state: { ...state, a: 1, b: 5 } })
-    expect(deserialize(v2, format).money).toBe(15)
+    expect(deserialize(v2, format).money).toBe(1500)
   })
 
   describe('S42 schema check', () => {
@@ -247,12 +250,37 @@ describe('orders migration (S56)', () => {
   })
 
   it('AC-4: loads a version 6 save with no orders', () => {
-    expect(SAVE_VERSION).toBe(7)
+    expect(SAVE_VERSION).toBeGreaterThanOrEqual(7)
     const old: Record<string, unknown> = { ...createState(5) }
     delete old.orders
     const loaded = deserialize(JSON.stringify({ version: 6, state: old }))
     expect(loaded.orders).toEqual({ open: [], nextId: 0 })
     expect(loaded).toEqual(createState(5))
+  })
+})
+
+describe('whole CC migration (S57)', () => {
+  const load = (version: number, money: number, invested: number) =>
+    deserialize(JSON.stringify({ version, state: { ...createState(5), money, invested } }))
+
+  it('AC-4: has version 8 and floors money and invested of a version 7 save to whole CC', () => {
+    expect(SAVE_VERSION).toBe(8)
+    expect(load(7, 12345, 4599)).toMatchObject({ money: 12300, invested: 4500 })
+    expect(load(7, -50, 0).money).toBe(-100)
+  })
+
+  it('AC-4: loads a version 8 save unchanged', () => {
+    const state = { ...createState(5), money: 12300, invested: 4500 }
+    expect(deserialize(serialize(state))).toEqual(state)
+  })
+
+  it('Round 1: floors a version 8 save with fractions and does not reject it', () => {
+    expect(load(8, 15050.5, 4599)).toMatchObject({ money: 15000, invested: 4500 })
+  })
+
+  it('AC-4: still rejects a version 7 save with a bad money value', () => {
+    const old = JSON.stringify({ version: 7, state: { ...createState(5), money: 'x' } })
+    expect(() => deserialize(old)).toThrow(/money/)
   })
 })
 

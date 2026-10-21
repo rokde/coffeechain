@@ -1,10 +1,11 @@
 import type { GameState } from '../state'
+import { roundIncome } from '../money'
 import { gameStateSchema } from './schema'
 
 // When a slice adds a state field: increase SAVE_VERSION by one and append one migration
 // to MIGRATIONS that fills the default value. Migration i turns version i + 1 into i + 2.
 // Never edit an old migration.
-export const SAVE_VERSION = 7
+export const SAVE_VERSION = 8
 
 export type Migration = (state: Record<string, unknown>) => Record<string, unknown>
 
@@ -22,6 +23,8 @@ export const MIGRATIONS: Migration[] = [
   (state) => ({ ...state, invested: 0 }),
   // 6 -> 7: S56 adds the buyer orders.
   (state) => ({ ...state, orders: { open: [], nextId: 0 } }),
+  // 7 -> 8: S57 books whole CC only. deserialize floors money and invested on every load.
+  (state) => state,
 ]
 
 export interface SaveFormat {
@@ -64,5 +67,7 @@ export function deserialize(
     const issues = result.error.issues.map((i) => `${i.path.join('.') || 'state'}: ${i.message}`)
     throw new Error(`Save state is invalid: ${issues.join('; ')}`)
   }
-  return result.data
+  // Floor, so a save with fractions loads as whole CC and the rounding never gives money.
+  const { money, invested } = result.data
+  return { ...result.data, money: roundIncome(money), invested: roundIncome(invested) }
 }

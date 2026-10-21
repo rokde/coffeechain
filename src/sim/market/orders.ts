@@ -1,6 +1,7 @@
 import { balance } from '../balance'
 import { harvestSeed } from '../farm/harvest'
 import type { Variety } from '../farm/yield'
+import { roundIncome } from '../money'
 import { mulberry32 } from '../rng'
 import type { GameState } from '../state'
 import type { Batch } from '../storage/storage'
@@ -86,7 +87,7 @@ export function deliverOrder(state: GameState, command: DeliverOrder): GameState
 
   return {
     ...state,
-    money: state.money + order.units * order.price,
+    money: state.money + roundIncome(order.units * order.price),
     storage: { ...state.storage, batches },
     orders: { ...state.orders, open: state.orders.open.filter((o) => o !== order) },
   }

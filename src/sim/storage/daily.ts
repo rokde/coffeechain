@@ -1,4 +1,5 @@
 import { balance } from '../balance'
+import { roundCost } from '../money'
 import type { GameState } from '../state'
 import { soilClassOf } from '../world/generate'
 import { storageUsed } from './storage'
@@ -6,7 +7,9 @@ import { storageUsed } from './storage'
 // Applies the storage cost, the quality loss and the fallow recovery for one game day.
 export function dailyUpkeep(state: GameState): GameState {
   const cfg = balance()
-  const cost = Math.round(storageUsed(state.storage) * cfg.storage.costPerUnitPerDay * 100)
+  const cost = roundCost(
+    Math.round(storageUsed(state.storage) * cfg.storage.costPerUnitPerDay * 100),
+  )
   const loss = cfg.storage.qualityLossPerDayRaw
   const batches = state.storage.batches.map((batch) => ({
     ...batch,

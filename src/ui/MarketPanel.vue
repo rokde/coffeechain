@@ -11,13 +11,13 @@ import {
 import { useGameStore } from '../app/store'
 import { balance } from '../sim/balance'
 import type { Variety } from '../sim/farm/yield'
-import { bankBuyPrice, bankSellPrice, priceHistory } from '../sim/market/market'
+import { bankBuyPrice, bankSellPrice, priceHistory, sellIncome } from '../sim/market/market'
 import { isVarietyUnlocked } from '../sim/progression/capital'
-import { hasProcessing, isRunning, runningUntil } from '../sim/processing/process'
+import { hasProcessing, isRunning, processCost, runningUntil } from '../sim/processing/process'
 import type { GameState } from '../sim/state'
 import { clock } from '../sim/time/time'
 import de from './i18n/de.json'
-import { formatMoney } from './money'
+import { formatMoney, formatUnitPrice } from './money'
 import OrdersPanel from './OrdersPanel.vue'
 
 const t = de.marketPanel
@@ -31,7 +31,24 @@ const varieties = computed(() =>
       game.state.storage.batches.some((b) => b.variety === v),
   ),
 )
-const price = (cc: number) => formatMoney(Math.round(cc * 100))
+const price = (cc: number) => formatUnitPrice(Math.round(cc * 100))
+const hint = t.hint.replace('{units}', String(Math.round(1 / cfg.storage.costPerUnitPerDay)))
+const money = (cents: number) => formatMoney(cents).replace(' ', '\u00a0')
+// Label and zero-income warning of a sell button. A sale that pays 0 CC stays possible.
+const sale = (state: GameState, variety: Variety, units: number, washed: boolean) => {
+  const income = sellIncome(state, variety, units, washed)
+  return {
+    label:
+      units > 0
+        ? (washed ? t.sellWashedAmount : t.sellAmount)
+            .replace('{units}', String(units))
+            .replace('{income}', money(income))
+        : washed
+          ? t.sellWashed
+          : t.sell,
+    why: units > 0 && income === 0 ? t.sellZero : null,
+  }
+}
 const lineLabel = (text: string) => text.replace('{days}', String(cfg.market.historyDays))
 
 const W = 100
@@ -55,17 +72,19 @@ const blocks = computed(() => {
   return varieties.value.map((variety) => {
     const units = processUnits(state, variety)
     const until = runningUntil(state, variety)
-    const cost = Math.round(units * cfg.processing.washed.costPerUnit * 100)
+    const cost = processCost(units)
+    const stock = storedUnits(state, variety)
+    const washed = washedUnits(state, variety)
     return {
       variety,
-      stock: storedUnits(state, variety),
-      washed: washedUnits(state, variety),
+      stock,
+      washed,
+      sell: sale(state, variety, stock, false),
+      sellWashed: sale(state, variety, washed, true),
       washedPrice: bankBuyPrice(state, variety, 0, true),
       processLabel:
         units > 0
-          ? t.processAmount
-              .replace('{units}', String(units))
-              .replace('{cost}', formatMoney(cost).replace(' ', '\u00a0'))
+          ? t.processAmount.replace('{units}', String(units)).replace('{cost}', money(cost))
           : t.process,
       // The first reason that blocks "Aufbereiten". The money check keeps a click from a throw.
       processWhy: !hasProcessing(state)
@@ -94,7 +113,7 @@ const blocks = computed(() => {
 <template>
   <section class="tool" data-testid="market-panel">
     <h2>{{ t.heading }}</h2>
-    <p class="hint">{{ t.hint }}</p>
+    <p class="hint" data-testid="market-hint">{{ hint }}</p>
     <OrdersPanel />
     <article v-for="b in blocks" :key="b.variety" class="good" :data-testid="`market-${b.variety}`">
       <h3>{{ de.inspector.varieties[b.variety] }}</h3>
@@ -136,9 +155,11 @@ const blocks = computed(() => {
         type="button"
         data-testid="market-sell"
         :disabled="b.stock === 0"
+        :title="b.sell.why ?? undefined"
+        :aria-label="b.sell.why ? `${b.sell.label}. ${b.sell.why}` : undefined"
         @click="sellAll(game, b.variety)"
       >
-        {{ t.sell }}
+        {{ b.sell.label }}
       </button>
       <button
         type="button"
@@ -157,9 +178,11 @@ const blocks = computed(() => {
         type="button"
         data-testid="market-sell-washed"
         :disabled="b.washed === 0"
+        :title="b.sellWashed.why ?? undefined"
+        :aria-label="b.sellWashed.why ? `${b.sellWashed.label}. ${b.sellWashed.why}` : undefined"
         @click="sellAllWashed(game, b.variety)"
       >
-        {{ t.sellWashed }}
+        {{ b.sellWashed.label }}
       </button>
     </article>
   </section>
