@@ -352,5 +352,19 @@
     "newGameYes": "Ja, neues Spiel",
     "newGameConfirm": "Das laufende Spiel geht verloren. Neues Spiel beginnen?",
     "cancel": "Abbrechen"
+  },
+  "bookings": {
+    "parcel": "Parzelle",
+    "plant": "Pflanzen",
+    "fertilize": "Dünger",
+    "irrigate": "Bewässerung",
+    "protect": "Schutz",
+    "harvest": "Ernte",
+    "sell": "Verkauf",
+    "buy": "Einkauf",
+    "build": "Bau",
+    "process": "Aufbereitung",
+    "order": "Auftrag",
+    "tick": "Lagerkosten"
   }
 }

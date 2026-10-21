@@ -21,6 +21,7 @@ import FpsMeter from './FpsMeter.vue'
 import HelpOverlay from './HelpOverlay.vue'
 import MarketPanel from './MarketPanel.vue'
 import MessagePanel from './MessagePanel.vue'
+import MoneyToasts from './MoneyToasts.vue'
 import BuildTool from './BuildTool.vue'
 import ParcelInspector from './ParcelInspector.vue'
 import OverlayPanel from './OverlayPanel.vue'
@@ -166,6 +167,7 @@ const phaseText = computed(() => {
         {{ tool.label }}
       </button>
     </nav>
+    <MoneyToasts />
     <FpsMeter v-if="view.fpsVisible" />
     <HelpOverlay v-if="view.helpOpen" />
     <SavePanel v-if="savePanel.open" />
