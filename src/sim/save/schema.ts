@@ -56,13 +56,15 @@ export const gameStateSchema = z.object({
   buildings: z.record(z.string(), z.object({ kind: z.enum(['processing', 'storage']) })),
   storage: z.object({
     batches: z.array(
-      z.object({
-        variety,
-        units: num,
-        quality: num,
-        washed: z.literal(true).optional(),
-        readyHour: num.optional(),
-      }),
+      z
+        .object({
+          variety,
+          units: num,
+          quality: num,
+          washed: z.literal(true).optional(),
+          readyHour: num.optional(),
+        })
+        .refine((b) => b.readyHour === undefined || b.washed === true, 'readyHour needs washed'),
     ),
   }),
   market: z.object({

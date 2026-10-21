@@ -162,9 +162,16 @@
     "coffeeLine": "Kaffee, {days} Tage",
     "seedLine": "Saatgut, {days} Tage",
     "sell": "Verkaufen",
-    "washedStock": "Gewaschen im Lager",
+    "washedStock": "Gewaschen bereit",
     "washedSellPrice": "Bank zahlt (gewaschen)",
     "process": "Aufbereiten",
+    "processAmount": "Aufbereiten ({units}\u00a0Einh., {cost})",
+    "processWhy": {
+      "building": "Baue zuerst eine Aufbereitung.",
+      "running": "Es läuft schon eine Aufbereitung.",
+      "stock": "Kein Rohkaffee im Lager.",
+      "money": "Zu wenig Geld."
+    },
     "sellWashed": "Gewaschen verkaufen",
     "processing": "Aufbereitung läuft bis Tag {day}"
   },

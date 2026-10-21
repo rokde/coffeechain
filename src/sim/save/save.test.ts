@@ -198,6 +198,9 @@ describe('washed batches (S46)', () => {
       version: 5,
       state: { ...base, storage: { batches: [{ variety: 'robusta', units: 3, quality: 80 }] } },
     })
+    const raw = { variety: 'robusta', units: 3, quality: 80, readyHour: 24 }
+    const bad = serialize({ ...base, storage: { batches: [raw as never] } })
+    expect(() => deserialize(bad)).toThrow(/readyHour needs washed/)
     expect(deserialize(old).storage.batches).toEqual([
       { variety: 'robusta', units: 3, quality: 80 },
     ])

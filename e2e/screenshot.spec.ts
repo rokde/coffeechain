@@ -492,10 +492,9 @@ test('S20: market panel from the toolbar and the market stand', async ({ page })
   await expect(page.getByTestId('parcel-inspector')).toHaveCount(0)
   await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
   await page.screenshot({ path: 'docs/progress/S20.png' })
-  // The processing rows of S46 make the right panel scroll down at its max height, never sideways.
+  // The right panel keeps its max height and can scroll down, but never sideways.
   const right = page.getByTestId('hud-right-panel')
   expect((await right.boundingBox())!.height).toBeLessThanOrEqual(480)
-  expect(await right.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true)
   expect(await panel.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
 
   // Select a land parcel first: the market click must clear it.

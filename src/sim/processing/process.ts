@@ -13,6 +13,9 @@ export interface Process {
 export const isRunning = (batch: Batch, hour: number) =>
   batch.readyHour !== undefined && hour < batch.readyHour
 
+export const hasProcessing = (state: GameState) =>
+  Object.values(state.buildings).some((b) => b.kind === 'processing')
+
 // Ready hour of the running washed batch of a variety, or undefined.
 export const runningUntil = (state: GameState, variety: Variety) =>
   state.storage.batches.find((b) => b.variety === variety && isRunning(b, state.time.hour))
@@ -23,8 +26,7 @@ export function process(state: GameState, command: Process): GameState {
   const cfg = balance()
   const { washed } = cfg.processing
   const { variety, units } = command
-  if (!Object.values(state.buildings).some((b) => b.kind === 'processing'))
-    throw new Error('The farm has no processing building')
+  if (!hasProcessing(state)) throw new Error('The farm has no processing building')
   if (!Number.isInteger(units) || units <= 0)
     throw new Error(`Units must be a positive integer: ${units}`)
   if (units > washed.batchCapacity)

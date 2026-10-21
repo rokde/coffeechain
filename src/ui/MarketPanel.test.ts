@@ -125,6 +125,8 @@ describe('MarketPanel processing (S46)', () => {
     const { pinia, game } = processing(true)
     let html = await render(pinia)
     expect(button(html, 'process')).not.toContain('disabled')
+    expect(button(html, 'process')).not.toContain('title')
+    expect(field(html, 'process')!.trim()).toBe('Aufbereiten (50\u00a0Einh., 15\u00a0CC)')
     expect(button(html, 'sell-washed')).toContain('disabled')
     expect(html).not.toContain('market-processing')
     const dispatch = vi.spyOn(game, 'dispatch')
@@ -139,6 +141,7 @@ describe('MarketPanel processing (S46)', () => {
     expect(field(html, 'washed-stock')).toBe('0')
     expect(field(html, 'processing')!.trim()).toBe('Aufbereitung läuft bis Tag 2')
     expect(button(html, 'process')).toContain('disabled')
+    expect(button(html, 'process')).toContain('title="Es läuft schon eine Aufbereitung."')
     expect(button(html, 'sell-washed')).toContain('disabled')
   })
 
@@ -157,9 +160,39 @@ describe('MarketPanel processing (S46)', () => {
     ])
   })
 
-  it('AC-5: disables "Aufbereiten" without a processing building', async () => {
+  it('AC-5: disables "Aufbereiten" without a processing building and says why', async () => {
     const { pinia } = processing(false)
-    expect(button(await render(pinia), 'process')).toContain('disabled')
+    const html = button(await render(pinia), 'process')
+    expect(html).toContain('disabled')
+    expect(html).toContain('title="Baue zuerst eine Aufbereitung."')
+    expect(html).toContain(
+      'aria-label="Aufbereiten (50\u00a0Einh., 15\u00a0CC). Baue zuerst eine Aufbereitung."',
+    )
+  })
+
+  it('S46: names no raw stock and too little money as reasons', async () => {
+    const { pinia, game } = processing(true)
+    const state = game.state as GameState
+    game.replace({ ...state, money: 1499 })
+    expect(button(await render(pinia), 'process')).toContain('title="Zu wenig Geld."')
+    game.replace({ ...state, storage: { batches: [] } })
+    const html = await render(pinia)
+    expect(button(html, 'process')).toContain('title="Kein Rohkaffee im Lager."')
+    expect(field(html, 'process')!.trim()).toBe('Aufbereiten')
+  })
+
+  it('S46: keeps a locked variety with only washed units in the panel', async () => {
+    const { pinia, game } = processing(true)
+    const washed = {
+      variety: 'arabicaPremium' as const,
+      units: 5,
+      quality: 90,
+      washed: true as const,
+    }
+    game.replace({ ...(game.state as GameState), storage: { batches: [washed] } })
+    expect(await renderToString(createSSRApp(MarketPanel).use(pinia))).toContain(
+      'data-testid="market-arabicaPremium"',
+    )
   })
 })
 

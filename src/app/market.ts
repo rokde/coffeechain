@@ -22,17 +22,17 @@ export function selectParcel(
   selection.parcel = market ? null : parcel
 }
 
-const units = (state: GameState, variety: Variety, washed: boolean) =>
+const unitsOf = (state: GameState, variety: Variety, washed: boolean) =>
   state.storage.batches
     .filter((b) => b.variety === variety && (b.washed === true) === washed)
     .filter((b) => !isRunning(b, state.time.hour))
     .reduce((sum, b) => sum + b.units, 0)
 
 // Raw units of one variety in storage.
-export const storedUnits = (state: GameState, variety: Variety) => units(state, variety, false)
+export const storedUnits = (state: GameState, variety: Variety) => unitsOf(state, variety, false)
 
 // Ready washed units of one variety in storage.
-export const washedUnits = (state: GameState, variety: Variety) => units(state, variety, true)
+export const washedUnits = (state: GameState, variety: Variety) => unitsOf(state, variety, true)
 
 // Sells all stored units of one variety to the bank.
 export function sellAll(game: ReturnType<typeof useGameStore>, variety: Variety) {
