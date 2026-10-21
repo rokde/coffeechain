@@ -15,6 +15,7 @@ import de from './i18n/de.json'
 import { formatMoney } from './money'
 import EventChips from './EventChips.vue'
 import FieldList from './FieldList.vue'
+import FloatingCoins from './FloatingCoins.vue'
 import FirstSteps from './FirstSteps.vue'
 import FarmTool from './FarmTool.vue'
 import FpsMeter from './FpsMeter.vue'
@@ -196,6 +197,7 @@ const phaseText = computed(() => {
       <OverlayPanel />
     </nav>
     <MoneyToasts />
+    <FloatingCoins />
     <FpsMeter v-if="view.fpsVisible" />
     <HelpOverlay v-if="view.helpOpen" />
     <SavePanel v-if="savePanel.open" />

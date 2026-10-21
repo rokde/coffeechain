@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
 const speeds = [0, 1, 2, 4, 8, 16]
 const tools = [
@@ -1770,5 +1770,126 @@ for (const [width, height] of [
     await page.keyboard.press('o')
     await expect(page.getByTestId('overlay-soil')).toHaveAttribute('aria-pressed', 'true')
     expect(errors).toEqual([])
+  })
+}
+
+// Reads the money chip, the toasts and the coins in one step.
+const readMoney = (page: Page) =>
+  page.evaluate(() => {
+    const texts = (id: string) =>
+      [...document.querySelectorAll(`[data-testid="${id}"]`)].map((el) => el.textContent!.trim())
+    return {
+      money: texts('money')[0]!,
+      toasts: texts('money-toast'),
+      coins: texts('floating-coin'),
+    }
+  })
+
+async function startParcels(page: Page) {
+  await page.clock.install()
+  await page.goto('/?seed=48213')
+  await page.getByTestId('first-steps-close').click()
+  await page.getByTestId('speed-0').click()
+  await page.getByTestId('tool-parcel').click()
+  // A stopped clock keeps the coin on screen for the checks.
+  await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 1000)
+}
+
+test('S58b: a click shows one coin with the toast amount at the click point', async ({ page }) => {
+  await startParcels(page)
+  const canvas = page.locator('canvas#scene')
+  await canvas.click({ position: { x: 607, y: 357 } })
+  const coin = page.getByTestId('floating-coin')
+  await expect(coin).toHaveCount(1)
+  await expect(coin).toHaveAttribute('aria-hidden', 'true')
+  await expect(coin).toHaveText(/^−[\d.,]+ CC$/)
+  const { toasts, coins } = await readMoney(page)
+  expect(toasts).toHaveLength(1)
+  expect(cents(coins[0]!)).toBe(cents(toasts[0]!))
+  const box = (await canvas.boundingBox())!
+  const start = await coin.evaluate((el) => [el.style.left, el.style.top])
+  expect(start).toEqual([`${box.x + 607}px`, `${box.y + 357}px`])
+  await page.screenshot({ path: 'docs/progress/S58b.png' })
+  await page.clock.runFor(1000)
+  await expect(coin).toHaveCount(0)
+})
+
+test('S58b: a brush stroke shows one coin with the full sum', async ({ page }) => {
+  await startParcels(page)
+  const before = cents((await readMoney(page)).money)
+  await page.mouse.move(607, 357)
+  await page.mouse.down()
+  await page.mouse.move(758, 417, { steps: 10 })
+  await page.mouse.up()
+  await expect
+    .poll(async () => {
+      const { money, toasts, coins } = await readMoney(page)
+      return [toasts.length, coins.map((text) => cents(text) === before - cents(money))]
+    })
+    .toEqual([1, [true]])
+  expect(before - cents((await readMoney(page)).money)).toBeGreaterThanOrEqual(3 * 2140)
+  await page.clock.runFor(1000)
+  await expect(page.getByTestId('floating-coin')).toHaveCount(0)
+})
+
+test('S58b: a sale shows an income coin at the sell button', async ({ page }) => {
+  await page.clock.install()
+  await page.goto('/?seed=48213')
+  await page.getByTestId('save-button').click()
+  await page.getByTestId('save-slot-1').getByTestId('save-slot-save').click()
+  await page.evaluate(() => {
+    const key = 'coffeechain.save.slot-1'
+    const save = JSON.parse(localStorage.getItem(key)!)
+    save.state.time = { hour: 8, speed: 0 }
+    save.state.storage.batches = [{ variety: 'arabicaStandard', units: 60, quality: 100 }]
+    localStorage.setItem(key, JSON.stringify(save))
+  })
+  await page.getByTestId('save-panel-close').click()
+  await page.getByTestId('save-button').click()
+  await page.getByTestId('save-slot-1').getByTestId('save-slot-load').click()
+  await page.getByTestId('first-steps-close').click()
+  await page.getByTestId('tool-market').click()
+  await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 1000)
+  const sell = page.getByTestId('market-arabicaStandard').getByTestId('market-sell')
+  await sell.click()
+  const coin = page.getByTestId('floating-coin')
+  await expect(coin).toHaveCount(1)
+  await expect(coin).toHaveText(/^\+[\d.,]+ CC$/)
+  await expect(coin).toHaveClass(/\bincome\b/)
+  const box = (await sell.boundingBox())!
+  const [left, top] = await coin.evaluate((el) => [
+    parseFloat(el.style.left),
+    parseFloat(el.style.top),
+  ])
+  expect(left).toBeGreaterThanOrEqual(box.x)
+  expect(left).toBeLessThanOrEqual(box.x + box.width)
+  expect(top).toBeGreaterThanOrEqual(box.y)
+  expect(top).toBeLessThanOrEqual(box.y + box.height)
+})
+
+for (const reduce of [false, true]) {
+  test(`S58b: the coin animation ${reduce ? 'only fades with reduced motion' : 'rises and fades'}`, async ({
+    page,
+  }) => {
+    if (reduce) await page.emulateMedia({ reducedMotion: 'reduce' })
+    await startParcels(page)
+    await page.locator('canvas#scene').click({ position: { x: 607, y: 357 } })
+    const coin = page.getByTestId('floating-coin')
+    await expect(coin).toHaveCount(1)
+    const animation = await coin.evaluate((el) => {
+      const effect = el.getAnimations()[0]!.effect as KeyframeEffect
+      return {
+        duration: effect.getTiming().duration,
+        keyframes: effect
+          .getKeyframes()
+          .map((k) => ({ transform: k.transform, opacity: k.opacity })),
+      }
+    })
+    expect(animation.duration).toBe(800)
+    const first = animation.keyframes[0]!
+    const last = animation.keyframes.at(-1)!
+    expect([first.opacity, last.opacity]).toEqual(['1', '0'])
+    if (reduce) expect(animation.keyframes.every((k) => k.transform === undefined)).toBe(true)
+    else expect(last.transform).toBe('translateY(-40px)')
   })
 }
