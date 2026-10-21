@@ -14,7 +14,8 @@ const size = 6
 const { firstCost, baseCost, zoneMultiplier } = balance().parcels
 const FIRST = Math.round(firstCost * 100)
 const BASE = Math.round(baseCost * 100)
-const HIGH = Math.round(baseCost * zoneMultiplier.hochland * 100)
+// S57: 37.5 CC rounds up to whole CC.
+const HIGH = Math.ceil(baseCost * zoneMultiplier.hochland) * 100
 
 // Flat lowland. (0,0) is water, (4,4) is highland, (5,0) is a peak, so it and its neighbours are steep.
 function testWorld(): World {

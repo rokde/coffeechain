@@ -2,7 +2,9 @@ import { createPinia, setActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { createSSRApp } from 'vue'
 import { renderToString } from 'vue/server-renderer'
+import { useFirstStepsStore } from '../app/firstSteps'
 import { useGameStore } from '../app/store'
+import { useViewStore } from '../app/view'
 import type { GameState } from '../sim/state'
 import Hud from './Hud.vue'
 
@@ -85,8 +87,53 @@ describe('Hud money group (S58c)', () => {
     expect(item(storage!)).toEqual({ icons: 1, hidden: true, text: 'Lager 0 / 100' })
     // At 480 px or less the word "Lager" is hidden, so the tooltip and the label keep it.
     expect(storage).toMatch(/^<span[^>]*title="Lager 0 \/ 100" aria-label="Lager 0 \/ 100"/)
-    // 069-whole-cc can drop the decimals, so both forms pass.
     expect(item(money!)).toMatchObject({ icons: 1, hidden: true })
-    expect(item(money!).text).toMatch(/^500(,00)? CC$/)
+    expect(item(money!).text).toBe('500 CC')
+  })
+})
+
+describe('Hud left panel (S59)', () => {
+  const left = async (pinia: ReturnType<typeof createPinia>) =>
+    (await renderToString(createSSRApp(Hud).use(pinia)))
+      .split('data-testid="hud-left-panel"')[1]!
+      .split('</aside>')[0]!
+
+  it('AC-4: open first steps hide the field list, a close shows it', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    let h = await left(pinia)
+    expect(h).toContain('data-testid="first-steps"')
+    expect(h).not.toContain('field-list')
+    useFirstStepsStore(pinia).open = false
+    h = await left(pinia)
+    expect(h).toContain('data-testid="field-list"')
+    expect(h).not.toContain('first-steps')
+  })
+
+  it('AC-4: the field list replaces the open checklist when all steps are done', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const game = useGameStore(pinia)
+    const state = game.state as GameState
+    useViewStore(pinia).toggle('soil')
+    game.replace({
+      ...state,
+      farm: {
+        ...state.farm,
+        parcels: { 0: 0 },
+        fields: [{ id: 0, name: 'A' }],
+        plants: { 0: { variety: 'robusta', plantedHour: 0, fertilized: true } },
+      },
+      market: {
+        ...state.market,
+        volumes: [{ kind: 'coffee', variety: 'robusta', day: 1, units: 1 }],
+      },
+    })
+    const steps = useFirstStepsStore(pinia)
+    expect(steps.open).toBe(true)
+    expect(steps.current.next).toBeNull()
+    const h = await left(pinia)
+    expect(h).toContain('data-testid="field-list"')
+    expect(h).not.toContain('first-steps')
   })
 })

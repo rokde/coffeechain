@@ -154,16 +154,19 @@
   },
   "marketPanel": {
     "heading": "Markt",
-    "hint": "Die Bank kauft Roh- und gewaschenen Kaffee und verkauft Saatgut. Verkäufe senken den Preis, Käufe heben ihn.",
+    "hint": "Die Bank kauft Roh- und gewaschenen Kaffee und verkauft Saatgut. Verkäufe senken den Preis, Käufe heben ihn. Das Lager kostet pro Tag mindestens 1 CC, je {units} Einheiten 1 CC.",
     "stock": "Im Lager",
     "seeds": "Saatgut",
-    "sellPrice": "Bank zahlt",
-    "buyPrice": "Saatgut kostet",
+    "sellPrice": "Bank zahlt je Einheit",
+    "buyPrice": "Saatgut kostet je Einheit",
     "coffeeLine": "Kaffee, {days} Tage",
     "seedLine": "Saatgut, {days} Tage",
     "sell": "Verkaufen",
+    "sellAmount": "Verkaufen ({units}\u00a0Einh., {income})",
+    "sellWashedAmount": "Gewaschen verkaufen ({units}\u00a0Einh., {income})",
+    "sellZero": "Zu wenig Einheiten: Der Verkauf bringt unter 1 CC.",
     "washedStock": "Gewaschen bereit",
-    "washedSellPrice": "Bank zahlt (gewaschen)",
+    "washedSellPrice": "Bank zahlt (gewaschen) je Einheit",
     "process": "Aufbereiten",
     "processAmount": "Aufbereiten ({units}\u00a0Einh., {cost})",
     "processWhy": {
@@ -189,7 +192,7 @@
     "deadline": "bis Tag",
     "price": "je Einheit",
     "bank": "(Bank {price})",
-    "stock": "Passend im Lager: {have} / {units}",
+    "stock": "Passend (roh) im Lager: {have} / {units}",
     "deliver": "Liefern"
   },
   "toolNote": {
@@ -250,12 +253,20 @@
   },
   "messages": {
     "heading": "Meldungen",
-    "ripe": "Feld {name} ist erntereif",
-    "overripe": "Feld {name} ist überreif",
-    "needsCare": "Feld {name} braucht Pflege",
     "storageFull": "Lager voll",
-    "harvestPro": "Meilenstein Ernte-Profi erreicht: +5 % Erntequalität",
-    "none": "Keine Meldungen"
+    "harvestPro": "Meilenstein Ernte-Profi erreicht: +5 % Erntequalität"
+  },
+  "fieldList": {
+    "heading": "Deine Felder",
+    "empty": "Noch kein Feld bepflanzt.",
+    "parcels": "{n} Parzellen",
+    "parcelsOne": "1 Parzelle",
+    "progress": "{stage} · {n} %",
+    "states": {
+      "ripe": "Erntereif",
+      "overripe": "Überreif",
+      "care": "Braucht Pflege"
+    }
   },
   "events": {
     "warnTomorrow": "{warning} ab morgen",
@@ -344,5 +355,19 @@
     "newGameYes": "Ja, neues Spiel",
     "newGameConfirm": "Das laufende Spiel geht verloren. Neues Spiel beginnen?",
     "cancel": "Abbrechen"
+  },
+  "bookings": {
+    "parcel": "Parzelle",
+    "plant": "Pflanzen",
+    "fertilize": "Dünger",
+    "irrigate": "Bewässerung",
+    "protect": "Schutz",
+    "harvest": "Ernte",
+    "sell": "Verkauf",
+    "buy": "Einkauf",
+    "build": "Bau",
+    "process": "Aufbereitung",
+    "order": "Auftrag",
+    "tick": "Lagerkosten"
   }
 }

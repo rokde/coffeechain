@@ -37,7 +37,8 @@ describe('market', () => {
     expect(bankBuyPrice(state, 'robusta')).toBeCloseTo(0.4)
     const next = dispatch(state, { type: 'Sell', variety: 'robusta', units: 10 })
     // The 10 units sell at the mid volume of 5 units: 0.4 × (1 − 0.3 × 5 / 300) = 0.398 CC.
-    expect(next.money).toBe(state.money + 398)
+    // S57: the income of 3.98 CC rounds down to 3 CC.
+    expect(next.money).toBe(state.money + 300)
     expect(next.storage.batches).toEqual([
       { variety: 'arabicaStandard', units: 5, quality: 100 },
       { variety: 'robusta', units: 496, quality: 100 },
@@ -51,7 +52,8 @@ describe('market', () => {
     const next = dispatch(state, { type: 'Buy', variety: 'robusta', units: 5 })
     // The 5 units cost the price at the mid volume of 2.5 units.
     const factor = 1 + (m.demandFactorRange[1]! - 1) * (2.5 / m.demandUnitsForMaxFactor)
-    expect(next.money).toBe(state.money - Math.round(5 * seedCost * factor * 100))
+    // S57: the cost rounds up to whole CC.
+    expect(next.money).toBe(state.money - Math.ceil(5 * seedCost * factor) * 100)
     expect(next.market.seeds.robusta).toBe(5)
   })
 
@@ -63,6 +65,7 @@ describe('market', () => {
     ['Buy', 100],
     ['Buy', 160],
   ] as const)('AC-2 (S21b): one %s of %i units equals two trades of half the units', (type, n) => {
+    // S57: each trade rounds to whole CC against the player, so two trades never give more.
     const state: GameState = {
       ...testState(),
       money: 1e9,
@@ -80,11 +83,13 @@ describe('market', () => {
     const delta = (s: GameState) => Math.abs(s.money - state.money)
     const one = trade(state, n)
     const two = trade(trade(state, n / 2), n / 2)
-    expect(Math.abs(delta(one) - delta(two))).toBeLessThanOrEqual(2)
+    const gain = (s: GameState) => s.money - state.money
+    expect(gain(two)).toBeLessThanOrEqual(gain(one))
+    expect(gain(one) - gain(two)).toBeLessThanOrEqual(100)
     expect(one.market).toEqual(two.market)
 
     // The unit price of the trade is below (Sell) or above (Buy) the price before the trade.
-    // The income or cost rounds to whole cents, so compare it only for large trades.
+    // The income or cost rounds to whole CC, so compare it only for large trades.
     const price = type === 'Sell' ? bankBuyPrice : bankSellPrice
     const before = price(state, 'robusta')
     const after = price(state, 'robusta', n)
@@ -220,7 +225,7 @@ describe('washed coffee (S46)', () => {
     const price = bankBuyPrice(state, 'arabicaStandard', 10, true)
     expect(price).toBeCloseTo(1.5 * m.bankBuyFactor * (1 - 0.3 * (5 / 300)))
     const next = dispatch(state, sell(10, true))
-    expect(next.money).toBe(state.money + Math.round(10 * price * 100))
+    expect(next.money).toBe(state.money + Math.floor(10 * price) * 100)
     expect(next.storage.batches).toEqual([{ variety: 'arabicaStandard', units: 5, quality: 90 }])
     expect(next.market.volumes).toEqual([
       { kind: 'washed', variety: 'arabicaStandard', day: 2, units: 10 },

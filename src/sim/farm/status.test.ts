@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { balance } from '../balance'
 import { createState, type GameState } from '../state'
 import type { PlantState } from './plants'
-import { fieldNeedsCare, fieldStatus } from './status'
+import { fieldNeedsCare, fieldStatus, fieldSummaries } from './status'
 
 // Owns (0,0) and (1,0) as field A. Robusta planted at hour 0 on (0,0), (1,0) is empty.
 function testState(hour: number, plant: Partial<PlantState> = {}): GameState {
@@ -74,5 +74,96 @@ describe('fieldNeedsCare', () => {
     const done = { fertilized: true, irrigated: true, pestProtected: true }
     expect(fieldNeedsCare(testState(30, done), 0)).toBe(false)
     expect(fieldNeedsCare(testState(72), 0)).toBe(false)
+  })
+})
+
+describe('fieldSummaries (S59)', () => {
+  const cared = { fertilized: true, irrigated: true, pestProtected: true }
+  // Field A owns parcels 0-2, field B owns parcel 3 and has no plant.
+  function farm(hour: number, plants: Record<number, PlantState>): GameState {
+    const state = createState(1)
+    return {
+      ...state,
+      time: { ...state.time, hour },
+      farm: {
+        ...state.farm,
+        parcels: { 0: 0, 1: 0, 2: 0, 3: 1 },
+        fields: [
+          { id: 0, name: 'A' },
+          { id: 1, name: 'B' },
+        ],
+        plants,
+      },
+    }
+  }
+  const robusta = (plantedHour: number, extra: Partial<PlantState> = cared): PlantState => ({
+    variety: 'robusta',
+    plantedHour,
+    ...extra,
+  })
+
+  it('AC-1: gives no row for a field without plants, and a fresh field', () => {
+    expect(fieldSummaries(farm(0, {}))).toEqual([])
+    expect(fieldSummaries(farm(0, { 0: robusta(0) }))).toEqual([
+      {
+        id: 0,
+        name: 'A',
+        variety: 'robusta',
+        parcels: 3,
+        stage: 'setzling',
+        percent: 0,
+        state: null,
+      },
+    ])
+  })
+
+  it('AC-1: one ripe plant gives ripe, with the floor of the mean progress', () => {
+    // Robusta ripens after 72 hours: progress 1 and 0.5 give 75 %.
+    expect(fieldSummaries(farm(72, { 0: robusta(0), 1: robusta(36, {}) }))).toEqual([
+      {
+        id: 0,
+        name: 'A',
+        variety: 'robusta',
+        parcels: 3,
+        stage: 'bluete',
+        percent: 75,
+        state: 'ripe',
+      },
+    ])
+    expect(fieldSummaries(farm(72, { 0: robusta(0) }))[0]).toMatchObject({
+      stage: 'reif',
+      percent: 100,
+    })
+  })
+
+  it('AC-1: one overripe plant gives overripe before ripe', () => {
+    const late = 72 + (balance().farm.overripe.graceDays + 1) * 24
+    const [row] = fieldSummaries(farm(late, { 0: robusta(0), 1: robusta(late - 72) }))
+    expect(row).toMatchObject({ stage: 'reif', percent: 100, state: 'overripe' })
+  })
+
+  it('AC-1: an unripe field without fertilizer gives care', () => {
+    const [row] = fieldSummaries(
+      farm(30, { 0: robusta(0, { irrigated: true, pestProtected: true }) }),
+    )
+    expect(row).toMatchObject({ stage: 'wachstum', percent: 41, state: 'care' })
+  })
+
+  it('merge S51c: the monsoon delay lowers the progress and moves the ripe hour', () => {
+    // 12 delay hours: (30 - 12) / 72 gives 25 %.
+    const [row] = fieldSummaries(farm(30, { 0: robusta(0, { ...cared, growthDelayHours: 12 }) }))
+    expect(row).toMatchObject({ stage: 'wachstum', percent: 25, state: null })
+    const [late] = fieldSummaries(farm(72, { 0: robusta(0, { ...cared, growthDelayHours: 12 }) }))
+    expect(late).toMatchObject({ stage: 'bluete', percent: 83, state: null })
+  })
+
+  it('AC-1: a field with mixed varieties gives the majority variety', () => {
+    expect(balance().varieties.arabicaStandard.cycleDays).toBe(5)
+    const arabica: PlantState = { variety: 'arabicaStandard', plantedHour: 0, ...cared }
+    // 30/72 and 30/120 give a mean of 1/3.
+    const tie = fieldSummaries(farm(30, { 0: arabica, 1: robusta(0) }))
+    expect(tie[0]).toMatchObject({ variety: 'robusta', percent: 33 })
+    const two = fieldSummaries(farm(30, { 0: arabica, 1: robusta(0), 2: arabica }))
+    expect(two[0]).toMatchObject({ variety: 'arabicaStandard', stage: 'wachstum', percent: 30 })
   })
 })

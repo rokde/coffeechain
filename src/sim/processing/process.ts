@@ -1,5 +1,6 @@
 import { balance } from '../balance'
 import type { Variety } from '../farm/yield'
+import { roundCost } from '../money'
 import type { GameState } from '../state'
 import type { Batch } from '../storage/storage'
 
@@ -21,6 +22,10 @@ export const runningUntil = (state: GameState, variety: Variety) =>
   state.storage.batches.find((b) => b.variety === variety && isRunning(b, state.time.hour))
     ?.readyHour
 
+// Cost in hundredths of CC to wash the units.
+export const processCost = (units: number) =>
+  roundCost(Math.round(units * balance().processing.washed.costPerUnit * 100))
+
 // Washes raw units of one variety. The washed batches keep the quality of the raw batches.
 export function process(state: GameState, command: Process): GameState {
   const cfg = balance()
@@ -36,7 +41,7 @@ export function process(state: GameState, command: Process): GameState {
   const raw = state.storage.batches.filter((b) => b.variety === variety && !b.washed)
   const stock = raw.reduce((sum, b) => sum + b.units, 0)
   if (units > stock) throw new Error(`Not enough raw ${variety} in storage: ${stock} < ${units}`)
-  const cost = Math.round(units * washed.costPerUnit * 100)
+  const cost = processCost(units)
   if (cost > state.money)
     throw new Error(`Not enough money: cost ${cost / 100} CC, balance ${state.money / 100} CC`)
 

@@ -3,7 +3,8 @@ import { balance } from '../balance'
 import type { GameState } from '../state'
 import { cares } from './care'
 import { overripeFactor } from './overripe'
-import { growth, ripeHour as ripeHourOf, type Stage } from './plants'
+import { growth, ripeHour as ripeHourOf, stageAt, type Stage } from './plants'
+import type { Variety } from './yield'
 
 export type CareCommand = keyof typeof cares
 
@@ -60,5 +61,50 @@ export function fieldNeedsCare(state: GameState, fieldId: number): boolean {
     if (field !== fieldId) return false
     const i = Number(index)
     return (fieldStatus(state, i % size, Math.floor(i / size))?.open.length ?? 0) > 0
+  })
+}
+
+export interface FieldSummary {
+  id: number
+  name: string
+  variety: Variety
+  parcels: number
+  stage: Stage
+  percent: number
+  state: 'overripe' | 'ripe' | 'care' | null
+}
+
+// One row per field with plants, for the field list. The state follows the rule of the message panel.
+export function fieldSummaries(state: GameState, cfg: Balance = balance()): FieldSummary[] {
+  const { parcels, plants } = state.farm
+  const { hour } = state.time
+  return state.farm.fields.flatMap(({ id, name }) => {
+    const indexes = Object.keys(parcels).filter((i) => parcels[+i] === id)
+    const list = indexes.flatMap((i) => plants[+i] ?? [])
+    if (list.length === 0) return []
+    const count = (v: Variety) => list.filter((p) => p.variety === v).length
+    const variety = (Object.keys(cfg.varieties) as Variety[]).reduce((a, b) =>
+      count(b) > count(a) ? b : a,
+    )
+    const progress = list.reduce((sum, p) => sum + growth(p, hour, cfg).progress, 0) / list.length
+    const ripe = list.some((p) => growth(p, hour, cfg).progress >= 1)
+    const status = list.some((p) => overripeFactor(p, hour, cfg) < 1)
+      ? 'overripe'
+      : ripe
+        ? 'ripe'
+        : fieldNeedsCare(state, id)
+          ? 'care'
+          : null
+    return [
+      {
+        id,
+        name,
+        variety,
+        parcels: indexes.length,
+        stage: stageAt(progress, cfg),
+        percent: Math.floor(progress * 100),
+        state: status,
+      },
+    ]
   })
 }

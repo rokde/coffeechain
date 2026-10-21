@@ -133,8 +133,15 @@ button[aria-checked='true'] .thumb {
   height: 18px;
   border-radius: 4px;
 }
+/* 16 px below the left panel, which Hud.vue moves down below the event tab. */
+@media (max-width: 1279px) {
+  .overlay-panel {
+    top: 354px;
+  }
+}
 @media (max-width: 480px) {
   .overlay-panel {
+    top: 368px;
     padding: 10px 12px;
   }
   button {

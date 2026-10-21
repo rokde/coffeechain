@@ -1,4 +1,5 @@
 import { balance } from '../balance'
+import { roundCost } from '../money'
 import { phase } from '../progression/capital'
 import type { GameState } from '../state'
 
@@ -31,7 +32,7 @@ export function buildMenu(state: GameState): MenuEntry[] {
   const stage = storage.upgrades[Math.min(built, storage.upgrades.length - 1)]!
   const entry = (kind: BuildingKind, cost: number, requiredPhase: number, available: boolean) => ({
     kind,
-    cost: Math.round(cost * 100),
+    cost: roundCost(Math.round(cost * 100)),
     locked: requiredPhase > current,
     requiredPhase,
     available,
