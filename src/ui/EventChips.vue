@@ -48,7 +48,7 @@ const events = computed(() => activeEvents(game.state as GameState))
   .events {
     flex-wrap: wrap;
     justify-content: flex-end;
-    max-width: calc(100% - 160px);
+    max-width: calc(100% - 164px);
   }
 }
 </style>

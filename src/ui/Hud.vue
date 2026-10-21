@@ -119,7 +119,11 @@ const phaseText = computed(() => {
               /></svg
             >{{ formatMoney(store.state.money) }}</span
           >
-          <span data-testid="storage" :title="storageText.full" :aria-label="storageText.full"
+          <span
+            data-testid="storage"
+            :title="storageText.full"
+            :aria-label="storageText.full"
+            role="group"
             ><svg viewBox="0 0 16 16" width="22" height="22" aria-hidden="true">
               <path
                 d="M2 5h12v9H2z M2 5l1.5-3h9L14 5 M6 8h4"
@@ -134,7 +138,12 @@ const phaseText = computed(() => {
             ></span
           >
         </div>
-        <span class="chip" data-testid="phase" :title="phaseText.hint" :aria-label="phaseText.label"
+        <span
+          class="chip"
+          data-testid="phase"
+          :title="phaseText.hint"
+          :aria-label="phaseText.label"
+          role="group"
           >{{ phaseText.name }}
           <span v-if="phaseText.progress" class="phase-progress">{{
             phaseText.progress
