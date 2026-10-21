@@ -247,11 +247,32 @@ describe('orders migration (S56)', () => {
   })
 
   it('AC-4: loads a version 6 save with no orders', () => {
-    expect(SAVE_VERSION).toBe(7)
+    expect(SAVE_VERSION).toBeGreaterThanOrEqual(7)
     const old: Record<string, unknown> = { ...createState(5) }
     delete old.orders
     const loaded = deserialize(JSON.stringify({ version: 6, state: old }))
     expect(loaded.orders).toEqual({ open: [], nextId: 0 })
     expect(loaded).toEqual(createState(5))
+  })
+})
+
+describe('whole CC migration (S57)', () => {
+  const load = (version: number, money: number, invested: number) =>
+    deserialize(JSON.stringify({ version, state: { ...createState(5), money, invested } }))
+
+  it('AC-4: has version 8 and floors money and invested of a version 7 save to whole CC', () => {
+    expect(SAVE_VERSION).toBe(8)
+    expect(load(7, 12345, 4599)).toMatchObject({ money: 12300, invested: 4500 })
+    expect(load(7, -50, 0).money).toBe(-100)
+  })
+
+  it('AC-4: loads a version 8 save unchanged', () => {
+    const state = { ...createState(5), money: 12345, invested: 4599 }
+    expect(deserialize(serialize(state))).toEqual(state)
+  })
+
+  it('AC-4: still rejects a version 7 save with a bad money value', () => {
+    const old = JSON.stringify({ version: 7, state: { ...createState(5), money: 'x' } })
+    expect(() => deserialize(old)).toThrow(/money/)
   })
 })

@@ -7,6 +7,7 @@ import { useSelectionStore } from '../app/selection'
 import { useGameStore } from '../app/store'
 import { balance } from '../sim/balance'
 import { bankBuyPrice } from '../sim/market/market'
+import { processCost } from '../sim/processing/process'
 import type { GameState } from '../sim/state'
 import Hud from './Hud.vue'
 import MarketPanel from './MarketPanel.vue'
@@ -95,8 +96,9 @@ describe('MarketPanel (S20)', () => {
     const { game } = setup()
     const before = game.state.money
     // The 10 units sell at the price of the mid volume of 5 units.
-    const income = Math.round(10 * bankBuyPrice(game.state as GameState, 'robusta', 10) * 100)
-    expect(income).toBe(398)
+    // S57: 3.98 CC rounds down to 3 CC.
+    expect(10 * bankBuyPrice(game.state as GameState, 'robusta', 10)).toBeCloseTo(3.98)
+    const income = 300
     sellAll(game, 'robusta')
     expect(game.state.storage.batches.filter((b) => b.variety === 'robusta')).toEqual([])
     expect(game.state.money).toBe(before + income)
@@ -179,6 +181,25 @@ describe('MarketPanel processing (S46)', () => {
     const html = await render(pinia)
     expect(button(html, 'process')).toContain('title="Kein Rohkaffee im Lager."')
     expect(field(html, 'process')!.trim()).toBe('Aufbereiten')
+  })
+
+  it('S57 AC-5: the button shows the whole cost from processCost, the unit prices keep decimals', async () => {
+    const { pinia, game } = processing(true)
+    const state = game.state as GameState
+    const batches = [{ variety: 'arabicaStandard' as const, units: 7, quality: 100 }]
+    // 15 sold units lower the bank price to 0.8 × (1 − 0.3 × 15 / 300) = 0.788 CC.
+    const volumes = [
+      { kind: 'coffee' as const, variety: 'arabicaStandard' as const, day: 1, units: 15 },
+    ]
+    game.replace({ ...state, money: 300, storage: { batches }, market: { volumes, seeds: {} } })
+    let html = await render(pinia)
+    expect(processCost(7)).toBe(300)
+    expect(field(html, 'process')!.trim()).toBe('Aufbereiten (7\u00a0Einh., 3\u00a0CC)')
+    expect(button(html, 'process')).not.toContain('disabled')
+    expect(field(html, 'sell-price')).toBe('0,79 CC')
+    game.replace({ ...(game.state as GameState), money: 200 })
+    html = await render(pinia)
+    expect(button(html, 'process')).toContain('title="Zu wenig Geld."')
   })
 
   it('S46: keeps a locked variety with only washed units in the panel', async () => {

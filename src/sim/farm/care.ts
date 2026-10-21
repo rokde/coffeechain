@@ -1,4 +1,5 @@
 import { balance } from '../balance'
+import { roundCost } from '../money'
 import type { GameState } from '../state'
 import { soilClassOf } from '../world/generate'
 import { growth } from './plants'
@@ -66,8 +67,10 @@ export function care(state: GameState, command: Fertilize | Irrigate | ProtectPe
 export function quoteCare(state: GameState, command: Fertilize | Irrigate | ProtectPests): number {
   const { cost } = cares[command.type]
   const { varieties } = balance()
-  return command.parcels.reduce((sum, { x, y }) => {
-    const plant = state.farm.plants[y * state.world.size + x]
-    return plant ? sum + Math.round(varieties[plant.variety].careCost[cost] * 100) : sum
-  }, 0)
+  return roundCost(
+    command.parcels.reduce((sum, { x, y }) => {
+      const plant = state.farm.plants[y * state.world.size + x]
+      return plant ? sum + Math.round(varieties[plant.variety].careCost[cost] * 100) : sum
+    }, 0),
+  )
 }

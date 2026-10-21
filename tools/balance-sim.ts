@@ -192,6 +192,8 @@ export function renderReport(results: BotResult[], cfg: Balance): string {
     '',
     'Kapital nach PRD §10: Kontostand + Lager zum Bank-Ankaufspreis + bezahlte Parzellen und Gebäude.',
     '',
+    'Jede Buchung bewegt ganze CC (S57): Kosten runden auf, Einnahmen runden ab, einmal je Befehl und Lagerkosten einmal je Spieltag.',
+    '',
     '## Parameter',
     '',
     row(['Parameter', 'Wert']),

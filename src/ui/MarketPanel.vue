@@ -13,11 +13,11 @@ import { balance } from '../sim/balance'
 import type { Variety } from '../sim/farm/yield'
 import { bankBuyPrice, bankSellPrice, priceHistory } from '../sim/market/market'
 import { isVarietyUnlocked } from '../sim/progression/capital'
-import { hasProcessing, isRunning, runningUntil } from '../sim/processing/process'
+import { hasProcessing, isRunning, processCost, runningUntil } from '../sim/processing/process'
 import type { GameState } from '../sim/state'
 import { clock } from '../sim/time/time'
 import de from './i18n/de.json'
-import { formatMoney } from './money'
+import { formatMoney, formatUnitPrice } from './money'
 import OrdersPanel from './OrdersPanel.vue'
 
 const t = de.marketPanel
@@ -31,7 +31,7 @@ const varieties = computed(() =>
       game.state.storage.batches.some((b) => b.variety === v),
   ),
 )
-const price = (cc: number) => formatMoney(Math.round(cc * 100))
+const price = (cc: number) => formatUnitPrice(Math.round(cc * 100))
 const lineLabel = (text: string) => text.replace('{days}', String(cfg.market.historyDays))
 
 const W = 100
@@ -55,7 +55,7 @@ const blocks = computed(() => {
   return varieties.value.map((variety) => {
     const units = processUnits(state, variety)
     const until = runningUntil(state, variety)
-    const cost = Math.round(units * cfg.processing.washed.costPerUnit * 100)
+    const cost = processCost(units)
     return {
       variety,
       stock: storedUnits(state, variety),

@@ -66,9 +66,10 @@ describe('PlantTool (S13)', () => {
   })
 
   // The 2 seeds cost the price at the mid volume of 1 unit, so the total is a little above 2 × seedCost.
-  it('AC-3: the total for 2 parcels is 4,01 CC for Robusta and 8,01 CC for Arabica Standard', async () => {
-    expect(await render(50000, 'robusta')).toMatch(/plant-tool-total"[^>]*>4,01 CC</)
-    expect(await render(50000, 'arabicaStandard')).toMatch(/plant-tool-total"[^>]*>8,01 CC</)
+  // S57: the total rounds up to whole CC.
+  it('AC-3: the total for 2 parcels is 5 CC for Robusta and 9 CC for Arabica Standard', async () => {
+    expect(await render(50000, 'robusta')).toMatch(/plant-tool-total"[^>]*>5 CC</)
+    expect(await render(50000, 'arabicaStandard')).toMatch(/plant-tool-total"[^>]*>9 CC</)
   })
 
   it('S40: keeps the varieties and hides the count, total and button when no parcel is selected', async () => {
@@ -88,13 +89,13 @@ describe('PlantTool (S13)', () => {
   })
 
   it('AC-4: disables "Pflanzen" when the total is more than the balance', async () => {
-    const html = await render(400)
+    const html = await render(499)
     expect(plantButton(html)).toContain('disabled')
     expect(html).toContain('Nicht genug CC.')
   })
 
   it('AC-4: enables "Pflanzen" when the balance is equal to the total', async () => {
-    const html = await render(401)
+    const html = await render(500)
     expect(plantButton(html)).not.toContain('disabled')
     expect(html).not.toContain('plant-tool-short')
   })
@@ -105,7 +106,7 @@ describe('PlantTool (S13)', () => {
     const { size } = game.state.world
     for (const { x, y } of parcels)
       expect(game.state.farm.plants[y * size + x]?.variety).toBe('arabicaStandard')
-    expect(game.state.money).toBe(50000 - 801)
+    expect(game.state.money).toBe(50000 - 900)
     expect(selection.parcels).toEqual([])
   })
 })

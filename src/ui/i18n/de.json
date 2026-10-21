@@ -189,7 +189,7 @@
     "deadline": "bis Tag",
     "price": "je Einheit",
     "bank": "(Bank {price})",
-    "stock": "Passend im Lager: {have} / {units}",
+    "stock": "Passend (roh) im Lager: {have} / {units}",
     "deliver": "Liefern"
   },
   "toolNote": {
