@@ -1445,25 +1445,39 @@ const cents = (text: string) =>
   Math.round(Number(/[\d.,]+/.exec(text)![0].replaceAll('.', '').replace(',', '.')) * 100)
 
 test('S58: a brush stroke shows one money toast', async ({ page }) => {
+  await page.clock.install()
   await page.goto('/?seed=48213')
   await page.getByTestId('first-steps-close').click()
   await page.getByTestId('speed-0').click()
   const money = page.getByTestId('money')
   const before = cents((await money.textContent())!)
   await page.getByTestId('tool-parcel').click()
+  // A stopped clock keeps the stroke inside one hold time, also on a slow machine.
+  await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 1000)
   await page.mouse.move(607, 357)
   await page.mouse.down()
   await page.mouse.move(758, 417, { steps: 10 })
   await page.mouse.up()
-  const toast = page.getByTestId('money-toast')
-  await expect(toast).toHaveCount(1)
-  await expect(toast).toHaveText(/^−[\d.,]+ CC Parzelle$/)
-  const spent = before - cents((await money.textContent())!)
+  // Read the money chip and all toasts in one step, and wait until the toast shows the full sum.
+  const read = () =>
+    page.evaluate(() => ({
+      money: document.querySelector('[data-testid="money"]')!.textContent!,
+      toasts: [...document.querySelectorAll('[data-testid="money-toast"]')].map((el) =>
+        el.textContent!.trim(),
+      ),
+    }))
+  await expect
+    .poll(async () => {
+      const { money, toasts } = await read()
+      return toasts.map((text) => [text, cents(text) === before - cents(money)])
+    })
+    .toEqual([[expect.stringMatching(/^−[\d.,]+ CC Parzelle$/), true]])
+  const spent = before - cents((await read()).money)
   // Three or more parcels at the price of the first one.
   expect(spent).toBeGreaterThanOrEqual(3 * 2140)
-  expect(cents((await toast.textContent())!)).toBe(spent)
+  await page.clock.resume()
   await page.waitForTimeout(2000)
-  await expect(toast).toHaveCount(0)
+  await expect(page.getByTestId('money-toast')).toHaveCount(0, { timeout: 1 })
 })
 
 for (const [width, height, events] of [
@@ -1490,11 +1504,11 @@ for (const [width, height, events] of [
     await page.getByTestId('first-steps-close').click()
     await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
     await page.getByTestId('tool-parcel').click()
+    // Stop the fake clock, so the toast stays for the checks and the screenshot.
+    await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 1000)
     await page.locator('canvas#scene').click({ position: { x: width / 2, y: height / 2 } })
     const toast = page.getByTestId('money-toast')
     await expect(toast).toHaveText(/Parzelle$/)
-    // Stop the fake clock, so the toast stays for the checks and the screenshot.
-    await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 100)
     await toast.evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)))
 
     const box = async (id: string) => (await page.getByTestId(id).boundingBox())!

@@ -83,6 +83,16 @@ describe('merge', () => {
     expect(toasts.map((t) => t.reason)).toEqual(['plant', 'fertilize', 'sell'])
   })
 
+  it('a tick booking makes its own toast, so the storage cost toast does not stay for ever', () => {
+    let toasts = merge([], 'tick', -100, 0, 0)
+    toasts = merge(toasts, 'tick', -100, 500, 1)
+    expect(toasts.map((t) => [t.reason, t.amount, t.last])).toEqual([
+      ['tick', -100, 0],
+      ['tick', -100, 500],
+    ])
+    expect(toastPhase(toasts[0]!, 1401)).toBe('gone')
+  })
+
   it('drops toasts that are gone', () => {
     const toasts = merge([], 'parcel', -4000, 0, 0)
     expect(merge(toasts, 'plant', -100, 1401, 1).map((t) => t.reason)).toEqual(['plant'])
@@ -110,10 +120,13 @@ describe('toastPhase', () => {
     try {
       const { bookings } = setup()
       bookings.book('parcel', -4000)
+      bookings.book('parcel', -4000)
+      expect(vi.getTimerCount()).toBe(1)
       vi.advanceTimersByTime(HOLD_MS + 20)
       expect(toastPhase(bookings.toasts[0]!, bookings.now)).toBe('fading')
       vi.advanceTimersByTime(FADE_MS)
       expect(bookings.toasts).toEqual([])
+      expect(vi.getTimerCount()).toBe(0)
     } finally {
       vi.useRealTimers()
     }
