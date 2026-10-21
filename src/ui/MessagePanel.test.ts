@@ -17,7 +17,7 @@ vi.stubGlobal('sessionStorage', { getItem: () => null, removeItem: () => {} })
 const day = balance().time.ticksPerGameDay
 const ripeHour = balance().varieties.robusta.cycleDays * day
 const lateHour = ripeHour + (balance().farm.overripe.graceDays + 1) * day
-// The plant has all cares, so an unripe plant gives no "braucht Pflege" message.
+// The plant has all cares.
 const cared = { fertilized: true, irrigated: true, pestProtected: true }
 const robusta: PlantState = { variety: 'robusta', plantedHour: 0, ...cared }
 
@@ -75,39 +75,20 @@ describe('MessagePanel (S18b)', () => {
     expect(items(warned)).toHaveLength(1)
   })
 
-  it('AC-2: a ripe plant with overripeFactor 1 gives "Feld A ist erntereif"', async () => {
+  it('round 1 (S59): ripe, overripe and uncared fields give no message', async () => {
     expect(growth(robusta, ripeHour).stage).toBe('reif')
-    expect(overripeFactor(robusta, ripeHour)).toBe(1)
-    const html = await render(ripeHour)
-    expect(items(html)).toEqual(['Feld A ist erntereif'])
-  })
-
-  it('AC-3: an overripe plant gives "Feld A ist überreif" and no "erntereif"', async () => {
     expect(overripeFactor(robusta, lateHour)).toBeLessThan(1)
-    const html = await render(lateHour)
-    expect(items(html)).toEqual(['Feld A ist überreif'])
-    expect(html).not.toContain('erntereif')
-  })
-
-  it('AC-4: an unripe field gets no message', async () => {
-    expect(items(await render(0))).toEqual([])
-    expect(growth({ ...robusta, plantedHour: ripeHour }, ripeHour).stage).not.toBe('reif')
-    expect(items(await render(ripeHour, ripeHour))).toEqual(['Feld A ist erntereif'])
+    const bare: PlantState = { variety: 'robusta', plantedHour: 0 }
+    expect(items(await render(ripeHour))).toEqual([])
+    expect(items(await render(lateHour))).toEqual([])
+    expect(items(await render(0, undefined, 0, bare))).toEqual([])
+    expect(await render(ripeHour, 0, 0, bare)).not.toContain('message-panel')
   })
 
   it('AC-5: shows "Lager voll" only when storageUsed reaches startCapacity', async () => {
     const capacity = balance().storage.startCapacity
     expect(items(await render(0, undefined, capacity))).toEqual(['Lager voll'])
     expect(await render(0, undefined, capacity - 1)).not.toContain('Lager voll')
-  })
-
-  it('AC-5 (S21e): an unripe plant that misses a care gives "Feld A braucht Pflege"', async () => {
-    const bare: PlantState = { variety: 'robusta', plantedHour: 0 }
-    expect(items(await render(0, undefined, 0, bare))).toEqual(['Feld A braucht Pflege'])
-    const twoCares = { ...bare, fertilized: true, irrigated: true }
-    expect(items(await render(0, undefined, 0, twoCares))).toEqual(['Feld A braucht Pflege'])
-    expect(items(await render(0))).toEqual([])
-    expect(items(await render(ripeHour, undefined, 0, bare))).toEqual(['Feld A ist erntereif'])
   })
 
   it('AC-4 (S49): shows the Ernte-Profi message for one game day', async () => {

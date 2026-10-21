@@ -250,9 +250,6 @@
   },
   "messages": {
     "heading": "Meldungen",
-    "ripe": "Feld {name} ist erntereif",
-    "overripe": "Feld {name} ist überreif",
-    "needsCare": "Feld {name} braucht Pflege",
     "storageFull": "Lager voll",
     "harvestPro": "Meilenstein Ernte-Profi erreicht: +5 % Erntequalität"
   },

@@ -709,7 +709,9 @@ test('S21e: field status and care buttons in the inspector', async ({ page }) =>
     'Wässern',
     'Schützen',
   ])
-  await expect(page.getByTestId('message')).toContainText(['Feld A braucht Pflege'])
+  await expect(page.getByTestId('field-row').getByTestId('field-state')).toHaveText(
+    'Braucht Pflege',
+  )
 
   await page.getByTestId('inspector-care-action').filter({ hasText: 'Wässern' }).click()
   await expect(page.getByTestId('inspector-care')).toHaveText('gewässert')
@@ -1480,7 +1482,7 @@ const threeFields: FieldPlan[] = [
     cared: true,
   },
 ]
-// Ten one-parcel fields, all cared and unripe, so the game shows no message.
+// Ten one-parcel fields, more than the left panel can show.
 const tenFields: FieldPlan[] = Array.from({ length: 10 }, (_, i) => ({
   name: String.fromCharCode(65 + i),
   parcels: [[(i % 5) * 2 - 4, Math.floor(i / 5) * 2 - 7]],
@@ -1551,10 +1553,16 @@ for (const [width, height] of [
     await expect(rows.nth(0).getByTestId('field-state')).toHaveText('Erntereif')
     await expect(rows.nth(1).getByTestId('field-state')).toHaveText('Braucht Pflege')
     await expect(rows.nth(2)).toContainText('Blüte · 69 %')
+    await expect(page.getByTestId('message-panel')).toHaveCount(0)
     const left = (await page.getByTestId('hud-left-panel').boundingBox())!
-    // shortcut: a ripe field always gives a message, so the panel is there and takes at most half.
-    const messages = (await page.getByTestId('message-panel').boundingBox())!
-    expect(messages.height).toBeLessThanOrEqual(left.height / 2 + 1)
+    // All rows show whole at 800 px and more. At 390 px at least two rows show whole.
+    const list = (await page.getByTestId('field-list').boundingBox())!
+    let whole = 0
+    for (const row of await rows.all()) {
+      const box = (await row.boundingBox())!
+      if (box.y >= list.y && box.y + box.height <= list.y + list.height + 0.5) whole++
+    }
+    expect(whole).toBeGreaterThanOrEqual(width >= 800 ? 3 : 2)
     for (const id of ['hud-overlay-panel', 'hud-top-bar', 'hud-right-panel']) {
       const box = (await page.getByTestId(id).boundingBox())!
       expect(apart(left, box), `${id} ${JSON.stringify([left, box])}`).toBe(true)
