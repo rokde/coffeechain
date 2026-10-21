@@ -14,12 +14,15 @@ import { clock } from '../sim/time/time'
 import de from './i18n/de.json'
 import { formatMoney } from './money'
 import EventChips from './EventChips.vue'
+import FieldList from './FieldList.vue'
+import FloatingCoins from './FloatingCoins.vue'
 import FirstSteps from './FirstSteps.vue'
 import FarmTool from './FarmTool.vue'
 import FpsMeter from './FpsMeter.vue'
 import HelpOverlay from './HelpOverlay.vue'
 import MarketPanel from './MarketPanel.vue'
 import MessagePanel from './MessagePanel.vue'
+import MoneyToasts from './MoneyToasts.vue'
 import BuildTool from './BuildTool.vue'
 import ParcelInspector from './ParcelInspector.vue'
 import OverlayPanel from './OverlayPanel.vue'
@@ -138,7 +141,8 @@ const phaseText = computed(() => {
       </button>
     </header>
     <aside class="frame left-panel" data-testid="hud-left-panel">
-      <FirstSteps v-if="steps.open" /><MessagePanel v-else />
+      <FirstSteps v-if="steps.open && steps.current.next !== null" />
+      <template v-else><FieldList /><MessagePanel /></template>
     </aside>
     <OverlayPanel />
     <aside class="frame right-panel" data-testid="hud-right-panel">
@@ -164,6 +168,8 @@ const phaseText = computed(() => {
         {{ tool.label }}
       </button>
     </nav>
+    <MoneyToasts />
+    <FloatingCoins />
     <FpsMeter v-if="view.fpsVisible" />
     <HelpOverlay v-if="view.helpOpen" />
     <SavePanel v-if="savePanel.open" />
@@ -379,11 +385,16 @@ const phaseText = computed(() => {
     font-size: 11px;
   }
 }
+/* The height limit keeps the panel above the overlay panel at top 328px. */
 .left-panel {
+  --left-max: 220px;
   top: 92px;
   left: 16px;
   width: min(300px, calc(50vw - 24px));
-  height: 220px;
+  max-height: var(--left-max);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 .right-panel {
   top: 92px;
@@ -395,8 +406,8 @@ const phaseText = computed(() => {
 @media (max-width: 1279px) {
   /* Room for the event tab below the stats tab. */
   .left-panel {
+    --left-max: 204px;
     top: 108px;
-    height: 204px;
   }
   .right-panel {
     top: 108px;

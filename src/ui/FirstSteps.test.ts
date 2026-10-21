@@ -122,7 +122,7 @@ describe('FirstSteps (S25)', () => {
     expect(h0).toMatch(/<button[^>]*first-steps-close[^>]*aria-label="[^"]+"/)
     useFirstStepsStore(pinia).open = false
     const h = await html(pinia)
-    expect(left(h)).toContain('message-panel')
+    expect(left(h)).toContain('field-list')
     expect(h).not.toContain('first-steps"')
     expect(h).not.toContain('data-guide')
     expect(useFirstStepsStore(fresh()).open).toBe(true)

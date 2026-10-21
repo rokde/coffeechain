@@ -22,5 +22,8 @@ export const useViewStore = defineStore('view', () => {
     fpsVisible.value = !fpsVisible.value
   }
 
-  return { overlay, toggle, helpOpen, toggleHelp, fpsVisible, fps, toggleFps }
+  // The point that the camera must center on. Each request is a new object.
+  const focus = ref<{ x: number; y: number; z: number } | null>(null)
+
+  return { overlay, toggle, helpOpen, toggleHelp, fpsVisible, fps, toggleFps, focus }
 })

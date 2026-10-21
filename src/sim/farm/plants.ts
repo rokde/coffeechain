@@ -89,12 +89,17 @@ export function growth(
 ): { progress: number; stage: Stage } {
   const cycle = cfg.varieties[plant.variety].cycleDays * cfg.time.ticksPerGameDay
   const progress = Math.min(1, (hour - ripeHour(plant, cfg) + cycle) / cycle)
-  if (progress >= 1) return { progress, stage: 'reif' }
+  return { progress, stage: stageAt(progress, cfg) }
+}
+
+// The visual stage for a growth progress from 0 to 1.
+export function stageAt(progress: number, cfg: Balance = balance()): Stage {
+  if (progress >= 1) return 'reif'
   const stages = Object.entries(cfg.farm.visualStages) as [Stage, number][]
   let stage = stages[0]![0]
   let best = -Infinity
   for (const [name, threshold] of stages) {
     if (threshold <= progress && threshold > best) [stage, best] = [name, threshold]
   }
-  return { progress, stage }
+  return stage
 }
