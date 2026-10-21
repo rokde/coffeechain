@@ -44,6 +44,7 @@ const clockText = computed(() => {
     hour: de.time.hour.replace('{hour}', String(hourOfDay).padStart(2, '0')),
   }
 })
+const moneyText = computed(() => formatMoney(store.state.money))
 // The helpers only read the state, so the cast of the readonly snapshot is safe.
 const storageText = computed(() => {
   const full = de.storage
@@ -106,7 +107,13 @@ const phaseText = computed(() => {
       </div>
       <div class="stats">
         <div class="money-group" data-testid="money-group">
-          <span class="money" data-testid="money"
+          <span
+            class="money"
+            :class="{ 'money-long': moneyText.length > 12 }"
+            data-testid="money"
+            :title="moneyText"
+            :aria-label="moneyText"
+            role="group"
             ><svg viewBox="0 0 16 16" width="22" height="22" aria-hidden="true">
               <circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5" />
               <circle
@@ -117,7 +124,7 @@ const phaseText = computed(() => {
                 stroke="currentColor"
                 stroke-width="1.5"
               /></svg
-            >{{ formatMoney(store.state.money) }}</span
+            >{{ moneyText }}</span
           >
           <span
             data-testid="storage"
@@ -460,12 +467,6 @@ const phaseText = computed(() => {
     height: auto;
     min-height: 94px;
   }
-  /* shortcut: a wrapped row makes the bar taller than the panel tops expect, only for very large values. */
-  .stats {
-    flex-wrap: wrap;
-    height: auto;
-    min-height: 32px;
-  }
   .phase-progress,
   .storage-word {
     display: none;
@@ -477,11 +478,19 @@ const phaseText = computed(() => {
   .money-group > span {
     gap: 4px;
   }
+  /* Values wider than 12 characters shrink, so the row stays on one line. */
+  .money-long {
+    font-size: 14px;
+  }
+  .money-long svg {
+    width: 16px;
+    height: 16px;
+  }
   .stats .chip {
     padding: 4px;
   }
 }
-/* The height limit keeps the panel above the overlay panel at top 328px. */
+/* The height limit keeps the first steps short. Narrow screens set their own limit below. */
 .left-panel {
   --left-max: 220px;
   top: 92px;
@@ -499,7 +508,7 @@ const phaseText = computed(() => {
   max-height: 480px;
   overflow-y: auto;
 }
-/* The panels start 4 px below the event tab. The right panel keeps its bottom edge, the overlay panel moves down. */
+/* The panels start 4 px below the event tab. The right panel keeps its bottom edge, so its height limit shrinks. */
 @media (max-width: 1279px) {
   .left-panel {
     --left-max: 204px;
@@ -512,8 +521,10 @@ const phaseText = computed(() => {
 }
 /* Room for a second line of the event tab. */
 @media (max-width: 480px) {
+  /* The toolbar is 161 px high here, so the panel ends 8 px above it. The steps scroll only if they do not fit. */
   .left-panel {
     top: 148px;
+    max-height: calc(100vh - 333px);
   }
   .right-panel {
     top: 148px;
