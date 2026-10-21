@@ -75,8 +75,13 @@ for (const width of [1100, 800, 390, 360]) {
     await expect(page.getByTestId('phase')).toBeInViewport({ ratio: 1 })
     const seed = (await page.getByTestId('world-seed').boundingBox())!
     const stats = (await page.locator('.stats').boundingBox())!
-    // At 760 px or less the seed and the stats are tabs below the bar. They must not overlap.
-    expect(seed.x + seed.width <= stats.x || seed.y + seed.height <= stats.y).toBe(true)
+    // At 760 px or less the seed is a tab below the bar. It must not overlap the stats.
+    const apart =
+      seed.x + seed.width <= stats.x ||
+      stats.x + stats.width <= seed.x ||
+      seed.y + seed.height <= stats.y ||
+      stats.y + stats.height <= seed.y
+    expect(apart).toBe(true)
   })
 }
 
@@ -276,7 +281,7 @@ test('S12: parcel tool and money', async ({ page }) => {
   // S40: each click buys its parcel at once. No confirm button is necessary.
   await canvas.click({ position: { x: 607, y: 357 } })
   await canvas.click({ position: { x: 758, y: 417 } })
-  await expect(money).toHaveText('457,2 CC')
+  await expect(money).toHaveText('457 CC')
   await expect(page.getByTestId('parcel-tool-create')).toHaveCount(0)
   await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
   await page.screenshot({ path: 'docs/progress/S12.png' })
@@ -284,7 +289,7 @@ test('S12: parcel tool and money', async ({ page }) => {
   // An owned parcel cannot be bought again.
   await canvas.click({ position: { x: 607, y: 357 } })
   await expect(page.getByTestId('tool-note')).toHaveText('Hier nicht möglich.')
-  await expect(money).toHaveText('457,2 CC')
+  await expect(money).toHaveText('457 CC')
 
   await page.getByTestId('tool-select').click()
   await expect(page.getByTestId('parcel-tool')).toHaveCount(0)
@@ -344,7 +349,7 @@ test('S13: plant tool', async ({ page }) => {
   ]
   await page.getByTestId('tool-parcel').click()
   for (const position of clicks) await canvas.click({ position })
-  await expect(money).toHaveText('457,2 CC')
+  await expect(money).toHaveText('457 CC')
 
   await page.getByTestId('tool-plant').click()
   await expect(page.getByTestId('plant-tool')).toBeVisible()
@@ -358,17 +363,17 @@ test('S13: plant tool', async ({ page }) => {
   // S40 AC-3: one click plants Arabica Standard at once, and the tool stays armed.
   // One Arabica seed costs 4 CC, one Robusta seed 2 CC.
   await canvas.click({ position: clicks[0] })
-  await expect(money).toHaveText('453,2 CC')
+  await expect(money).toHaveText('453 CC')
   await expect(page.getByTestId('tool-plant')).toHaveAttribute('aria-pressed', 'true')
   await canvas.click({ position: clicks[1] })
-  await expect(money).toHaveText('449,19 CC')
+  await expect(money).toHaveText('448 CC')
   await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
   await page.screenshot({ path: 'docs/progress/S13.png' })
 
   // A parcel with a plant cannot be planted again.
   await canvas.click({ position: clicks[0] })
   await expect(page.getByTestId('tool-note')).toHaveText('Hier nicht möglich.')
-  await expect(money).toHaveText('449,19 CC')
+  await expect(money).toHaveText('448 CC')
   expect(errors).toEqual([])
 })
 
@@ -580,7 +585,7 @@ test('S13b: plant meshes', async ({ page }) => {
   for (const position of clicks) await canvas.click({ position })
   await page.getByTestId('tool-plant').click()
   for (const position of clicks) await canvas.click({ position })
-  await expect(page.getByTestId('money')).toHaveText('453,2 CC')
+  await expect(page.getByTestId('money')).toHaveText('453 CC')
   await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
   await page.screenshot({ path: 'docs/progress/S13b.png' })
   expect(errors).toEqual([])
@@ -609,7 +614,7 @@ test('S18a: care and harvest tools, storage chip', async ({ page }) => {
   for (const position of clicks) await canvas.click({ position })
   await page.getByTestId('tool-plant').click()
   for (const position of clicks) await canvas.click({ position })
-  await expect(money).toHaveText('453,2 CC')
+  await expect(money).toHaveText('453 CC')
 
   const labels = await page
     .getByTestId('hud-toolbar')
@@ -632,7 +637,7 @@ test('S18a: care and harvest tools, storage chip', async ({ page }) => {
   await expect(page.getByTestId('parcel-inspector')).toHaveCount(0)
   await expect(page.getByTestId('farm-tool-apply')).toHaveCount(0)
   for (const position of clicks) await canvas.click({ position })
-  await expect(money).toHaveText('451,2 CC')
+  await expect(money).toHaveText('451 CC')
   await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
   await page.screenshot({ path: 'docs/progress/S18a.png' })
 
@@ -1269,6 +1274,150 @@ for (const [width, height, events] of [
   })
 }
 
+for (const [width, height] of [
+  [1440, 900],
+  [800, 600],
+  [390, 844],
+] as const) {
+  test(`S58c: money group leads the top bar at ${width} px`, async ({ page }) => {
+    await page.setViewportSize({ width, height })
+    await page.goto('/?seed=4294967295')
+    await page.getByTestId('save-button').click()
+    await page.getByTestId('save-slot-1').getByTestId('save-slot-save').click()
+    await page.evaluate((events) => {
+      const key = 'coffeechain.save.slot-1'
+      const save = JSON.parse(localStorage.getItem(key)!)
+      save.state.time = { ...save.state.time, hour: 4 * 24 + 8, speed: 0 }
+      save.state.events = events
+      localStorage.setItem(key, JSON.stringify(save))
+    }, fourActive)
+    await page.getByTestId('save-panel-close').click()
+    await page.getByTestId('save-button').click()
+    await page.getByTestId('save-slot-1').getByTestId('save-slot-load').click()
+    await page.getByTestId('first-steps-close').click()
+    const chips = page.getByTestId('active-event')
+    await expect(chips).toHaveText(['Frost', 'Marktboom', 'Marktkrise', 'Schädlinge'])
+
+    const font = async (id: string) =>
+      page.getByTestId(id).evaluate((el) => {
+        const s = getComputedStyle(el)
+        return { size: parseFloat(s.fontSize), weight: Number(s.fontWeight) }
+      })
+    const time = Math.max((await font('clock')).size, (await font('speed-1')).size)
+    for (const id of ['money', 'storage']) {
+      const { size, weight } = await font(id)
+      expect(size, id).toBeGreaterThanOrEqual(20)
+      expect(size - time, id).toBeGreaterThanOrEqual(4)
+      expect(weight, id).toBeGreaterThanOrEqual(700)
+    }
+
+    const bar = page.getByTestId('hud-top-bar')
+    expect(await bar.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+    const parts = [
+      page.getByTestId('world-seed'),
+      page.getByTestId('clock'),
+      page.getByRole('group', { name: 'Spielgeschwindigkeit' }),
+      page.getByTestId('money-group'),
+      page.getByTestId('phase'),
+      page.getByTestId('save-button'),
+      page.getByTestId('help-button'),
+      ...(await chips.all()),
+    ]
+    const boxes: { x: number; y: number; width: number; height: number }[] = []
+    for (const part of parts) {
+      await expect(part).toBeInViewport({ ratio: 1 })
+      boxes.push((await part.boundingBox())!)
+    }
+    const gap = (a: (typeof boxes)[0], b: (typeof boxes)[0]) =>
+      Math.max(
+        b.x - (a.x + a.width),
+        a.x - (b.x + b.width),
+        b.y - (a.y + a.height),
+        a.y - (b.y + b.height),
+      )
+    for (const [i, a] of boxes.entries())
+      for (const b of boxes.slice(i + 1))
+        expect(gap(a, b), JSON.stringify([a, b])).toBeGreaterThanOrEqual(0)
+
+    const tab = (await page.locator('.events').boundingBox())!
+    const box = async (id: string) => (await page.getByTestId(id).boundingBox())!
+    const left = await box('hud-left-panel')
+    const right = await box('hud-right-panel')
+    for (const other of [await box('hud-top-bar'), left, right])
+      expect(gap(tab, other), JSON.stringify([tab, other])).toBeGreaterThanOrEqual(4)
+    // Nothing covers the event tab: the top element at its centre is part of the tab.
+    const onTop = await page.evaluate(
+      ({ x, y }) => !!document.elementFromPoint(x, y)?.closest('.events'),
+      { x: tab.x + tab.width / 2, y: tab.y + tab.height / 2 },
+    )
+    expect(onTop).toBe(true)
+    if (width >= 1280) {
+      expect(tab.x).toBeGreaterThanOrEqual(left.x + left.width)
+      expect(tab.x + tab.width).toBeLessThanOrEqual(right.x)
+    }
+    await page.screenshot({ path: `docs/progress/S58c-${width}.png` })
+  })
+}
+
+// 9.000 CC is the widest phase 2 chip ("Phase 2 · 88 %") with a long money text.
+for (const [width, height, money] of [
+  [1280, 800, 1_234_500],
+  [1280, 800, 900_000],
+  [1440, 900, 1_234_500],
+  [800, 600, 1_234_500],
+  [390, 844, 1_234_500],
+  [360, 640, 1_234_500],
+] as const) {
+  test(`S58c: large values fit the top bar at ${width} px with ${money / 100} CC`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height })
+    await page.goto('/?seed=4294967295')
+    await page.getByTestId('save-button').click()
+    await page.getByTestId('save-slot-1').getByTestId('save-slot-save').click()
+    await page.evaluate((money) => {
+      const key = 'coffeechain.save.slot-1'
+      const save = JSON.parse(localStorage.getItem(key)!)
+      save.state.time = { ...save.state.time, hour: 998 * 24 + 8, speed: 0 }
+      save.state.money = money
+      // Two Lager-Ausbau stages give the largest capacity, 600.
+      save.state.buildings = { 0: { kind: 'storage' }, 1: { kind: 'storage' } }
+      save.state.storage = { batches: [{ variety: 'robusta', units: 120, quality: 100 }] }
+      localStorage.setItem(key, JSON.stringify(save))
+    }, money)
+    await page.getByTestId('save-panel-close').click()
+    await page.getByTestId('save-button').click()
+    await page.getByTestId('save-slot-1').getByTestId('save-slot-load').click()
+    await page.getByTestId('first-steps-close').click()
+    await expect(page.getByTestId('clock')).toHaveText('Tag 999 · 08:00')
+    // 069-whole-cc drops the decimals. Whole values are the same in both forms.
+    await expect(page.getByTestId('money')).toHaveText(
+      `${(money / 100).toLocaleString('de-DE')} CC`,
+    )
+    await expect(page.getByTestId('storage')).toHaveAttribute('title', 'Lager 120 / 600')
+
+    const bar = page.getByTestId('hud-top-bar')
+    expect(await bar.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+    const frame = (await bar.boundingBox())!
+    const boxes: { x: number; y: number; width: number; height: number }[] = []
+    for (const id of ['clock', 'money', 'storage', 'phase', 'save-button', 'help-button']) {
+      const part = page.getByTestId(id)
+      await expect(part).toBeInViewport({ ratio: 1 })
+      const b = (await part.boundingBox())!
+      expect(b.x, id).toBeGreaterThanOrEqual(frame.x)
+      expect(b.x + b.width, id).toBeLessThanOrEqual(frame.x + frame.width)
+      boxes.push(b)
+    }
+    boxes.push((await page.getByRole('group', { name: 'Spielgeschwindigkeit' }).boundingBox())!)
+    const apart = (a: (typeof boxes)[0], b: (typeof boxes)[0]) =>
+      a.x + a.width <= b.x || b.x + b.width <= a.x || a.y + a.height <= b.y || b.y + b.height <= a.y
+    for (const [i, a] of boxes.entries())
+      for (const b of boxes.slice(i + 1)) expect(apart(a, b), JSON.stringify([a, b])).toBe(true)
+    if (money === 1_234_500)
+      await page.screenshot({ path: `docs/progress/S58c-large-${width}.png` })
+  })
+}
+
 test('S46: process raw coffee and sell washed coffee in the market panel', async ({ page }) => {
   const errors: string[] = []
   page.on('console', (msg) => {
@@ -1351,8 +1500,8 @@ for (const [width, height] of [
       const s = getComputedStyle(el)
       return { maxHeight: s.maxHeight, overflowY: s.overflowY }
     })
-    expect(style).toEqual({ maxHeight: '464px', overflowY: 'auto' })
-    expect((await panel.boundingBox())!.height).toBeLessThanOrEqual(464)
+    expect(style).toEqual({ maxHeight: '424px', overflowY: 'auto' })
+    expect((await panel.boundingBox())!.height).toBeLessThanOrEqual(424)
   })
 }
 

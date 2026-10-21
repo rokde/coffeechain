@@ -22,22 +22,33 @@ const events = computed(() => activeEvents(game.state as GameState))
 /* The top bar has no room for more chips, so the events hang below it as a tab. */
 .events {
   position: absolute;
-  top: 100%;
-  right: 12px;
+  top: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
-  gap: 12px;
+  gap: 0 12px;
   padding: 1px 8px;
-  border-radius: 0 0 6px 6px;
+  border-radius: 6px;
   background: var(--hud-bg);
   font-size: 12px;
   font-weight: 600;
   line-height: 14px;
   white-space: nowrap;
 }
-/* Below 1280 px the stats are a tab too, so the events hang below the stats tab. */
+/* Below 1280 px the panels are near the centre, so the tab moves to the right, away from the seed tab. */
 @media (max-width: 1279px) {
   .events {
-    right: 0;
+    left: auto;
+    right: 12px;
+    transform: none;
+  }
+}
+/* The tab must not reach the seed tab, so it wraps to a second line. */
+@media (max-width: 480px) {
+  .events {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    max-width: calc(100% - 164px);
   }
 }
 </style>

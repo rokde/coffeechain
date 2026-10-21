@@ -1,4 +1,5 @@
 import { balance } from '../balance'
+import { roundCost } from '../money'
 import type { GameState } from '../state'
 import type { World, Zone } from '../world/types'
 import type { PlantState } from './plants'
@@ -57,12 +58,14 @@ export function quoteParcels(state: GameState, list: { x: number; y: number }[])
   const { world } = state
   const { firstCost, zoneMultiplier } = balance().parcels
   const owned = Object.keys(state.farm.parcels).length
-  return list.reduce((cost, { x, y }, i) => {
-    if (owned + i > 0) return cost + parcelPrice(world, x, y)
-    // Buildable parcels are never water, so the zone is a land zone.
-    const zone = world.parcels[y * world.size + x]!.zone as Exclude<Zone, 'wasser'>
-    return cost + Math.round(firstCost * zoneMultiplier[zone] * 100)
-  }, 0)
+  return roundCost(
+    list.reduce((cost, { x, y }, i) => {
+      if (owned + i > 0) return cost + parcelPrice(world, x, y)
+      // Buildable parcels are never water, so the zone is a land zone.
+      const zone = world.parcels[y * world.size + x]!.zone as Exclude<Zone, 'wasser'>
+      return cost + Math.round(firstCost * zoneMultiplier[zone] * 100)
+    }, 0),
+  )
 }
 
 export function createParcels(state: GameState, command: CreateParcels): GameState {

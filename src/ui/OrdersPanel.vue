@@ -5,7 +5,7 @@ import { bankBuyPrice } from '../sim/market/market'
 import { deliverableUnits } from '../sim/market/orders'
 import type { GameState } from '../sim/state'
 import de from './i18n/de.json'
-import { formatMoney } from './money'
+import { formatUnitPrice } from './money'
 
 const t = de.orders
 const game = useGameStore()
@@ -15,7 +15,7 @@ const rows = computed(() => {
   const state = game.state as GameState
   return state.orders.open.map((order) => {
     const have = deliverableUnits(state, order)
-    const bank = formatMoney(Math.round(bankBuyPrice(state, order.variety) * 100))
+    const bank = formatUnitPrice(Math.round(bankBuyPrice(state, order.variety) * 100))
     return {
       ...order,
       buyer: t.buyers[order.id % t.buyers.length],
@@ -43,7 +43,7 @@ const rows = computed(() => {
         <dd>{{ o.deadlineDay }}</dd>
         <dt>{{ t.price }}</dt>
         <dd class="price" data-testid="order-price">
-          <span>{{ formatMoney(o.price) }}</span> <span>{{ o.bank }}</span>
+          <span>{{ formatUnitPrice(o.price) }}</span> <span>{{ o.bank }}</span>
         </dd>
       </dl>
       <p v-if="!o.ready" class="stock" data-testid="order-stock">{{ o.stock }}</p>

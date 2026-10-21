@@ -64,6 +64,36 @@ describe('Hud phase chip (S47)', () => {
   })
 })
 
+describe('Hud money group (S58c)', () => {
+  it('AC-1: holds money and storage, each with one hidden icon', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const html = await renderToString(createSSRApp(Hud).use(pinia))
+    const group = html.match(/<div[^>]*data-testid="money-group"[^>]*>(.*?)<\/div>/)![1]!
+    // Money is the first item and storage the second one.
+    const [money, storage] = group.split(/(?=<span[^>]*data-testid="storage")/)
+    const item = (html: string) => {
+      const inner = html.replace(/^<span[^>]*>/, '')
+      const svgs = inner.match(/<svg[^>]*>/g) ?? []
+      return {
+        icons: svgs.length,
+        hidden: svgs.every((tag) => tag.includes('aria-hidden="true"')),
+        text: inner
+          .replace(/<svg.*<\/svg>/, '')
+          .replace(/<[^>]*>/g, '')
+          .trim(),
+      }
+    }
+    expect(item(storage!)).toEqual({ icons: 1, hidden: true, text: 'Lager 0 / 100' })
+    // At 480 px or less the word "Lager" is hidden. The label keeps it, and the role makes screen readers speak it.
+    expect(storage).toMatch(
+      /^<span[^>]*title="Lager 0 \/ 100" aria-label="Lager 0 \/ 100" role="group"/,
+    )
+    expect(item(money!)).toMatchObject({ icons: 1, hidden: true })
+    expect(item(money!).text).toBe('500 CC')
+  })
+})
+
 describe('Hud left panel (S59)', () => {
   const left = async (pinia: ReturnType<typeof createPinia>) =>
     (await renderToString(createSSRApp(Hud).use(pinia)))

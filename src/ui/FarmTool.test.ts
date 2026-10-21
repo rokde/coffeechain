@@ -146,13 +146,13 @@ describe('FarmTool (S18a)', () => {
   it('AC-5: the top bar shows "Lager 0 / 100" in a new game and the value after a harvest', async () => {
     const pinia = createPinia()
     expect(await renderToString(createSSRApp(Hud).use(pinia))).toMatch(
-      /data-testid="storage"[^>]*>Lager 0 \/ 100</,
+      /data-testid="storage" title="Lager 0 \/ 100"/,
     )
     const { pinia: after, game } = setup('harvest', 0, true)
     farmSelected('harvest')
     const used = storageUsed(game.state.storage as GameState['storage'])
     expect(await renderToString(createSSRApp(Hud).use(after))).toMatch(
-      new RegExp(`data-testid="storage"[^>]*>Lager ${used} / 100<`),
+      new RegExp(`data-testid="storage" title="Lager ${used} / 100"`),
     )
   })
 
