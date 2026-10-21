@@ -56,14 +56,23 @@ const items = (html: string) =>
   [...html.matchAll(/data-testid="message"[^>]*>([^<]*)</g)].map((m) => m[1])
 
 describe('MessagePanel (S18b)', () => {
-  it('AC-1: a new game shows the panel in the left panel with the empty text', async () => {
+  it('AC-4 (S59): with no message the panel is not in the DOM, with one warning it is', async () => {
     const pinia = createPinia()
     useFirstStepsStore(pinia).open = false
     const html = await renderToString(createSSRApp(Hud).use(pinia))
     const left = html.split('data-testid="hud-left-panel"')[1]!.split('</aside>')[0]!
-    expect(left).toContain('data-testid="message-panel"')
-    expect(left).toContain('Keine Meldungen')
-    expect(items(left)).toEqual([])
+    expect(left).toContain('data-testid="field-list"')
+    expect(left).not.toContain('message-panel')
+    expect(left).not.toContain('Keine Meldungen')
+    const game = useGameStore(pinia)
+    const state = game.state as GameState
+    game.replace({
+      ...state,
+      events: [{ type: 'frost', announcedDay: 1, startDay: 3, endDay: 5 }],
+    })
+    const warned = await renderToString(createSSRApp(MessagePanel).use(pinia))
+    expect(warned).toContain('data-testid="message-panel"')
+    expect(items(warned)).toHaveLength(1)
   })
 
   it('AC-2: a ripe plant with overripeFactor 1 gives "Feld A ist erntereif"', async () => {
@@ -71,7 +80,6 @@ describe('MessagePanel (S18b)', () => {
     expect(overripeFactor(robusta, ripeHour)).toBe(1)
     const html = await render(ripeHour)
     expect(items(html)).toEqual(['Feld A ist erntereif'])
-    expect(html).not.toContain('Keine Meldungen')
   })
 
   it('AC-3: an overripe plant gives "Feld A ist überreif" and no "erntereif"', async () => {

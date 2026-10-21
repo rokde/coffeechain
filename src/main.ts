@@ -202,6 +202,16 @@ function start() {
     )
     const { target, zoom } = startView(world, worldProps, window.innerWidth / window.innerHeight)
     view.frame(target, zoom)
+    // The anchor lies above the ground, so the camera centers the ground point behind it.
+    watch(
+      () => viewStore.focus,
+      (to) => {
+        if (!to) return
+        const d = view.camera.getWorldDirection(new Vector3())
+        const t = -to.y / d.y
+        view.frame({ x: to.x + d.x * t, z: to.z + d.z * t }, view.camera.zoom)
+      },
+    )
     watch(
       () => plantsKey(store.state.farm.plants, store.state.time.hour),
       () => plants.show(store.state.farm.plants, store.state.time.hour),
