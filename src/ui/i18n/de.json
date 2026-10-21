@@ -165,7 +165,7 @@
     "sell": "Verkaufen",
     "sellAmount": "Verkaufen ({units}\u00a0Einh., {income})",
     "sellWashedAmount": "Gewaschen verkaufen ({units}\u00a0Einh., {income})",
-    "sellZero": "Zu wenig Einheiten: Der Verkauf bringt unter 1 CC.",
+    "sellZero": "Menge zu klein",
     "washedStock": "Gewaschen bereit",
     "washedSellPrice": "Bank zahlt (gewaschen) je Einheit",
     "process": "Aufbereiten",

@@ -102,16 +102,40 @@ describe('MarketPanel (S20)', () => {
     expect(game.state.money).toBe(before + income)
   })
 
-  it('S57 round 1: a sale that pays 0 CC shows "0 CC" and says why, but stays possible', async () => {
+  it('S61 AC-1/AC-4: a sale that pays 0 CC disables the button and shows why', async () => {
     const { pinia, game } = setup()
     const state = game.state as GameState
     game.replace({ ...state, storage: { batches: [{ variety: 'robusta', units: 2, quality: 1 }] } })
     const html = block(await renderToString(createSSRApp(MarketPanel).use(pinia)), 'robusta')
     expect(field(html, 'sell')!.trim()).toBe('Verkaufen (2\u00a0Einh., 0\u00a0CC)')
-    const why = 'Zu wenig Einheiten: Der Verkauf bringt unter 1 CC.'
-    expect(sellButton(html)).toContain(`title="${why}"`)
-    expect(sellButton(html)).toContain(`aria-label="Verkaufen (2\u00a0Einh., 0\u00a0CC). ${why}"`)
-    expect(sellButton(html)).not.toContain('disabled')
+    expect(sellButton(html)).toContain('disabled')
+    expect(sellButton(html)).not.toContain('title')
+    expect(sellButton(html)).toContain('aria-describedby="market-sell-why-robusta"')
+    expect(html).toMatch(
+      /<p[^>]*id="market-sell-why-robusta"[^>]*data-testid="market-sell-why"[^>]*>\s*Menge zu klein\s*</,
+    )
+  })
+
+  it('S61 AC-2/AC-4: washed units that pay 0 CC disable the washed button and show why', async () => {
+    const { pinia, game } = setup()
+    const washed = { variety: 'robusta' as const, units: 1, quality: 1, washed: true as const }
+    game.replace({ ...(game.state as GameState), storage: { batches: [washed] } })
+    const html = block(await renderToString(createSSRApp(MarketPanel).use(pinia)), 'robusta')
+    const btn = html.match(/<button[^>]*data-testid="market-sell-washed"[^>]*>/)![0]
+    expect(btn).toContain('disabled')
+    expect(btn).not.toContain('title')
+    expect(btn).toContain('aria-describedby="market-sell-washed-why-robusta"')
+    expect(html).toMatch(
+      /id="market-sell-washed-why-robusta"[^>]*data-testid="market-sell-washed-why"[^>]*>\s*Menge zu klein\s*</,
+    )
+  })
+
+  it('S61 AC-3: 10 units stay sellable without a line, 0 units show no line', async () => {
+    const { pinia } = setup()
+    const html = await renderToString(createSSRApp(MarketPanel).use(pinia))
+    expect(sellButton(block(html, 'robusta'))).not.toContain('disabled')
+    expect(html).not.toContain('Menge zu klein')
+    expect(sellButton(block(html, 'arabicaStandard'))).toContain('disabled')
   })
 
   it('AC-4: each block has two flat lines with historyDays points', async () => {

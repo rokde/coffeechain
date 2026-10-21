@@ -2047,3 +2047,48 @@ for (const reduce of [false, true]) {
     else expect(last.transform).toBe('translateY(-40px)')
   })
 }
+
+for (const [width, height] of [
+  [1440, 900],
+  [390, 844],
+] as const) {
+  test(`S61: zero-CC sale is blocked with a visible reason at ${width}x${height}`, async ({
+    page,
+  }) => {
+    const errors: string[] = []
+    page.on('pageerror', (error) => errors.push(error.message))
+    await page.setViewportSize({ width, height })
+    await page.goto('/?seed=48213')
+    await page.getByTestId('save-button').click()
+    await page.getByTestId('save-slot-1').getByTestId('save-slot-save').click()
+    await page.evaluate(() => {
+      const key = 'coffeechain.save.slot-1'
+      const save = JSON.parse(localStorage.getItem(key)!)
+      save.state.storage.batches = [{ variety: 'robusta', units: 2, quality: 1 }]
+      localStorage.setItem(key, JSON.stringify(save))
+    })
+    await page.getByTestId('save-panel-close').click()
+    await page.getByTestId('save-button').click()
+    await page.getByTestId('save-slot-1').getByTestId('save-slot-load').click()
+    await page.getByTestId('first-steps-close').click()
+    await page.getByTestId('tool-market').click()
+
+    const panel = page.getByTestId('market-panel')
+    const block = page.getByTestId('market-robusta')
+    const why = block.getByTestId('market-sell-why')
+    await why.scrollIntoViewIfNeeded()
+    await expect(why).toHaveText('Menge zu klein')
+    await expect(block.getByTestId('market-sell')).toBeDisabled()
+    expect(await panel.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+    const inside = await page.evaluate(() => {
+      const p = document.querySelector('[data-testid="market-panel"]')!.getBoundingClientRect()
+      const w = document.querySelector('[data-testid="market-sell-why"]')!.getBoundingClientRect()
+      return w.left >= p.left && w.right <= p.right && w.top >= p.top && w.bottom <= p.bottom
+    })
+    expect(inside).toBe(true)
+    const money = await page.getByTestId('money').textContent()
+    await block.getByTestId('market-sell').click({ force: true })
+    await expect(page.getByTestId('money')).toHaveText(money!)
+    expect(errors).toEqual([])
+  })
+}

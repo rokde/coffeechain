@@ -34,7 +34,7 @@ const varieties = computed(() =>
 const price = (cc: number) => formatUnitPrice(Math.round(cc * 100))
 const hint = t.hint.replace('{units}', String(Math.round(1 / cfg.storage.costPerUnitPerDay)))
 const money = (cents: number) => formatMoney(cents).replace(' ', '\u00a0')
-// Label and zero-income warning of a sell button. A sale that pays 0 CC stays possible.
+// Label and zero-income reason of a sell button. A sale that pays 0 CC is blocked.
 const sale = (state: GameState, variety: Variety, units: number, washed: boolean) => {
   const income = sellIncome(state, variety, units, washed)
   return {
@@ -154,13 +154,20 @@ const blocks = computed(() => {
       <button
         type="button"
         data-testid="market-sell"
-        :disabled="b.stock === 0"
-        :title="b.sell.why ?? undefined"
-        :aria-label="b.sell.why ? `${b.sell.label}. ${b.sell.why}` : undefined"
+        :disabled="b.stock === 0 || b.sell.why !== null"
+        :aria-describedby="b.sell.why ? `market-sell-why-${b.variety}` : undefined"
         @click="sellAll(game, b.variety)"
       >
         {{ b.sell.label }}
       </button>
+      <p
+        v-if="b.sell.why"
+        :id="`market-sell-why-${b.variety}`"
+        class="running"
+        data-testid="market-sell-why"
+      >
+        {{ b.sell.why }}
+      </p>
       <button
         type="button"
         data-testid="market-process"
@@ -177,13 +184,20 @@ const blocks = computed(() => {
       <button
         type="button"
         data-testid="market-sell-washed"
-        :disabled="b.washed === 0"
-        :title="b.sellWashed.why ?? undefined"
-        :aria-label="b.sellWashed.why ? `${b.sellWashed.label}. ${b.sellWashed.why}` : undefined"
+        :disabled="b.washed === 0 || b.sellWashed.why !== null"
+        :aria-describedby="b.sellWashed.why ? `market-sell-washed-why-${b.variety}` : undefined"
         @click="sellAllWashed(game, b.variety)"
       >
         {{ b.sellWashed.label }}
       </button>
+      <p
+        v-if="b.sellWashed.why"
+        :id="`market-sell-washed-why-${b.variety}`"
+        class="running"
+        data-testid="market-sell-washed-why"
+      >
+        {{ b.sellWashed.why }}
+      </p>
     </article>
   </section>
 </template>
