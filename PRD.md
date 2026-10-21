@@ -191,7 +191,7 @@ menge = basisErtrag(sorte)
       × zufall             // seedbar, Startwert 0,9–1,1 (GDD 5.4: „Zufall“)
 ```
 - Ergebnis auf ganze Einheiten abgerundet.
-- **Qualität** (GDD 5.4: Sorte + Pflege + Zufall + Events) wird als Wert 0–100 pro Charge berechnet und angezeigt. In v1 beeinflusst sie den Preis noch nicht. Ob und wie sie das tut, ist offen (Abschnitt 12).
+- **Qualität** (GDD 5.4: Sorte + Pflege + Zufall + Events) wird als Wert 0–100 pro Charge berechnet und angezeigt. Die Bank zahlt unabhängig von der Qualität. Einen Preiseffekt hat sie über Aufträge virtueller Käufer (Mindestqualität, Aufpreis über der Bank, siehe Abschnitt 12, Punkt 4).
 - `sim/farm/yield.ts` ist eine reine Funktion mit Tabellentests.
 
 ### Überreife (NEU, im Entwurf)
@@ -312,9 +312,11 @@ Aufbau wie in den Mockups:
 | 1 | **Das Farmer-Balancing aus dem GDD ist allein zu langsam.** Robusta bringt pro Parzelle 20 × 0,4 CC = 8 CC an die Bank, minus 2 CC Saatgut, also 6 CC je 3 Spieltage. Mit dem Startkapital lassen sich 5 Parzellen anlegen, das ergibt 10 CC pro Spieltag. Grobe Rechnung ohne Dünger, Events und Lagerkosten: Wer danach nur spart, braucht rund 195 Spieltage bis 2.000 CC (ca. 13 Stunden Spielzeit). Wer alles sofort in neue Parzellen steckt, braucht rund 72 Spieltage (ca. 5 Stunden), wenn man die Parzellen zum Kapital zählt. Das GDD sieht für Phase 1 aber nur 4 Spielwochen vor, also 28 Spieltage. Außerdem ist das GDD hier nicht einheitlich (11.10: „~8 CC/Tag“, aber „~175 CC/Woche“). | Erst in M4 mit der Bot-Simulation messen. Danach eine von drei Stellschrauben drehen: günstigere Parzellen (z. B. 20 CC flach), höhere Erträge pro Parzelle oder niedrigere Phasengrenzen. | offen, blockiert nicht |
 | 2 | Überreife übernehmen? | Ja, 2 Spieltage, dann −15 % pro Tag | offen |
 | 3 | 1 Spieltag = 4 Minuten? | Ja | offen |
-| 4 | Soll die Qualität einer Charge den Verkaufspreis beeinflussen? | Ja, ab v1.1: Preis × (0,8 + 0,4 × Qualität/100) | offen |
+| 4 | Soll die Qualität einer Charge den Verkaufspreis beeinflussen? | Ja, ab v1.1: Preis × (0,8 + 0,4 × Qualität/100) | entschieden 2026-10-21: über Aufträge virtueller Käufer mit Mindestqualität und Aufpreis; die Bank bleibt ohne Qualitätsfaktor |
 | 5 | Alle mit `NEU` markierten Startwerte (Bodenfaktoren, Lagerkosten, Zonen-Multiplikatoren, Düngerbonus …) | Nach M4-Bot-Simulation gemeinsam prüfen | offen |
 | 6 | Name der Mac-App | „CoffeeChain“ | offen |
+| 7 | Event-Effekte über ±30 % im GDD (Monsun-Zykluszeit +50 %) | PRD-Grenze ±30 % gilt | entschieden 2026-10-21 |
+| 8 | Kontostand mit Nachkommastellen? | Nein: CC sind immer ganze Zahlen; jede Buchung wird auf ganze CC gerundet | entschieden 2026-10-21 |
 
 ---
 

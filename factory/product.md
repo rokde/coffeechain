@@ -15,7 +15,7 @@ Robert gets a singleplayer 3D coffee farm game for the Mac: he builds a farm on 
 - Out: code-made buildings and trees (Feedback 1 asks for Kenney models already in M1).
 - Out: code-made plants from Kenney (plants stay code-generated, PRD §11).
 - Out: terrain chunks (one mesh for 48 × 48 parcels is fast enough; split when the world grows).
-- Out: quality effect on price (PRD §12 point 4 is open).
+- In: quality effect on price via virtual buyers' orders (minimum quality, premium over the bank); the bank stays quality-blind (PRD §12 point 4, decided 2026-10-21).
 - Out: all non-goals of `PRD.md` §1 and all items of `PRD.md` §14.
 
 ## Stack
