@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { buildMenu } from '../buildings/build'
 import { dispatch } from '../commands'
+import { bankBuyPrice } from '../market/market'
 import { isFree } from '../farm/parcels'
 import { deserialize } from '../save/save'
 import { createState, type GameState } from '../state'
@@ -30,6 +31,43 @@ describe('capital (S47)', () => {
     expect(built.money).toBeLessThan(bought.money)
     expect(built.invested - bought.invested).toBe(bought.money - built.money)
     expect(capital(built)).toBe(capital(base))
+  })
+})
+
+describe('capital with washed coffee (S47b)', () => {
+  const robusta = { variety: 'robusta' as const, units: 10, quality: 100 }
+  const withBatches = (batches: GameState['storage']['batches'], invested = 0): GameState => ({
+    ...withMoney(100_000),
+    storage: { batches },
+    invested,
+  })
+
+  it('AC-1: counts a washed batch at the washed bank price', () => {
+    expect(capital(withBatches([{ ...robusta, washed: true }]))).toBe(100_600)
+  })
+
+  it('AC-2: counts a raw batch at the raw bank price', () => {
+    expect(capital(withBatches([robusta]))).toBe(100_400)
+  })
+
+  it('AC-3: adds a raw and a washed batch', () => {
+    expect(capital(withBatches([robusta, { ...robusta, washed: true }], 5_000))).toBe(106_000)
+  })
+
+  it('AC-4: values washed stock at the market panel price', () => {
+    const state = withBatches([
+      { variety: 'arabicaStandard', units: 20, quality: 100, washed: true },
+    ])
+    expect(capital(state) - state.money).toBe(
+      Math.round(20 * bankBuyPrice(state, 'arabicaStandard', 0, true) * 100),
+    )
+    expect(capital(state)).toBe(102_400)
+  })
+
+  it('AC-5: counts a washed batch still in processing at the washed price', () => {
+    const state = withBatches([{ ...robusta, washed: true, readyHour: 500 }])
+    expect(state.time.hour).toBeLessThan(500)
+    expect(capital(state)).toBe(100_600)
   })
 })
 
