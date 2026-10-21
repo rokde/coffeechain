@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { createSSRApp } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import { useViewStore } from '../app/view'
+import { balance } from '../sim/balance'
+import de from './i18n/de.json'
 import Hud from './Hud.vue'
 import { overlays, tools } from './toolbar'
 
@@ -97,5 +99,124 @@ describe('tool keys and tooltips (S53)', () => {
       ['O', 'Overlay Bodenqualität ein / aus'],
       ['Z', 'Overlay Lagen ein / aus'],
     ])
+  })
+})
+
+describe('help: buildings and washing (S62)', () => {
+  const section = (html: string, id: string) =>
+    html.split(`data-testid="${id}"`)[1]!.split('</ol>')[0]!
+
+  it('AC-1: the sections follow help-loop and precede help-controls with the real labels', async () => {
+    const html = await render(true)
+    const at = (id: string) => html.indexOf(`data-testid="${id}"`)
+    expect(at('help-loop')).toBeLessThan(at('help-washing'))
+    expect(at('help-washing')).toBeLessThan(at('help-storage'))
+    expect(at('help-storage')).toBeLessThan(at('help-controls'))
+    expect(html).toContain('Kaffee waschen')
+    expect(html).toContain('Lager ausbauen')
+    const washing = section(html, 'help-washing')
+    const labels = [
+      'Auswählen',
+      de.buildTool.heading,
+      de.buildTool.buildings.processing,
+      de.marketPanel.heading,
+      de.marketPanel.process,
+      de.marketPanel.sellWashed,
+    ]
+    for (const label of labels) expect(washing).toContain(label)
+    expect(washing).toContain(de.marketPanel.processing.replace('{day}', 'N'))
+    expect(section(html, 'help-storage')).toContain(de.buildTool.buildings.storage)
+  })
+
+  it('AC-2: the washing section shows the default values', async () => {
+    const washing = section(await render(true), 'help-washing')
+    for (const text of [
+      '150 CC',
+      'Phase 1',
+      '50 Einheiten',
+      '0,3 CC je Einheit',
+      '1 Tag.',
+      'das 1,5-Fache',
+      'mehr als 0,6 CC',
+    ])
+      expect(washing).toContain(text)
+  })
+
+  it('AC-2/AC-3: the sections follow a changed config', async () => {
+    const base = balance()
+    const changed = {
+      ...base,
+      processing: {
+        washed: {
+          ...base.processing.washed,
+          buildCost: 275,
+          requiresPhase: 3,
+          batchCapacity: 70,
+          costPerUnit: 0.4,
+          durationDays: 2,
+          valueMultiplier: 1.8,
+        },
+      },
+      storage: {
+        ...base.storage,
+        startCapacity: 80,
+        costPerUnitPerDay: 0.1,
+        qualityLossPerDayRaw: 3,
+        upgrades: [
+          { capacity: 111, cost: 11, requiresPhase: 1 },
+          { capacity: 222, cost: 22, requiresPhase: 2 },
+          { capacity: 333, cost: 33, requiresPhase: 4 },
+        ],
+      },
+    }
+    vi.resetModules()
+    vi.doMock('../sim/balance', () => ({ balance: () => changed }))
+    const { default: HudMocked } = await import('./Hud.vue')
+    const { useViewStore: useView } = await import('../app/view')
+    const pinia = createPinia()
+    useView(pinia).helpOpen = true
+    const html = await renderToString(createSSRApp(HudMocked).use(pinia))
+    vi.doUnmock('../sim/balance')
+    const washing = section(html, 'help-washing')
+    for (const text of [
+      '275 CC',
+      'Phase 3',
+      '70 Einheiten',
+      '0,4 CC',
+      '2 Tage',
+      '1,8-Fache',
+      '0,5 CC',
+    ])
+      expect(washing).toContain(text)
+    const storage = section(html, 'help-storage')
+    expect(storage).toContain('80 Einheiten')
+    expect(storage.match(/Stufe \d:/g)).toHaveLength(3)
+    for (const text of [
+      'Stufe 3: Gesamtplatz 333 Einheiten, Kosten 33 CC, ab Phase 4',
+      'je angefangene 10 Einheiten',
+      'Qualitätspunkten: 3',
+    ])
+      expect(storage).toContain(text)
+  })
+
+  it('AC-3: the storage section shows the default values', async () => {
+    const storage = section(await render(true), 'help-storage')
+    for (const text of [
+      '100 Einheiten',
+      'Stufe 1: Gesamtplatz 250 Einheiten, Kosten 150 CC, ab Phase 1',
+      'Stufe 2: Gesamtplatz 600 Einheiten, Kosten 400 CC, ab Phase 2',
+      '1 CC je angefangene 50 Einheiten',
+      'Qualitätspunkten: 1',
+    ])
+      expect(storage).toContain(text)
+  })
+
+  it('AC-4: no placeholder is left and the new texts hold no digits', async () => {
+    const html = await render(true)
+    const help = html.split('data-testid="help-overlay"')[1]!.split('</section>')[0]!
+    expect(help).not.toMatch(/[{}]/)
+    const h = de.help
+    const texts = [...h.washing, ...h.storage, h.storageStage, ...h.storageAfter]
+    for (const text of texts) expect(text.replace(/\{\w+\}|1 CC je/g, '')).not.toMatch(/\d/)
   })
 })

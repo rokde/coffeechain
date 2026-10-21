@@ -311,6 +311,29 @@
       { "name": "Verkaufen", "text": "Verkaufe den Kaffee aus dem Lager am Markt." },
       { "name": "Reinvestieren", "text": "Kaufe mit dem Geld neue Parzellen und pflanze mehr an." }
     ],
+    "washingHeading": "Kaffee waschen",
+    "washing": [
+      "Wähle mit „Auswählen“ eine eigene, leere Parzelle.",
+      "Öffne „Bauen“ und wähle „Aufbereitung“. Sie kostet {cost} CC und ist ab Phase {phase} frei. Du kannst eine je Farm bauen.",
+      "Ernte den Kaffee. Er liegt dann als Rohkaffee im Lager.",
+      "Öffne „Markt“ und klicke „Aufbereiten“. Eine Charge nimmt höchstens {batch} Einheiten und kostet {unitCost} CC je Einheit. Der älteste Kaffee kommt zuerst dran.",
+      "Warte, bis „Aufbereitung läuft bis Tag N“ verschwindet. Die Aufbereitung dauert {days} {dayUnit}.",
+      "Klicke im „Markt“ auf „Gewaschen verkaufen“.",
+      "Wann lohnt sich das? Die Bank zahlt für gewaschenen Kaffee das {factor}-Fache des Rohpreises. Die Qualität bleibt gleich. Es lohnt sich, wenn die Bank für Rohkaffee mehr als {breakEven} CC je Einheit zahlt."
+    ],
+    "dayOne": "Tag",
+    "dayMany": "Tage",
+    "storageHeading": "Lager ausbauen",
+    "storage": [
+      "Das Lager fasst am Anfang {start} Einheiten.",
+      "Wähle mit „Auswählen“ eine eigene, leere Parzelle. Öffne „Bauen“ und wähle „Lager-Ausbau“.",
+      "Jeder „Lager-Ausbau“ ist ein neues Gebäude auf einer eigenen, leeren Parzelle. Er setzt den Gesamtplatz auf die nächste Stufe."
+    ],
+    "storageStage": "Stufe {n}: Gesamtplatz {capacity} Einheiten, Kosten {cost} CC, ab Phase {phase}.",
+    "storageAfter": [
+      "Das Lager kostet jeden Tag 1 CC je angefangene {units} Einheiten.",
+      "Kaffee im Lager verliert Qualität. Verlust je Tag in Qualitätspunkten: {loss}."
+    ],
     "controlsHeading": "Steuerung",
     "toolKey": "Werkzeug {label}",
     "overlayKey": "Overlay {label} ein / aus",

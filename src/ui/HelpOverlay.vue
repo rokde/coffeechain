@@ -1,9 +1,49 @@
 <script setup lang="ts">
 import { useViewStore } from '../app/view'
+import { balance } from '../sim/balance'
 import de from './i18n/de.json'
 import { overlays, tools } from './toolbar'
 
 const view = useViewStore()
+
+const num = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 })
+const fill = (text: string, values: Record<string, string | number>) =>
+  text.replace(/\{(\w+)\}/g, (_, key: string) =>
+    typeof values[key] === 'number' ? num.format(values[key]) : (values[key] ?? `{${key}}`),
+  )
+const cfg = balance()
+const w = cfg.processing.washed
+const st = cfg.storage
+const washing = de.help.washing.map((text) =>
+  fill(text, {
+    cost: w.buildCost,
+    phase: w.requiresPhase,
+    batch: w.batchCapacity,
+    unitCost: w.costPerUnit,
+    days: w.durationDays,
+    dayUnit: w.durationDays === 1 ? de.help.dayOne : de.help.dayMany,
+    factor: w.valueMultiplier,
+    // Washing pays when raw price * (multiplier - 1) is more than the cost per unit.
+    breakEven: w.costPerUnit / (w.valueMultiplier - 1),
+  }),
+)
+const storage = [
+  ...de.help.storage.map((text) => fill(text, { start: st.startCapacity })),
+  ...st.upgrades.map((u, i) =>
+    fill(de.help.storageStage, {
+      n: i + 1,
+      capacity: u.capacity,
+      cost: u.cost,
+      phase: u.requiresPhase,
+    }),
+  ),
+  ...de.help.storageAfter.map((text) =>
+    fill(text, {
+      units: Math.round(1 / st.costPerUnitPerDay),
+      loss: st.qualityLossPerDayRaw,
+    }),
+  ),
+]
 </script>
 
 <template>
@@ -31,6 +71,14 @@ const view = useViewStore()
         <li v-for="step in de.help.loop" :key="step.name">
           <strong>{{ step.name }}</strong> {{ step.text }}
         </li>
+      </ol>
+      <h3>{{ de.help.washingHeading }}</h3>
+      <ol data-testid="help-washing">
+        <li v-for="text in washing" :key="text">{{ text }}</li>
+      </ol>
+      <h3>{{ de.help.storageHeading }}</h3>
+      <ol data-testid="help-storage">
+        <li v-for="text in storage" :key="text">{{ text }}</li>
       </ol>
       <h3>{{ de.help.controlsHeading }}</h3>
       <dl data-testid="help-controls">
