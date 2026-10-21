@@ -934,11 +934,7 @@ test('S35a: help button and overlay fit a narrow window', async ({ page }) => {
   expect(panel.x + panel.width).toBeLessThanOrEqual(360)
 })
 
-for (const [width, height] of [
-  [1440, 900],
-  [800, 600],
-  [390, 700],
-]) {
+for (const [width, height] of [[1440, 900] as const, [800, 600] as const, [390, 700] as const]) {
   test(`S62: help with washing and storage fits and scrolls at ${width} px`, async ({ page }) => {
     await page.setViewportSize({ width, height })
     await page.goto('/')

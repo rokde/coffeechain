@@ -314,19 +314,19 @@
     "washingHeading": "Kaffee waschen",
     "washing": [
       "Wähle mit „Auswählen“ eine eigene, leere Parzelle.",
-      "Öffne „Bauen“ und wähle „Aufbereitung“. Sie kostet {cost} CC und ist ab Phase {phase} frei. Du kannst eine je Farm bauen.",
-      "Ernte den Kaffee. Er liegt dann als Rohkaffee im Lager.",
-      "Öffne „Markt“ und klicke „Aufbereiten“. Eine Charge nimmt höchstens {batch} Einheiten und kostet {unitCost} CC je Einheit. Der älteste Kaffee kommt zuerst dran.",
+      "Öffne „Bauen“. Klicke bei „Aufbereitung“ auf „Bauen“. Sie kostet {cost} CC und ist ab Phase {phase} frei. Du kannst eine pro Farm bauen.",
+      "Wähle „Ernten“ (Taste {harvestKey}) und klicke eine reife Pflanze an. Der Kaffee liegt dann als Rohkaffee im Lager.",
+      "Öffne „Markt“ und klicke „Aufbereiten“. Eine Charge nimmt höchstens {batch} Einheiten und kostet {unitCost} CC je Einheit. Der älteste Kaffee kommt zuerst dran. Eine Charge wäscht eine Sorte. Es läuft immer nur eine Aufbereitung. Für mehr als {batch} Einheiten wäschst du nach dem Ende noch einmal.",
       "Warte, bis „Aufbereitung läuft bis Tag N“ verschwindet. Die Aufbereitung dauert {days} {dayUnit}.",
-      "Klicke im „Markt“ auf „Gewaschen verkaufen“.",
-      "Wann lohnt sich das? Die Bank zahlt für gewaschenen Kaffee das {factor}-Fache des Rohpreises. Die Qualität bleibt gleich. Es lohnt sich, wenn die Bank für Rohkaffee mehr als {breakEven} CC je Einheit zahlt."
+      "Klicke im „Markt“ auf „Gewaschen verkaufen“."
     ],
+    "washingPays": "Wann lohnt sich das? Die Bank zahlt für gewaschenen Kaffee das {factor}-Fache des Rohpreises. Die Qualität bleibt gleich. Es lohnt sich ab etwa {breakEven} CC je Einheit Rohpreis, bei voller Charge. Die Kosten werden auf ganze CC aufgerundet.",
     "dayOne": "Tag",
     "dayMany": "Tage",
     "storageHeading": "Lager ausbauen",
     "storage": [
       "Das Lager fasst am Anfang {start} Einheiten.",
-      "Wähle mit „Auswählen“ eine eigene, leere Parzelle. Öffne „Bauen“ und wähle „Lager-Ausbau“.",
+      "Wähle mit „Auswählen“ eine eigene, leere Parzelle. Öffne „Bauen“. Klicke bei „Lager-Ausbau“ auf „Bauen“.",
       "Jeder „Lager-Ausbau“ ist ein neues Gebäude auf einer eigenen, leeren Parzelle. Er setzt den Gesamtplatz auf die nächste Stufe."
     ],
     "storageStage": "Stufe {n}: Gesamtplatz {capacity} Einheiten, Kosten {cost} CC, ab Phase {phase}.",

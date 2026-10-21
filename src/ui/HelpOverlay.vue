@@ -14,8 +14,15 @@ const fill = (text: string, values: Record<string, string | number>) =>
 const cfg = balance()
 const w = cfg.processing.washed
 const st = cfg.storage
-const washing = de.help.washing.map((text) =>
+const harvestKey = tools.find((tool) => tool.id === 'harvest')!.key
+const washingTexts = [
+  ...de.help.washing,
+  // A multiplier of 1 or less never pays, so no break-even price exists.
+  ...(w.valueMultiplier > 1 ? [de.help.washingPays] : []),
+]
+const washing = washingTexts.map((text) =>
   fill(text, {
+    harvestKey,
     cost: w.buildCost,
     phase: w.requiresPhase,
     batch: w.batchCapacity,

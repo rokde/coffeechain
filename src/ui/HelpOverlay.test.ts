@@ -137,7 +137,7 @@ describe('help: buildings and washing (S62)', () => {
       '0,3 CC je Einheit',
       '1 Tag.',
       'das 1,5-Fache',
-      'mehr als 0,6 CC',
+      'ab etwa 0,6 CC',
     ])
       expect(washing).toContain(text)
   })
@@ -199,6 +199,36 @@ describe('help: buildings and washing (S62)', () => {
       expect(storage).toContain(text)
   })
 
+  it('hides the break-even step when the multiplier is 1 or less', async () => {
+    const base = balance()
+    const flat = {
+      ...base,
+      processing: { washed: { ...base.processing.washed, valueMultiplier: 1 } },
+    }
+    vi.resetModules()
+    vi.doMock('../sim/balance', () => ({ balance: () => flat }))
+    const { default: HudMocked } = await import('./Hud.vue')
+    const { useViewStore: useView } = await import('../app/view')
+    const pinia = createPinia()
+    useView(pinia).helpOpen = true
+    const html = await renderToString(createSSRApp(HudMocked).use(pinia))
+    vi.doUnmock('../sim/balance')
+    const washing = section(html, 'help-washing')
+    expect(washing).toContain('Gewaschen verkaufen')
+    expect(washing).not.toContain('Wann lohnt sich das')
+    expect(washing).not.toMatch(/Infinity|NaN|-\d+ CC/)
+  })
+
+  it('S62 review: build steps name the Bauen button, harvest names the tool and key', async () => {
+    const html = await render(true)
+    const washing = section(html, 'help-washing')
+    expect(washing).toContain('Klicke bei „Aufbereitung“ auf „Bauen“')
+    expect(washing).toContain('Wähle „Ernten“ (Taste N)')
+    expect(washing).toContain('Es läuft immer nur eine Aufbereitung')
+    expect(washing).toContain('ab etwa 0,6 CC')
+    expect(section(html, 'help-storage')).toContain('Klicke bei „Lager-Ausbau“ auf „Bauen“')
+  })
+
   it('AC-3: the storage section shows the default values', async () => {
     const storage = section(await render(true), 'help-storage')
     for (const text of [
@@ -216,7 +246,7 @@ describe('help: buildings and washing (S62)', () => {
     const help = html.split('data-testid="help-overlay"')[1]!.split('</section>')[0]!
     expect(help).not.toMatch(/[{}]/)
     const h = de.help
-    const texts = [...h.washing, ...h.storage, h.storageStage, ...h.storageAfter]
+    const texts = [...h.washing, h.washingPays, ...h.storage, h.storageStage, ...h.storageAfter]
     for (const text of texts) expect(text.replace(/\{\w+\}|1 CC je/g, '')).not.toMatch(/\d/)
   })
 })
