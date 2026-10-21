@@ -709,7 +709,9 @@ test('S21e: field status and care buttons in the inspector', async ({ page }) =>
     'Wässern',
     'Schützen',
   ])
-  await expect(page.getByTestId('message')).toContainText(['Feld A braucht Pflege'])
+  await expect(page.getByTestId('field-row').getByTestId('field-state')).toHaveText(
+    'Braucht Pflege',
+  )
 
   await page.getByTestId('inspector-care-action').filter({ hasText: 'Wässern' }).click()
   await expect(page.getByTestId('inspector-care')).toHaveText('gewässert')
@@ -845,7 +847,7 @@ test('S25: first steps tick, highlight and close', async ({ page }) => {
   await expect(page.getByTestId('first-step-overlay')).toHaveAttribute('data-done', 'true')
   await expect(page.getByTestId('tool-parcel')).toHaveAttribute('data-guide', 'next')
   await page.getByTestId('first-steps-close').click()
-  await expect(page.getByTestId('message-panel')).toBeVisible()
+  await expect(page.getByTestId('field-list')).toBeVisible()
   await expect(page.locator('[data-guide="next"]')).toHaveCount(0)
 })
 
@@ -1438,6 +1440,183 @@ test('S56: deliver a buyer order in the market panel', async ({ page }) => {
   await expect(money).toHaveText('518 CC')
   await expect(page.getByTestId('market-robusta').getByTestId('market-stock')).toHaveText('30')
   expect(errors).toEqual([])
+})
+
+type FieldPlan = { name: string; parcels: [number, number][]; age: number; cared: boolean }
+const day12 = 11 * 24 + 14
+// A ripe field A, an unripe field B without care and a field C in bloom. Robusta ripens after 72 hours.
+const threeFields: FieldPlan[] = [
+  {
+    name: 'A',
+    parcels: [
+      [2, -6],
+      [3, -6],
+      [4, -6],
+      [2, -5],
+      [3, -5],
+      [4, -5],
+    ],
+    age: 80,
+    cared: true,
+  },
+  {
+    name: 'B',
+    parcels: [
+      [-6, -2],
+      [-5, -2],
+      [-6, -1],
+      [-5, -1],
+    ],
+    age: 20,
+    cared: false,
+  },
+  {
+    name: 'C',
+    parcels: [
+      [2, -3],
+      [3, -3],
+      [2, -2],
+      [3, -2],
+    ],
+    age: 50,
+    cared: true,
+  },
+]
+// Ten one-parcel fields, more than the left panel can show. The last field J is ripe.
+const tenFields: FieldPlan[] = Array.from({ length: 10 }, (_, i) => ({
+  name: String.fromCharCode(65 + i),
+  parcels: [[(i % 5) * 2 - 4, Math.floor(i / 5) * 2 - 7]],
+  age: i === 9 ? 80 : 10 + i * 5,
+  cared: true,
+}))
+
+// Saves the game to slot 1, writes the fields relative to the start parcel into it, and loads it.
+async function loadFields(page: import('@playwright/test').Page, plan: FieldPlan[]) {
+  await page.goto('/?seed=48213')
+  await page.getByTestId('save-button').click()
+  await page.getByTestId('save-slot-1').getByTestId('save-slot-save').click()
+  await page.evaluate(
+    ({ plan, hour }) => {
+      const key = 'coffeechain.save.slot-1'
+      const save = JSON.parse(localStorage.getItem(key)!)
+      const { start, size } = save.state.world
+      const parcels: Record<number, number> = {}
+      const plants: Record<number, object> = {}
+      plan.forEach((field, id) => {
+        for (const [dx, dy] of field.parcels) {
+          const index = (start.y + dy) * size + start.x + dx
+          if (save.state.world.parcels[index].zone === 'wasser')
+            throw new Error(`Water: ${dx},${dy}`)
+          parcels[index] = id
+          const care = { fertilized: true, irrigated: true, pestProtected: true }
+          plants[index] = {
+            variety: 'robusta',
+            plantedHour: hour - field.age,
+            ...(field.cared ? care : {}),
+          }
+        }
+      })
+      save.state.time = { hour, speed: 0 }
+      save.state.events = []
+      save.state.farm = {
+        parcels,
+        fields: plan.map((f, id) => ({ id, name: f.name })),
+        nextFieldId: plan.length,
+        plants,
+      }
+      localStorage.setItem(key, JSON.stringify(save))
+    },
+    { plan, hour: day12 },
+  )
+  await page.getByTestId('save-panel-close').click()
+  await page.getByTestId('save-button').click()
+  await page.getByTestId('save-slot-1').getByTestId('save-slot-load').click()
+  await page.getByTestId('first-steps-close').click()
+}
+
+type Box = { x: number; y: number; width: number; height: number }
+const apart = (a: Box, b: Box) =>
+  a.x + a.width <= b.x || b.x + b.width <= a.x || a.y + a.height <= b.y || b.y + b.height <= a.y
+
+for (const [width, height] of [
+  [1440, 900],
+  [800, 600],
+  [390, 844],
+] as const) {
+  test(`S59: field list in the left panel at ${width} px`, async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', (error) => errors.push(error.message))
+    await page.setViewportSize({ width, height })
+    await loadFields(page, threeFields)
+    const rows = page.getByTestId('field-row')
+    await expect(rows).toHaveCount(3)
+    await expect(rows.nth(0).getByTestId('field-state')).toHaveText('Erntereif')
+    await expect(rows.nth(1).getByTestId('field-state')).toHaveText('Braucht Pflege')
+    await expect(rows.nth(2)).toContainText('Blüte · 69 %')
+    await expect(page.getByTestId('message-panel')).toHaveCount(0)
+    const left = (await page.getByTestId('hud-left-panel').boundingBox())!
+    // All rows show whole at 800 px and more. At 390 px at least two rows show whole.
+    const list = (await page.getByTestId('field-list').boundingBox())!
+    let whole = 0
+    for (const row of await rows.all()) {
+      const box = (await row.boundingBox())!
+      if (box.y >= list.y && box.y + box.height <= list.y + list.height + 0.5) whole++
+    }
+    expect(whole).toBeGreaterThanOrEqual(width >= 800 ? 3 : 2)
+    for (const id of ['hud-overlay-panel', 'hud-top-bar', 'hud-right-panel']) {
+      const box = (await page.getByTestId(id).boundingBox())!
+      expect(apart(left, box), `${id} ${JSON.stringify([left, box])}`).toBe(true)
+    }
+    for (const row of await rows.all())
+      expect(await row.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+    await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
+    await page.screenshot({ path: `docs/progress/S59-${width}.png` })
+    expect(errors).toEqual([])
+  })
+}
+
+test('S59: a row click marks the field and centers the camera on it', async ({ page }) => {
+  await loadFields(page, threeFields)
+  // The label sits above its anchor, so the check uses its bottom center.
+  const centered = async () => {
+    const box = (await page.getByTestId('field-label-B').boundingBox())!
+    return Math.abs(box.x + box.width / 2 - 720) <= 144 && Math.abs(box.y + box.height - 450) <= 90
+  }
+  expect(await centered()).toBe(false)
+  const row = page.getByTestId('field-row').filter({ hasText: 'Feld B' })
+  await row.click()
+  await expect(row).toHaveAttribute('aria-current', 'true')
+  await expect(page.getByTestId('tool-select')).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByTestId('parcel-inspector')).toBeVisible()
+  // The fertilize tool keeps the marks it can act on: all 4 parcels of field B.
+  await page.getByTestId('tool-fertilize').click()
+  await expect(page.getByTestId('farm-tool-count')).toHaveText('4')
+  await page.getByTestId('tool-select').click()
+  await row.click()
+  await expect.poll(centered).toBe(true)
+  await page.screenshot({ path: 'docs/progress/S59-focus.png' })
+})
+
+test('S59: ten fields scroll inside the left panel at 800 px', async ({ page }) => {
+  await page.setViewportSize({ width: 800, height: 600 })
+  await loadFields(page, tenFields)
+  await expect(page.getByTestId('field-row')).toHaveCount(10)
+  await expect(page.getByTestId('message-panel')).toHaveCount(0)
+  const list = page.getByTestId('field-list')
+  expect(await list.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true)
+  // The ripe field J is last in field order, but its row shows first without a scroll.
+  const first = page.getByTestId('field-row').first()
+  await expect(first).toContainText('J')
+  await expect(first.getByTestId('field-state')).toHaveText('Erntereif')
+  expect(await list.evaluate((el) => el.scrollTop)).toBe(0)
+  const box = (await list.boundingBox())!
+  const row = (await first.boundingBox())!
+  expect(row.y).toBeGreaterThanOrEqual(box.y)
+  expect(row.y + row.height).toBeLessThanOrEqual(box.y + box.height)
+  const left = (await page.getByTestId('hud-left-panel').boundingBox())!
+  const overlay = (await page.getByTestId('hud-overlay-panel').boundingBox())!
+  expect(left.y + left.height).toBeLessThanOrEqual(overlay.y)
+  await page.screenshot({ path: 'docs/progress/S59-scroll.png' })
 })
 
 // Parses "457,2 CC" or "−42,8 CC Parzelle" into cents.

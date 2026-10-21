@@ -250,12 +250,20 @@
   },
   "messages": {
     "heading": "Meldungen",
-    "ripe": "Feld {name} ist erntereif",
-    "overripe": "Feld {name} ist überreif",
-    "needsCare": "Feld {name} braucht Pflege",
     "storageFull": "Lager voll",
-    "harvestPro": "Meilenstein Ernte-Profi erreicht: +5 % Erntequalität",
-    "none": "Keine Meldungen"
+    "harvestPro": "Meilenstein Ernte-Profi erreicht: +5 % Erntequalität"
+  },
+  "fieldList": {
+    "heading": "Deine Felder",
+    "empty": "Noch kein Feld bepflanzt.",
+    "parcels": "{n} Parzellen",
+    "parcelsOne": "1 Parzelle",
+    "progress": "{stage} · {n} %",
+    "states": {
+      "ripe": "Erntereif",
+      "overripe": "Überreif",
+      "care": "Braucht Pflege"
+    }
   },
   "events": {
     "warnTomorrow": "{warning} ab morgen",

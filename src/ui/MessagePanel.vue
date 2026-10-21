@@ -3,9 +3,6 @@ import { computed } from 'vue'
 import { useGameStore } from '../app/store'
 import { balance } from '../sim/balance'
 import { warnedEvents } from '../sim/events/schedule'
-import { overripeFactor } from '../sim/farm/overripe'
-import { growth } from '../sim/farm/plants'
-import { fieldNeedsCare } from '../sim/farm/status'
 import type { GameState } from '../sim/state'
 import { storageCapacity } from '../sim/storage/capacity'
 import { storageUsed } from '../sim/storage/storage'
@@ -27,20 +24,9 @@ const warnings = computed(() => {
 const messages = computed(() => {
   // The helpers only read the state, so the cast of the readonly snapshot is safe.
   const state = game.state as GameState
-  const { farm, storage, time, milestones } = state
-  const status = new Map<number, 'ripe' | 'overripe'>()
-  for (const [index, plant] of Object.entries(farm.plants)) {
-    const field = farm.parcels[Number(index)]
-    if (field === undefined || status.get(field) === 'overripe') continue
-    if (overripeFactor(plant, time.hour) < 1) status.set(field, 'overripe')
-    else if (growth(plant, time.hour).stage === 'reif') status.set(field, 'ripe')
-  }
-  const list = farm.fields.flatMap((f) => {
-    const key = status.get(f.id)
-    const out = key ? [t[key].replace('{name}', f.name)] : []
-    if (fieldNeedsCare(state, f.id)) out.push(t.needsCare.replace('{name}', f.name))
-    return out
-  })
+  const { storage, time, milestones } = state
+  // Field states are not here: the badges of the field list above show them.
+  const list: string[] = []
   if (storageUsed(storage) >= storageCapacity(state)) list.push(t.storageFull)
   const { harvestProHour } = milestones
   const { ticksPerGameDay } = balance().time
@@ -52,24 +38,26 @@ const messages = computed(() => {
 </script>
 
 <template>
-  <section class="messages" data-testid="message-panel">
+  <section v-if="warnings.length || messages.length" class="messages" data-testid="message-panel">
     <h2>{{ t.heading }}</h2>
-    <ul v-if="warnings.length || messages.length">
+    <ul>
       <li v-for="w in warnings" :key="w.text" data-testid="message">
         {{ w.text }}<small class="hint">{{ w.hint }}</small>
       </li>
       <li v-for="text in messages" :key="text" data-testid="message">{{ text }}</li>
     </ul>
-    <p v-else class="none">{{ t.none }}</p>
   </section>
 </template>
 
 <style scoped>
+/* Below the field list, at most half of the left panel. */
 .messages {
   box-sizing: border-box;
-  height: 100%;
+  flex: none;
+  max-height: calc(var(--left-max, 220px) / 2);
   overflow-y: auto;
-  padding: 20px;
+  padding: 12px 20px;
+  border-top: 1px solid rgb(255 255 255 / 8%);
 }
 h2 {
   margin: 0 0 8px;
@@ -91,11 +79,6 @@ li {
 .hint {
   display: block;
   font-size: 12px;
-  opacity: 0.8;
-}
-.none {
-  margin: 0;
-  font-size: 13px;
   opacity: 0.8;
 }
 </style>
