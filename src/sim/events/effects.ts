@@ -44,3 +44,10 @@ export function priceEventFactor(state: GameState, variety: Variety, day: number
   }
   return limit(factor)
 }
+
+// Growth time factor of one parcel: 1 + the monsoon cycle time of its zone, within ±events.maxEffect.
+export function cycleTimeEventFactor(state: GameState, parcelIndex: number, day: number): number {
+  if (!activeEvents(state, day).some((e) => e.type === 'monsoon')) return 1
+  const zone = state.world.parcels[parcelIndex]!.zone
+  return limit(1 + (balance().events.types.monsoon.cycleTime[zone] ?? 0))
+}

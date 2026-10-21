@@ -21,6 +21,8 @@ export interface PlantState {
   pendingUnits?: number
   // Overripe factor at the time pendingUnits was set. Missing means 1.
   overripeFactor?: number
+  // Game hours that events added to the growth time. Missing means 0.
+  growthDelayHours?: number
 }
 
 export type Stage = keyof Balance['farm']['visualStages'] | 'reif'
@@ -73,14 +75,19 @@ export function quotePlant(state: GameState, variety: Variety, count: number): n
   return Math.round(missing * bankSellPrice(state, variety, missing) * 100)
 }
 
-// Growth comes only from the game hours since planting, so it needs no per-tick state.
+export const ripeHour = (plant: PlantState, cfg: Balance = balance()): number =>
+  plant.plantedHour +
+  (plant.growthDelayHours ?? 0) +
+  cfg.varieties[plant.variety].cycleDays * cfg.time.ticksPerGameDay
+
+// Growth comes from the game hours since planting and the event delay, so it needs no per-tick state.
 export function growth(
   plant: PlantState,
   hour: number,
   cfg: Balance = balance(),
 ): { progress: number; stage: Stage } {
   const cycle = cfg.varieties[plant.variety].cycleDays * cfg.time.ticksPerGameDay
-  const progress = Math.min(1, (hour - plant.plantedHour) / cycle)
+  const progress = Math.min(1, (hour - ripeHour(plant, cfg) + cycle) / cycle)
   if (progress >= 1) return { progress, stage: 'reif' }
   const stages = Object.entries(cfg.farm.visualStages) as [Stage, number][]
   let stage = stages[0]![0]
