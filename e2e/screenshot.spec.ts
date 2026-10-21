@@ -1482,11 +1482,11 @@ const threeFields: FieldPlan[] = [
     cared: true,
   },
 ]
-// Ten one-parcel fields, more than the left panel can show.
+// Ten one-parcel fields, more than the left panel can show. The last field J is ripe.
 const tenFields: FieldPlan[] = Array.from({ length: 10 }, (_, i) => ({
   name: String.fromCharCode(65 + i),
   parcels: [[(i % 5) * 2 - 4, Math.floor(i / 5) * 2 - 7]],
-  age: 10 + i * 5,
+  age: i === 9 ? 80 : 10 + i * 5,
   cared: true,
 }))
 
@@ -1604,6 +1604,15 @@ test('S59: ten fields scroll inside the left panel at 800 px', async ({ page }) 
   await expect(page.getByTestId('message-panel')).toHaveCount(0)
   const list = page.getByTestId('field-list')
   expect(await list.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true)
+  // The ripe field J is last in field order, but its row shows first without a scroll.
+  const first = page.getByTestId('field-row').first()
+  await expect(first).toContainText('J')
+  await expect(first.getByTestId('field-state')).toHaveText('Erntereif')
+  expect(await list.evaluate((el) => el.scrollTop)).toBe(0)
+  const box = (await list.boundingBox())!
+  const row = (await first.boundingBox())!
+  expect(row.y).toBeGreaterThanOrEqual(box.y)
+  expect(row.y + row.height).toBeLessThanOrEqual(box.y + box.height)
   const left = (await page.getByTestId('hud-left-panel').boundingBox())!
   const overlay = (await page.getByTestId('hud-overlay-panel').boundingBox())!
   expect(left.y + left.height).toBeLessThanOrEqual(overlay.y)

@@ -76,6 +76,30 @@ describe('FieldList (S59)', () => {
     expect(list[0]).toMatch(/data-testid="field-state"[^>]*>Überreif</)
   })
 
+  it('round 2: rows that need action come first, overripe, ripe, care, then the others', async () => {
+    const hour = 3 * day
+    const names = async (plants: Record<number, PlantState>) =>
+      rows(await html(setup(plants))).map((r) => text(r).match(/Feld (\w)/)![1])
+    // A grows, B needs care, C is ripe, D is overripe.
+    expect(
+      await names({
+        0: { variety: 'robusta', plantedHour: hour - 10, ...cared },
+        5: { variety: 'robusta', plantedHour: hour - 10 },
+        10: { variety: 'robusta', plantedHour: 0, ...cared },
+        20: { variety: 'robusta', plantedHour: hour - late, ...cared },
+      }),
+    ).toEqual(['D', 'C', 'B', 'A'])
+    // Rows with the same state keep the field order.
+    expect(
+      await names({
+        0: { variety: 'robusta', plantedHour: 0, ...cared },
+        5: { variety: 'robusta', plantedHour: hour - 10, ...cared },
+        10: { variety: 'robusta', plantedHour: 0, ...cared },
+        20: { variety: 'robusta', plantedHour: hour - 10, ...cared },
+      }),
+    ).toEqual(['A', 'C', 'B', 'D'])
+  })
+
   it('AC-2: shows the empty line with no planted field', async () => {
     const h = await html(setup({}))
     expect(h).toContain('data-testid="field-list-empty"')

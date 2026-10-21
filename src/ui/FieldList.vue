@@ -13,7 +13,13 @@ const game = useGameStore()
 const selection = useSelectionStore()
 const view = useViewStore()
 // The helpers only read the state, so the cast of the readonly snapshot is safe.
-const rows = computed(() => fieldSummaries(game.state as GameState))
+const rank = { overripe: 0, ripe: 1, care: 2 } as const
+// sort() is stable, so rows with the same state keep the field order.
+const rows = computed(() =>
+  fieldSummaries(game.state as GameState).sort(
+    (a, b) => (a.state ? rank[a.state] : 3) - (b.state ? rank[b.state] : 3),
+  ),
+)
 const selected = computed(() => {
   const p = selection.parcel
   return p ? game.state.farm.parcels[p.y * game.state.world.size + p.x] : undefined
