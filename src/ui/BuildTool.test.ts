@@ -84,7 +84,9 @@ describe('BuildTool (S44)', () => {
     expect(selection.parcels).toEqual([empty2])
     expect(game.state.money).toBe(before - 15000)
     const text = await html(pinia)
-    expect(text).toMatch(new RegExp(`data-testid="money"[^>]*>${formatMoney(before - 15000)}<`))
+    expect(text).toMatch(
+      new RegExp(`data-testid="money"[^>]*>.*?</svg>${formatMoney(before - 15000)}<`),
+    )
     expect(button(text, 'processing')).toContain('disabled')
     expect(canSelect(game.state as GameState, 'plant', empty)).toBe(false)
   })
