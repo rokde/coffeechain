@@ -89,11 +89,14 @@ describe('save format', () => {
     const state = createState(1)
     const text = JSON.stringify({ version: 1, state: { ...state, a: 1 } })
     const m1 = (s: Record<string, unknown>) => ({ ...s, b: 2 })
-    const m2 = (s: Record<string, unknown>) => ({ ...s, money: Number(s.a) * 10 + Number(s.b) })
+    const m2 = (s: Record<string, unknown>) => ({
+      ...s,
+      money: Number(s.a) * 1000 + Number(s.b) * 100,
+    })
     const format = { version: 3, migrations: [m1, m2] }
-    expect(deserialize(text, format).money).toBe(12)
+    expect(deserialize(text, format).money).toBe(1200)
     const v2 = JSON.stringify({ version: 2, state: { ...state, a: 1, b: 5 } })
-    expect(deserialize(v2, format).money).toBe(15)
+    expect(deserialize(v2, format).money).toBe(1500)
   })
 
   describe('S42 schema check', () => {
@@ -267,8 +270,12 @@ describe('whole CC migration (S57)', () => {
   })
 
   it('AC-4: loads a version 8 save unchanged', () => {
-    const state = { ...createState(5), money: 12345, invested: 4599 }
+    const state = { ...createState(5), money: 12300, invested: 4500 }
     expect(deserialize(serialize(state))).toEqual(state)
+  })
+
+  it('Round 1: floors a version 8 save with fractions and does not reject it', () => {
+    expect(load(8, 15050.5, 4599)).toMatchObject({ money: 15000, invested: 4500 })
   })
 
   it('AC-4: still rejects a version 7 save with a bad money value', () => {

@@ -93,12 +93,12 @@ describe('save slots (S42)', () => {
   })
 
   it('AC-5: the store starts with the pending save and removes the key', async () => {
-    const state = { ...createState(7), money: 12345 }
+    const state = { ...createState(7), money: 12300 }
     session.setItem(PENDING, serialize(state))
     setStartState(await startState(location.search))
     const store = useGameStore()
     expect(store.state.world.seed).toBe(7)
-    expect(store.state.money).toBe(12345)
+    expect(store.state.money).toBe(12300)
     expect(session.getItem(PENDING)).toBeNull()
   })
 

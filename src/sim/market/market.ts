@@ -94,6 +94,10 @@ export function bankBuyPrice(
   return marketPrice(state.market, good, day, cfg, units / 2, event) * cfg.market.bankBuyFactor
 }
 
+// Whole-CC income of a sale, in hundredths of CC. The sell command and the HUD both use it.
+export const sellIncome = (state: GameState, variety: Variety, units: number, washed = false) =>
+  roundIncome(Math.round(units * bankBuyPrice(state, variety, units, washed) * 100))
+
 // Price in CC per unit that the bank asks for seed today.
 // With units, it is the price for each unit of a purchase of that size, at the mid volume of the purchase.
 export function bankSellPrice(state: GameState, variety: Variety, units = 0): number {
@@ -146,7 +150,7 @@ export function sell(state: GameState, command: Sell): GameState {
   const stored = state.storage.batches.filter(sellable).reduce((sum, b) => sum + b.units, 0)
   if (units > stored) throw new Error(`Not enough ${variety} in storage: ${stored} < ${units}`)
 
-  const income = roundIncome(Math.round(units * bankBuyPrice(state, variety, units, washed) * 100))
+  const income = sellIncome(state, variety, units, washed)
   // Batches are in harvest order, so the first batches are the oldest.
   let rest = units
   const batches = state.storage.batches

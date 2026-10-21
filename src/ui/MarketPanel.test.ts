@@ -6,7 +6,7 @@ import { processAll, sellAll, sellAllWashed } from '../app/market'
 import { useSelectionStore } from '../app/selection'
 import { useGameStore } from '../app/store'
 import { balance } from '../sim/balance'
-import { bankBuyPrice } from '../sim/market/market'
+import { bankBuyPrice, sellIncome } from '../sim/market/market'
 import { processCost } from '../sim/processing/process'
 import type { GameState } from '../sim/state'
 import Hud from './Hud.vue'
@@ -68,6 +68,50 @@ describe('MarketPanel (S20)', () => {
     expect(html).not.toContain('market-specialty')
     expect(html).not.toContain('Arabica Premium')
     expect(html).not.toContain('Specialty')
+  })
+
+  it('S57 round 1: names the unit prices as per unit', async () => {
+    const { pinia } = setup()
+    const robusta = block(await renderToString(createSSRApp(MarketPanel).use(pinia)), 'robusta')
+    expect(robusta).toContain('>Bank zahlt je Einheit</dt>')
+    expect(robusta).toContain('>Saatgut kostet je Einheit</dt>')
+    expect(robusta).toContain('>Bank zahlt (gewaschen) je Einheit</dt>')
+  })
+
+  it('S57 round 1: the hint says the storage costs at least 1 CC per day, 1 CC per 50 units', async () => {
+    const { pinia } = setup()
+    const html = await renderToString(createSSRApp(MarketPanel).use(pinia))
+    expect(1 / balance().storage.costPerUnitPerDay).toBe(50)
+    expect(field(html, 'hint')).toContain(
+      'Das Lager kostet pro Tag mindestens 1 CC, je 50 Einheiten 1 CC.',
+    )
+  })
+
+  it('S57 round 1: "Verkaufen" shows the whole income that sell books', async () => {
+    const { pinia, game } = setup()
+    const html = await renderToString(createSSRApp(MarketPanel).use(pinia))
+    const income = sellIncome(game.state as GameState, 'robusta', 10)
+    expect(income).toBe(300)
+    expect(field(block(html, 'robusta'), 'sell')!.trim()).toBe(
+      'Verkaufen (10\u00a0Einh., 3\u00a0CC)',
+    )
+    expect(sellButton(block(html, 'robusta'))).not.toContain('title=')
+    expect(field(block(html, 'arabicaStandard'), 'sell')!.trim()).toBe('Verkaufen')
+    const before = game.state.money
+    sellAll(game, 'robusta')
+    expect(game.state.money).toBe(before + income)
+  })
+
+  it('S57 round 1: a sale that pays 0 CC shows "0 CC" and says why, but stays possible', async () => {
+    const { pinia, game } = setup()
+    const state = game.state as GameState
+    game.replace({ ...state, storage: { batches: [{ variety: 'robusta', units: 2, quality: 1 }] } })
+    const html = block(await renderToString(createSSRApp(MarketPanel).use(pinia)), 'robusta')
+    expect(field(html, 'sell')!.trim()).toBe('Verkaufen (2\u00a0Einh., 0\u00a0CC)')
+    const why = 'Zu wenig Einheiten: Der Verkauf bringt unter 1 CC.'
+    expect(sellButton(html)).toContain(`title="${why}"`)
+    expect(sellButton(html)).toContain(`aria-label="Verkaufen (2\u00a0Einh., 0\u00a0CC). ${why}"`)
+    expect(sellButton(html)).not.toContain('disabled')
   })
 
   it('AC-4: each block has two flat lines with historyDays points', async () => {
@@ -156,7 +200,13 @@ describe('MarketPanel processing (S46)', () => {
     expect(field(html, 'washed-sell-price')).toBe('1,2 CC')
     expect(html).not.toContain('market-processing')
     expect(button(html, 'sell-washed')).not.toContain('disabled')
+    const income = sellIncome(game.state as GameState, 'arabicaStandard', 50, true)
+    expect(field(html, 'sell-washed')!.trim()).toBe(
+      `Gewaschen verkaufen (50\u00a0Einh., ${income / 100}\u00a0CC)`,
+    )
+    const before = game.state.money
     sellAllWashed(game, 'arabicaStandard')
+    expect(game.state.money).toBe(before + income)
     expect(game.state.storage.batches).toEqual([
       { variety: 'arabicaStandard', units: 10, quality: 100 },
     ])

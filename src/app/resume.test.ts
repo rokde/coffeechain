@@ -29,7 +29,7 @@ beforeEach(() => {
 
 const saved = () => {
   const state = createState(7)
-  return { ...state, time: { ...state.time, hour: 24 * 3 + 5 }, money: 4321 }
+  return { ...state, time: { ...state.time, hour: 24 * 3 + 5 }, money: 4300 }
 }
 
 describe('startState (S43b)', () => {
@@ -99,7 +99,7 @@ describe('startState (S43b)', () => {
 
   it('AC-2: a pending load wins over the autosave', async () => {
     local.set(AUTOSAVE, serialize(saved()))
-    const pending = { ...createState(9), money: 1 }
+    const pending = { ...createState(9), money: 100 }
     session.set(PENDING, serialize(pending))
     expect(await startState('')).toEqual(pending)
     expect(session.has(PENDING)).toBe(false)

@@ -23,12 +23,8 @@ export const MIGRATIONS: Migration[] = [
   (state) => ({ ...state, invested: 0 }),
   // 6 -> 7: S56 adds the buyer orders.
   (state) => ({ ...state, orders: { open: [], nextId: 0 } }),
-  // 7 -> 8: S57 books whole CC only. Old balances floor, so the rounding never gives money.
-  // A value that is not a number stays, so the schema reports it.
-  (state) => {
-    const floor = (v: unknown) => (typeof v === 'number' ? roundIncome(v) : v)
-    return { ...state, money: floor(state.money), invested: floor(state.invested) }
-  },
+  // 7 -> 8: S57 books whole CC only. deserialize floors money and invested on every load.
+  (state) => state,
 ]
 
 export interface SaveFormat {
@@ -71,5 +67,7 @@ export function deserialize(
     const issues = result.error.issues.map((i) => `${i.path.join('.') || 'state'}: ${i.message}`)
     throw new Error(`Save state is invalid: ${issues.join('; ')}`)
   }
-  return result.data
+  // Floor, so a save with fractions loads as whole CC and the rounding never gives money.
+  const { money, invested } = result.data
+  return { ...result.data, money: roundIncome(money), invested: roundIncome(invested) }
 }
