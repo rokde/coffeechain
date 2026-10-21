@@ -3,7 +3,7 @@ import { balance } from '../balance'
 import type { GameState } from '../state'
 import { cares } from './care'
 import { overripeFactor } from './overripe'
-import { growth, type Stage } from './plants'
+import { growth, ripeHour as ripeHourOf, type Stage } from './plants'
 
 export type CareCommand = keyof typeof cares
 
@@ -29,7 +29,7 @@ export function fieldStatus(
   const { hour } = state.time
   const day = cfg.time.ticksPerGameDay
   const { progress, stage } = growth(plant, hour, cfg)
-  const ripeHour = plant.plantedHour + cfg.varieties[plant.variety].cycleDays * day
+  const ripeHour = ripeHourOf(plant, cfg)
   const { enabled, graceDays, lossPerDay } = cfg.farm.overripe
   const overripe = overripeFactor(plant, hour, cfg) < 1
   const ripe = progress >= 1

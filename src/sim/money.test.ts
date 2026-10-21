@@ -5,6 +5,7 @@ import { dispatch, type Command } from './commands'
 import { isFree, quoteParcels } from './farm/parcels'
 import { quotePlant } from './farm/plants'
 import type { Variety } from './farm/yield'
+import { bankBuyPrice, bankSellPrice } from './market/market'
 import { roundCost, roundIncome } from './money'
 import { processCost } from './processing/process'
 import { createState, type GameState } from './state'
@@ -147,6 +148,28 @@ describe('S57 income rounds down per booking', () => {
     const state = { ...withStock(testState(), 30), orders: { open: [order], nextId: 1 } }
     expect(-spent(state, { type: 'DeliverOrder', id: 0 })).toBe(1700)
     expect(state.orders.open[0]!.price).toBe(59)
+  })
+})
+
+describe('S57 with a monsoon (S51c)', () => {
+  // The monsoon raises the Robusta bank price by 15 %. It does not change the seed price.
+  const monsoon = (state: GameState): GameState => ({
+    ...state,
+    events: [{ type: 'monsoon', announcedDay: 0, startDay: 1, endDay: 7 }],
+  })
+
+  it('AC-2: a bank sale pays whole CC, rounded down', () => {
+    const state = monsoon(withStock(testState(), 10))
+    // 3.98 CC × 1.15 = 4.577 CC → 4 CC.
+    expect(10 * bankBuyPrice(state, 'robusta', 10)).toBeCloseTo(4.577)
+    expect(-spent(state, { type: 'Sell', variety: 'robusta', units: 10 })).toBe(400)
+  })
+
+  it('AC-1: seed still costs whole CC, rounded up', () => {
+    const state = monsoon(testState())
+    expect(bankSellPrice(state, 'robusta')).toBe(bankSellPrice(testState(), 'robusta'))
+    expect(spent(state, { type: 'Buy', variety: 'robusta', units: 3 })).toBe(700)
+    expect(quotePlant(state, 'robusta', 3)).toBe(700)
   })
 })
 
