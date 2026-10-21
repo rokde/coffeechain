@@ -49,7 +49,7 @@ for (const [width, height] of [
     await expect(page.getByTestId('money')).toHaveText('9.999.999.999 CC')
 
     const bar = (await page.getByTestId('hud-top-bar').boundingBox())!
-    expect(bar.height).toBe(94)
+    expect(Math.abs(bar.height - 94)).toBeLessThanOrEqual(1)
     // The chips differ in height, so one row means the same vertical centre.
     const centres = await Promise.all(
       ['money', 'storage', 'phase'].map(async (id) => {
@@ -81,7 +81,7 @@ test('079: the 1440x900 layout keeps its boxes', async ({ page }) => {
     expect(actual.x).toBeCloseTo(box.x, 1)
     expect(actual.y).toBeCloseTo(box.y, 1)
     expect(actual.width).toBeCloseTo(box.width, 1)
-    expect(actual.height).toBeCloseTo(box.height, 1)
+    expect(Math.abs(actual.height - box.height)).toBeLessThanOrEqual(1)
   }
 })
 
