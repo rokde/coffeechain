@@ -104,6 +104,7 @@
     "label": "Karten-Overlays",
     "soil": "Bodenqualität",
     "zone": "Lagen",
+    "short": { "soil": "Boden", "zone": "Lagen" },
     "soilHint": "Dunkler Boden bringt mehr Ertrag pro Pflanze."
   },
   "money": "{n} CC",
@@ -235,14 +236,14 @@
     "heading": "Erste Schritte",
     "close": "Erste Schritte schließen",
     "steps": {
-      "overlay": "Boden-Overlay einschalten und eine gute Tiefland-Parzelle wählen",
+      "overlay": "Unten „Boden“ einschalten und eine gute Tiefland-Parzelle wählen",
       "parcel": "Erste Parzelle anlegen",
       "plant": "Robusta pflanzen",
       "fertilize": "Düngen",
       "sell": "Ernten und an die Bank verkaufen"
     },
     "hints": {
-      "overlay": "Schalte links das Boden-Overlay ein. Dunkelbraun ist guter Boden.",
+      "overlay": "Schalte unten „Boden“ ein (Taste O). Dunkelbraun ist guter Boden.",
       "parcel": "Wähle „Parzelle“, dann eine Tiefland-Parzelle auf der Karte.",
       "plant": "Wähle „Pflanzen“ und setze Robusta auf dein Feld.",
       "fertilize": "Wähle „Düngen“ und dünge dein Feld.",
@@ -312,6 +313,7 @@
     ],
     "controlsHeading": "Steuerung",
     "toolKey": "Werkzeug {label}",
+    "overlayKey": "Overlay {label} ein / aus",
     "controls": [
       { "keys": "Mausrad / Trackpad-Pinch", "text": "Zoom" },
       { "keys": "Linksklick mit Werkzeug", "text": "Werkzeug auf die Parzelle anwenden" },

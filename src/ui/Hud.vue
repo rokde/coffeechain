@@ -29,7 +29,7 @@ import OverlayPanel from './OverlayPanel.vue'
 import ParcelTool from './ParcelTool.vue'
 import PlantTool from './PlantTool.vue'
 import SavePanel from './SavePanel.vue'
-import { tools } from './toolbar'
+import { overlays, tools } from './toolbar'
 
 const store = useGameStore()
 const selection = useSelectionStore()
@@ -183,7 +183,6 @@ const phaseText = computed(() => {
       <FirstSteps v-if="steps.open && steps.current.next !== null" />
       <template v-else><FieldList /><MessagePanel /></template>
     </aside>
-    <OverlayPanel />
     <aside class="frame right-panel" data-testid="hud-right-panel">
       <ParcelTool v-if="selection.tool === 'parcel'" />
       <PlantTool v-else-if="selection.tool === 'plant'" />
@@ -206,6 +205,31 @@ const phaseText = computed(() => {
       >
         {{ tool.label }}
       </button>
+      <div class="overlays" role="group" :aria-label="de.overlay.label">
+        <button
+          v-for="overlay in overlays"
+          :key="overlay.id"
+          type="button"
+          :data-testid="`overlay-${overlay.id}`"
+          :aria-pressed="view.overlay === overlay.id"
+          :title="`${overlay.title} (${overlay.key})`"
+          :aria-keyshortcuts="overlay.key"
+          :data-guide="steps.guide === `overlay-${overlay.id}` ? 'next' : undefined"
+          @click="view.toggle(overlay.id)"
+        >
+          <svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true">
+            <path
+              :d="overlay.icon"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linejoin="round"
+            />
+          </svg>
+          <span>{{ overlay.label }}</span>
+        </button>
+      </div>
+      <OverlayPanel />
     </nav>
     <MoneyToasts />
     <FloatingCoins />
@@ -500,7 +524,7 @@ const phaseText = computed(() => {
   bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
-  width: min(820px, calc(100vw - 32px));
+  width: min(1000px, calc(100vw - 32px));
   height: 82px;
   display: flex;
   gap: 8px;
@@ -508,7 +532,6 @@ const phaseText = computed(() => {
 }
 .toolbar button {
   flex: 1 0 0;
-  min-width: 0;
   padding: 0 4px;
   border: 0;
   border-radius: 8px;
@@ -531,7 +554,28 @@ const phaseText = computed(() => {
   outline: 2px solid #f2c48d;
   outline-offset: 2px;
 }
-@media (max-width: 480px) {
+.overlays {
+  flex: 2 0 0;
+  display: flex;
+  gap: 8px;
+  padding-left: 8px;
+  border-left: 1px solid rgb(255 255 255 / 25%);
+}
+.overlays button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+/* Eleven buttons in one row need a smaller font. "Auswählen" keeps its full width. */
+@media (max-width: 900px) {
+  .toolbar button {
+    padding: 0;
+    font-size: 12px;
+  }
+}
+@media (max-width: 640px) {
   /* Nine tools do not fit in one row, so they use two rows of five and four. */
   .toolbar {
     height: auto;
@@ -544,6 +588,19 @@ const phaseText = computed(() => {
     height: 44px;
     padding: 0;
     font-size: 12px;
+  }
+  /* The overlay toggles take their own row below the tools. */
+  .overlays {
+    flex-basis: 100%;
+    gap: 4px;
+    padding: 4px 0 0;
+    border-left: 0;
+    border-top: 1px solid rgb(255 255 255 / 25%);
+  }
+  .overlays button {
+    flex: 1 0 0;
+    flex-direction: row;
+    gap: 6px;
   }
 }
 @media (max-width: 380px) {

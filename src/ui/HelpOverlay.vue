@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useViewStore } from '../app/view'
 import de from './i18n/de.json'
-import { tools } from './toolbar'
+import { overlays, tools } from './toolbar'
 
 const view = useViewStore()
 </script>
@@ -41,6 +41,10 @@ const view = useViewStore()
         <template v-for="tool in tools" :key="tool.id">
           <dt>{{ tool.key }}</dt>
           <dd>{{ de.help.toolKey.replace('{label}', tool.label) }}</dd>
+        </template>
+        <template v-for="overlay in overlays" :key="overlay.id">
+          <dt>{{ overlay.key }}</dt>
+          <dd>{{ de.help.overlayKey.replace('{label}', overlay.title) }}</dd>
         </template>
       </dl>
     </section>
