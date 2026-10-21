@@ -9,7 +9,7 @@ import { mulberry32 } from '../rng'
 import { createState, type GameState } from '../state'
 import { clock, step } from '../time/time'
 import type { Parcel, World, Zone } from '../world/types'
-import { priceEventFactor, yieldEventFactor } from './effects'
+import { cycleTimeEventFactor, priceEventFactor, yieldEventFactor } from './effects'
 import { activeEvents, type EventType, type GameEvent } from './schedule'
 
 const cfg = balance()
@@ -194,6 +194,26 @@ describe('event effects', () => {
     expect(yieldEventFactor({ ...testState('frost'), research: [day] }, 1, day)).toBeCloseTo(
       0.7 * (1 + cfg.events.types.research.yieldBonus),
     )
+  })
+
+  it('S51c AC-1: monsoon gives a capped cycle time factor of 1.3 only on Tiefland', () => {
+    const monsoon = testState('monsoon')
+    expect(cycleTimeEventFactor(monsoon, 0, day)).toBeCloseTo(1 + max)
+    expect(cycleTimeEventFactor(monsoon, 0, day)).toBeCloseTo(1.3)
+    expect(cycleTimeEventFactor(testState(), 0, day)).toBe(1)
+    expect(cycleTimeEventFactor(testState('frost', 'pests'), 0, day)).toBe(1)
+    for (const i of [1, 2, 3]) expect(cycleTimeEventFactor(monsoon, i, day)).toBe(1)
+  })
+
+  it('S51c AC-1: the cap limits the cycle time, it does not fix it', () => {
+    const cycleTime = cfg.events.types.monsoon.cycleTime
+    const before = cycleTime.tiefland!
+    cycleTime.tiefland = 0.2
+    try {
+      expect(cycleTimeEventFactor(testState('monsoon'), 0, day)).toBeCloseTo(1.2)
+    } finally {
+      cycleTime.tiefland = before
+    }
   })
 
   // Non-boundary ticks only add 1 to the hour, so one step from the last hour of the day is enough.

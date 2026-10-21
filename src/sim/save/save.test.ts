@@ -255,3 +255,32 @@ describe('orders migration (S56)', () => {
     expect(loaded).toEqual(createState(5))
   })
 })
+
+describe('growth delay (S51c)', () => {
+  it('AC-5: loads plants without growthDelayHours and round-trips the delay', () => {
+    const state = populated()
+    const plant = state.farm.plants[0]!
+    expect(plant.growthDelayHours).toBeUndefined()
+    const loaded = deserialize(serialize(state))
+    expect(loaded.farm.plants[0]!.growthDelayHours).toBeUndefined()
+    const ripe = state.time.hour + balance().varieties.robusta.cycleDays * perDay()
+    expect(growth(loaded.farm.plants[0]!, ripe - 1).progress).toBeLessThan(1)
+    expect(growth(loaded.farm.plants[0]!, ripe).stage).toBe('reif')
+
+    const delayed = {
+      ...state,
+      farm: {
+        ...state.farm,
+        plants: { ...state.farm.plants, 0: { ...plant, growthDelayHours: 5.5384615 } },
+      },
+    }
+    const text = serialize(delayed)
+    expect(deserialize(text).farm.plants[0]!.growthDelayHours).toBe(5.5384615)
+    expect(deserialize(text)).toEqual(delayed)
+    const bad = serialize({
+      ...delayed,
+      farm: { ...delayed.farm, plants: { 0: { ...plant, growthDelayHours: -1 } } },
+    })
+    expect(() => deserialize(bad)).toThrow(/growthDelayHours/)
+  })
+})
