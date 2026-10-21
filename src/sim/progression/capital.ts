@@ -3,10 +3,10 @@ import type { Variety } from '../farm/yield'
 import { bankBuyPrice } from '../market/market'
 import type { GameState } from '../state'
 
-// PRD §10: balance + stock at the bank buy price + paid parcels and buildings. Hundredths of CC.
+// PRD §10: balance + stock at the bank buy price (washed batches at the washed bank price) + paid parcels and buildings. Hundredths of CC.
 export function capital(state: GameState): number {
   const stock = state.storage.batches.reduce(
-    (sum, b) => sum + b.units * bankBuyPrice(state, b.variety),
+    (sum, b) => sum + b.units * bankBuyPrice(state, b.variety, 0, b.washed === true),
     0,
   )
   return state.money + Math.round(stock * 100) + state.invested
