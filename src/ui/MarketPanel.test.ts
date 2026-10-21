@@ -78,13 +78,15 @@ describe('MarketPanel (S20)', () => {
     expect(robusta).toContain('>Bank zahlt (gewaschen) je Einheit</dt>')
   })
 
-  it('S57 round 1: the hint says the storage costs at least 1 CC per day, 1 CC per 50 units', async () => {
+  it('S63 AC-1..3: the hint states the real storage cost rule', async () => {
     const { pinia } = setup()
     const html = await renderToString(createSSRApp(MarketPanel).use(pinia))
-    expect(1 / balance().storage.costPerUnitPerDay).toBe(50)
-    expect(field(html, 'hint')).toContain(
-      'Das Lager kostet pro Tag mindestens 1 CC, je 50 Einheiten 1 CC.',
-    )
+    const n = Math.round(1 / balance().storage.costPerUnitPerDay)
+    const hint = field(html, 'hint')!
+    expect(hint).toContain(`Das Lager kostet jeden Tag 1 CC je angefangene ${n} Einheiten.`)
+    expect(hint).toContain('Ein leeres Lager kostet nichts.')
+    expect(hint).not.toContain('mindestens')
+    expect(hint).not.toContain('{units}')
   })
 
   it('S57 round 1: "Verkaufen" shows the whole income that sell books', async () => {

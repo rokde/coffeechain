@@ -155,7 +155,7 @@
   },
   "marketPanel": {
     "heading": "Markt",
-    "hint": "Die Bank kauft Roh- und gewaschenen Kaffee und verkauft Saatgut. Verkäufe senken den Preis, Käufe heben ihn. Das Lager kostet pro Tag mindestens 1 CC, je {units} Einheiten 1 CC.",
+    "hint": "Die Bank kauft Roh- und gewaschenen Kaffee und verkauft Saatgut. Verkäufe senken den Preis, Käufe heben ihn. Das Lager kostet jeden Tag 1 CC je angefangene {units} Einheiten. Ein leeres Lager kostet nichts.",
     "stock": "Im Lager",
     "seeds": "Saatgut",
     "sellPrice": "Bank zahlt je Einheit",
