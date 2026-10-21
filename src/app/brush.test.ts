@@ -100,3 +100,18 @@ describe('isClick (S40)', () => {
     expect(isClick(-30, 12)).toBe(false)
   })
 })
+
+describe('brushParcel with Specialty (S48)', () => {
+  it('AC-4: gives "invalid" for a lowland parcel and Plant for a volcano parcel', () => {
+    const v = fresh.world.parcels.find((p) => p.zone === 'vulkan' && isFree(fresh, p.x, p.y))!
+    const volcano = { x: v.x, y: v.y }
+    const state = dispatch(
+      { ...fresh, money: 2000000 },
+      { type: 'CreateParcels', parcels: [a!, volcano] },
+    )
+    expect(brushParcel(state, 'plant', 'specialty', a!)).toBe('invalid')
+    const command = brushParcel(state, 'plant', 'specialty', volcano)
+    expect(command).toEqual({ type: 'Plant', variety: 'specialty', parcels: [volcano] })
+    expect(() => dispatch(state, command as Exclude<typeof command, string>)).not.toThrow()
+  })
+})

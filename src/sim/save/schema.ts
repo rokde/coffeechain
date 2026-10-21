@@ -71,6 +71,19 @@ export const gameStateSchema = z.object({
     ),
     seeds: z.partialRecord(z.string(), num),
   }),
+  orders: z.object({
+    open: z.array(
+      z.object({
+        id: int.nonnegative(),
+        variety,
+        units: int.positive(),
+        minQuality: int,
+        price: int.nonnegative(),
+        deadlineDay: int,
+      }),
+    ),
+    nextId: int.nonnegative(),
+  }),
   events: z.array(
     z.object({
       type: z.enum(['frost', 'monsoon', 'boom', 'crisis', 'pests']),

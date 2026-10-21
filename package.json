@@ -6,11 +6,14 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
-    "test": "vitest run",
+    "test": "vitest run --exclude src/app/perf.test.ts",
+    "test:perf": "vitest run src/app/perf.test.ts",
+    "test:ci": "npm test && npm run test:perf",
     "lint": "eslint .",
     "typecheck": "vue-tsc --noEmit",
     "format": "prettier --write .",
-    "screenshot": "playwright test",
+    "screenshot": "playwright test --project=screenshot",
+    "run30": "playwright test --project=run30",
     "tauri": "tauri",
     "balance-sim": "tsx tools/balance-sim.ts"
   },

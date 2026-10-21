@@ -4,6 +4,7 @@ import { useSelectionStore } from '../app/selection'
 import { useGameStore } from '../app/store'
 import { buildMenu } from '../sim/buildings/build'
 import type { GameState } from '../sim/state'
+import { nextStorageCapacity } from '../sim/storage/capacity'
 import { buildSelected, validParcels } from './farmAction'
 import de from './i18n/de.json'
 import { formatMoney } from './money'
@@ -15,6 +16,7 @@ const selection = useSelectionStore()
 const menu = computed(() => buildMenu(game.state as GameState))
 const targets = computed(() => validParcels(game.state as GameState, 'build').length)
 const hasTarget = computed(() => targets.value > 0)
+const nextCapacity = computed(() => nextStorageCapacity(game.state as GameState))
 </script>
 
 <template>
@@ -33,6 +35,13 @@ const hasTarget = computed(() => targets.value > 0)
             formatMoney(entry.cost)
           }}</span>
         </div>
+        <p
+          v-if="entry.kind === 'storage' && nextCapacity !== null"
+          class="info"
+          data-testid="build-tool-capacity"
+        >
+          {{ t.capacity.replace('{capacity}', String(nextCapacity)) }}
+        </p>
         <p v-if="entry.locked" class="short" data-testid="build-tool-locked">
           {{ t.locked.replace('{phase}', String(entry.requiredPhase)) }}
         </p>
@@ -95,6 +104,11 @@ ul {
 }
 .cost {
   font-weight: 600;
+}
+.info {
+  margin: 0 0 8px;
+  font-size: 13px;
+  opacity: 0.8;
 }
 .short {
   margin: 0 0 8px;

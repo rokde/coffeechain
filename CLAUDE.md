@@ -26,8 +26,11 @@ Nach Änderungen an Szene oder HUD: `npm run screenshot` (Playwright gegen den V
 ## Befehle
 - `npm run dev` – Vite im Browser
 - `npm run tauri dev` – als Mac-App
-- `npm test` – Vitest
+- `npm test` – Vitest ohne den Perf-Test (Filter wie `npm test -- src/sim/rng` gehen)
+- `npm run test:perf` – nur der Perf-Test
+- `npm run test:ci` – `npm test`, danach `npm run test:perf`
 - `npm run screenshot` – Playwright-Screenshots nach `docs/progress/`
+- `npm run run30` – 30-Tage-Durchlauf mit Screenshots (Playwright, nicht Teil von `npm run screenshot`)
 - `npm run build` / `npm run tauri build`
 - `npm run lint`, `npm run typecheck`
 

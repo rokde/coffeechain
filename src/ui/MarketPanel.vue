@@ -12,17 +12,23 @@ import { useGameStore } from '../app/store'
 import { balance } from '../sim/balance'
 import type { Variety } from '../sim/farm/yield'
 import { bankBuyPrice, bankSellPrice, priceHistory } from '../sim/market/market'
+import { isVarietyUnlocked } from '../sim/progression/capital'
 import { isRunning, runningUntil } from '../sim/processing/process'
 import type { GameState } from '../sim/state'
 import { clock } from '../sim/time/time'
 import de from './i18n/de.json'
 import { formatMoney } from './money'
+import OrdersPanel from './OrdersPanel.vue'
 
 const t = de.marketPanel
 const game = useGameStore()
 const cfg = balance()
-const varieties = (Object.keys(cfg.varieties) as Variety[]).filter(
-  (v) => cfg.varieties[v].unlockCapital === 0,
+// The sim functions only read the state, so the cast of the readonly snapshot is safe.
+const varieties = computed(() =>
+  (Object.keys(cfg.varieties) as Variety[]).filter(
+    (v) =>
+      isVarietyUnlocked(game.state as GameState, v) || storedUnits(game.state as GameState, v) > 0,
+  ),
 )
 const price = (cc: number) => formatMoney(Math.round(cc * 100))
 const lineLabel = (text: string) => text.replace('{days}', String(cfg.market.historyDays))
@@ -46,7 +52,7 @@ const blocks = computed(() => {
   const state = game.state as GameState
   const hasBuilding = Object.values(state.buildings).some((b) => b.kind === 'processing')
   const busy = state.storage.batches.some((b) => isRunning(b, state.time.hour))
-  return varieties.map((variety) => {
+  return varieties.value.map((variety) => {
     const units = processUnits(state, variety)
     const until = runningUntil(state, variety)
     const cost = Math.round(units * cfg.processing.washed.costPerUnit * 100)
@@ -75,6 +81,7 @@ const blocks = computed(() => {
   <section class="tool" data-testid="market-panel">
     <h2>{{ t.heading }}</h2>
     <p class="hint">{{ t.hint }}</p>
+    <OrdersPanel />
     <article v-for="b in blocks" :key="b.variety" class="good" :data-testid="`market-${b.variety}`">
       <h3>{{ de.inspector.varieties[b.variety] }}</h3>
       <dl>

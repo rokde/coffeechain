@@ -10,7 +10,7 @@ import { dispatch } from '../sim/commands'
 import type { GameState } from '../sim/state'
 import Hud from './Hud.vue'
 import PlantTool from './PlantTool.vue'
-import { plantSelected } from './plantAction'
+import { plantSelected, plantVarieties } from './plantAction'
 import { tools } from './toolbar'
 
 vi.stubGlobal('location', { search: '?seed=42' })
@@ -57,12 +57,10 @@ describe('PlantTool (S13)', () => {
     expect(html).not.toContain('data-testid="parcel-tool"')
   })
 
-  it('AC-3: shows Robusta and Arabica Standard only, Robusta is the default', async () => {
+  it('AC-3: shows 4 varieties, Robusta is the default', async () => {
     const html = await render(50000)
-    expect(html).toContain('Robusta')
-    expect(html).toContain('Arabica Standard')
-    expect(html).not.toContain('Arabica Premium')
-    expect(html).not.toContain('Specialty')
+    for (const v of plantVarieties) expect(html).toContain(`plant-tool-variety-${v}`)
+    expect(plantVarieties).toHaveLength(4)
     expect(html).toContain('data-testid="plant-tool-variety-robusta" aria-pressed="true"')
     expect(useSelectionStore(createPinia()).variety).toBe('robusta')
   })
@@ -109,5 +107,84 @@ describe('PlantTool (S13)', () => {
       expect(game.state.farm.plants[y * size + x]?.variety).toBe('arabicaStandard')
     expect(game.state.money).toBe(50000 - 801)
     expect(selection.parcels).toEqual([])
+  })
+})
+
+describe('PlantTool locked varieties (S48)', () => {
+  const button = (html: string, v: string) =>
+    html.match(new RegExp(`<button[^>]*plant-tool-variety-${v}"[^>]*>[\\s\\S]*?</button>`))![0]
+
+  // A new game with the balance set so that capital is money: no stock, nothing invested.
+  async function renderNew(money: number) {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const game = useGameStore(pinia)
+    game.replace({ ...(game.state as GameState), money })
+    useSelectionStore(pinia).tool = 'plant'
+    return renderToString(createSSRApp(PlantTool).use(pinia))
+  }
+
+  it('AC-3: in a new game Arabica Premium and Spezialität are disabled with their condition', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const html = await renderToString(createSSRApp(PlantTool).use(pinia))
+    for (const v of ['robusta', 'arabicaStandard']) {
+      expect(button(html, v)).not.toContain('disabled')
+      expect(button(html, v)).not.toContain('plant-tool-locked')
+    }
+    const premium = button(html, 'arabicaPremium')
+    expect(premium).toContain('disabled')
+    expect(premium).toContain('Arabica Premium')
+    expect(premium).toMatch(/plant-tool-locked-arabicaPremium[^>]*>[^<]*Phase 2[^<]*2\.000 CC</)
+    const specialty = button(html, 'specialty')
+    expect(specialty).toContain('disabled')
+    expect(specialty).toContain('Spezialität')
+    expect(specialty).toMatch(/plant-tool-locked-specialty[^>]*>[^<]*Phase 3[^<]*10\.000 CC</)
+  })
+
+  it('AC-3: at 2.000 CC capital Arabica Premium is enabled and Spezialität stays disabled', async () => {
+    const html = await renderNew(200000)
+    expect(button(html, 'arabicaPremium')).not.toContain('disabled')
+    expect(html).not.toContain('plant-tool-locked-arabicaPremium')
+    expect(button(html, 'specialty')).toContain('disabled')
+    expect(html).toContain('plant-tool-locked-specialty')
+  })
+
+  it('UX: Spezialität says "nur auf Vulkanboden", locked or not', async () => {
+    for (const money of [0, 1000000]) {
+      const specialty = button(await renderNew(money), 'specialty')
+      expect(specialty).toMatch(/plant-tool-zone-specialty[^>]*>\s*nur auf Vulkanboden\s*</)
+      expect(specialty.includes('plant-tool-locked-specialty')).toBe(money === 0)
+    }
+    expect(button(await renderNew(0), 'robusta')).not.toContain('Vulkanboden')
+  })
+
+  it('AC-4: with Specialty the count and the plant action use only the volcano parcels', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const game = useGameStore(pinia)
+    const state = game.state as GameState
+    const free = (zone: string) =>
+      state.world.parcels
+        .filter((p) => p.zone === zone && isBuildable(state.world, p.x, p.y))
+        .map(({ x, y }) => ({ x, y }))
+    const volcano = free('vulkan').slice(0, 2)
+    const parcels = [...volcano, free('tiefland')[0]!]
+    expect(volcano).toHaveLength(2)
+    game.replace(dispatch({ ...state, money: 2000000 }, { type: 'CreateParcels', parcels }))
+    const selection = useSelectionStore(pinia)
+    selection.tool = 'plant'
+    selection.variety = 'specialty'
+    for (const p of parcels) selection.toggle(game.state as GameState, p)
+    expect(selection.parcels).toHaveLength(3)
+    const html = await renderToString(createSSRApp(PlantTool).use(pinia))
+    expect(html).toMatch(/plant-tool-count"[^>]*>2</)
+    plantSelected()
+    const { size } = game.state.world
+    expect(Object.values(game.state.farm.plants).map((p) => p.variety)).toEqual([
+      'specialty',
+      'specialty',
+    ])
+    for (const { x, y } of volcano) expect(game.state.farm.plants[y * size + x]).toBeDefined()
   })
 })
