@@ -1439,3 +1439,117 @@ test('S56: deliver a buyer order in the market panel', async ({ page }) => {
   await expect(page.getByTestId('market-robusta').getByTestId('market-stock')).toHaveText('30')
   expect(errors).toEqual([])
 })
+
+// Parses "457,2 CC" or "−42,8 CC Parzelle" into cents.
+const cents = (text: string) =>
+  Math.round(Number(/[\d.,]+/.exec(text)![0].replaceAll('.', '').replace(',', '.')) * 100)
+
+test('S58: a brush stroke shows one money toast', async ({ page }) => {
+  await page.clock.install()
+  await page.goto('/?seed=48213')
+  await page.getByTestId('first-steps-close').click()
+  await page.getByTestId('speed-0').click()
+  const money = page.getByTestId('money')
+  const before = cents((await money.textContent())!)
+  await page.getByTestId('tool-parcel').click()
+  // A stopped clock keeps the stroke inside one hold time, also on a slow machine.
+  await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 1000)
+  await page.mouse.move(607, 357)
+  await page.mouse.down()
+  await page.mouse.move(758, 417, { steps: 10 })
+  await page.mouse.up()
+  // Read the money chip and all toasts in one step, and wait until the toast shows the full sum.
+  const read = () =>
+    page.evaluate(() => ({
+      money: document.querySelector('[data-testid="money"]')!.textContent!,
+      toasts: [...document.querySelectorAll('[data-testid="money-toast"]')].map((el) =>
+        el.textContent!.trim(),
+      ),
+    }))
+  await expect
+    .poll(async () => {
+      const { money, toasts } = await read()
+      return toasts.map((text) => [text, cents(text) === before - cents(money)])
+    })
+    .toEqual([[expect.stringMatching(/^−[\d.,]+ CC Parzelle$/), true]])
+  const spent = before - cents((await read()).money)
+  // Three or more parcels at the price of the first one.
+  expect(spent).toBeGreaterThanOrEqual(3 * 2140)
+  // The fake clock moves 2 s on, also when the machine is slow.
+  await page.clock.runFor(2000)
+  await expect(page.getByTestId('money-toast')).toHaveCount(0)
+})
+
+for (const [width, height, events] of [
+  [1440, 900, activeAndWarned],
+  [800, 800, fourActive],
+  [390, 844, activeAndWarned],
+] as const) {
+  test(`S58: money toast fits beside the panels at ${width} px`, async ({ page }) => {
+    await page.clock.install()
+    await page.setViewportSize({ width, height })
+    await page.goto('/?seed=4294967295')
+    await page.getByTestId('save-button').click()
+    await page.getByTestId('save-slot-1').getByTestId('save-slot-save').click()
+    await page.evaluate((events) => {
+      const key = 'coffeechain.save.slot-1'
+      const save = JSON.parse(localStorage.getItem(key)!)
+      save.state.time = { ...save.state.time, hour: 4 * 24 + 8, speed: 0 }
+      save.state.events = events
+      localStorage.setItem(key, JSON.stringify(save))
+    }, events)
+    await page.getByTestId('save-panel-close').click()
+    await page.getByTestId('save-button').click()
+    await page.getByTestId('save-slot-1').getByTestId('save-slot-load').click()
+    await page.getByTestId('first-steps-close').click()
+    await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
+    await page.getByTestId('tool-parcel').click()
+    // Stop the fake clock, so the toast stays for the checks and the screenshot.
+    await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 1000)
+    await page.locator('canvas#scene').click({ position: { x: width / 2, y: height / 2 } })
+    const toast = page.getByTestId('money-toast')
+    await expect(toast).toHaveText(/Parzelle$/)
+    await toast.evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)))
+
+    const box = async (id: string) => (await page.getByTestId(id).boundingBox())!
+    const t = (await toast.boundingBox())!
+    await expect(toast).toBeInViewport({ ratio: 1 })
+    const others = [
+      await box('hud-toolbar'),
+      await box('hud-right-panel'),
+      await box('hud-left-panel'),
+      await box('hud-top-bar'),
+    ]
+    for (const chip of await page.getByTestId('active-event').all())
+      others.push((await chip.boundingBox())!)
+    expect(others.length).toBeGreaterThan(4)
+    for (const b of others) {
+      const apart =
+        t.x + t.width <= b.x ||
+        b.x + b.width <= t.x ||
+        t.y + t.height <= b.y ||
+        b.y + b.height <= t.y
+      expect(apart, JSON.stringify([t, b])).toBe(true)
+    }
+    await page.screenshot({ path: `docs/progress/S58-${width}.png` })
+  })
+}
+
+test('S58: the money toast does not move with reduced motion', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.clock.install()
+  await page.goto('/?seed=48213')
+  await page.getByTestId('first-steps-close').click()
+  await page.getByTestId('speed-0').click()
+  await page.getByTestId('tool-parcel').click()
+  // Stop the fake clock, so the toast stays for the check.
+  await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 1000)
+  await page.locator('canvas#scene').click({ position: { x: 607, y: 357 } })
+  const toast = page.getByTestId('money-toast')
+  await expect(toast).toHaveCount(1)
+  const durations = await toast.evaluate((el) => {
+    const style = getComputedStyle(el)
+    return [style.transitionDuration, style.animationDuration]
+  })
+  expect(durations).toEqual(['0s', '0s'])
+})
