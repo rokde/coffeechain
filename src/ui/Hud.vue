@@ -42,11 +42,14 @@ const clockText = computed(() => {
   }
 })
 // The helpers only read the state, so the cast of the readonly snapshot is safe.
-const storageText = computed(() =>
-  de.storage
+const storageText = computed(() => {
+  const full = de.storage
     .replace('{used}', String(storageUsed((store.state as GameState).storage)))
-    .replace('{capacity}', String(storageCapacity(store.state as GameState))),
-)
+    .replace('{capacity}', String(storageCapacity(store.state as GameState)))
+  // The word before the numbers. At 480 px or less only the crate icon names the value.
+  const word = de.storage.slice(0, de.storage.indexOf('{used}'))
+  return { full, word, numbers: full.slice(word.length) }
+})
 const phaseText = computed(() => {
   const state = store.state as GameState
   const { next, share } = phaseProgress(state)
@@ -113,7 +116,7 @@ const phaseText = computed(() => {
               /></svg
             >{{ formatMoney(store.state.money) }}</span
           >
-          <span data-testid="storage"
+          <span data-testid="storage" :title="storageText.full" :aria-label="storageText.full"
             ><svg viewBox="0 0 16 16" width="22" height="22" aria-hidden="true">
               <path
                 d="M2 5h12v9H2z M2 5l1.5-3h9L14 5 M6 8h4"
@@ -122,7 +125,10 @@ const phaseText = computed(() => {
                 stroke-width="1.5"
                 stroke-linejoin="round"
               /></svg
-            >{{ storageText }}</span
+            ><span
+              ><span class="storage-word">{{ storageText.word }}</span
+              >{{ storageText.numbers }}</span
+            ></span
           >
         </div>
         <span class="chip" data-testid="phase" :title="phaseText.hint" :aria-label="phaseText.label"
@@ -217,12 +223,15 @@ const phaseText = computed(() => {
   height: 60px;
   display: flex;
   align-items: center;
-  padding: 0 20px;
+  padding: 0 16px;
   font-size: 20px;
 }
 .name {
   display: flex;
   flex-direction: column;
+}
+.name strong {
+  font-size: 18px;
 }
 .name small {
   font-size: 12px;
@@ -231,13 +240,14 @@ const phaseText = computed(() => {
 .time {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 8px;
   margin: 0 auto;
+  padding: 0 8px;
   font-size: 15px;
   font-weight: 600;
 }
 .chip {
-  padding: 8px 16px;
+  padding: 8px 12px;
   border-radius: 999px;
   background: rgb(255 255 255 / 8%);
   white-space: nowrap;
@@ -245,17 +255,17 @@ const phaseText = computed(() => {
 .stats {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   font-size: 15px;
   font-weight: 600;
 }
 .money-group {
   display: flex;
-  gap: 16px;
+  gap: 12px;
   font-size: 20px;
   font-weight: 700;
 }
-.money-group span {
+.money-group > span {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -267,7 +277,7 @@ const phaseText = computed(() => {
   align-items: center;
   gap: 8px;
   height: 44px;
-  margin-left: 12px;
+  margin-left: 8px;
   padding: 0 12px;
   border: 0;
   border-radius: 8px;
@@ -286,7 +296,7 @@ const phaseText = computed(() => {
   flex: none;
   width: 44px;
   height: 44px;
-  margin-left: 12px;
+  margin-left: 8px;
   border: 0;
   border-radius: 8px;
   background: rgb(255 255 255 / 8%);
@@ -331,7 +341,7 @@ const phaseText = computed(() => {
     height: 94px;
     flex-wrap: wrap;
     align-content: space-between;
-    padding: 8px 20px 6px;
+    padding: 8px 16px 6px;
   }
   .stats {
     order: 1;
@@ -405,16 +415,27 @@ const phaseText = computed(() => {
     margin-left: 2px;
   }
 }
-/* The second row must fit the money group, so the phase drops the progress. */
+/* The second row must fit the money group, so the phase drops the progress and the storage its word. */
 @media (max-width: 480px) {
-  .phase-progress {
+  .top-bar {
+    height: auto;
+    min-height: 94px;
+  }
+  /* shortcut: a wrapped row makes the bar taller than the panel tops expect, only for very large values. */
+  .stats {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 32px;
+  }
+  .phase-progress,
+  .storage-word {
     display: none;
   }
   .stats,
   .money-group {
     gap: 6px;
   }
-  .money-group span {
+  .money-group > span {
     gap: 4px;
   }
   .stats .chip {

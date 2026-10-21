@@ -68,8 +68,10 @@ describe('Hud money group (S58c)', () => {
     setActivePinia(pinia)
     const html = await renderToString(createSSRApp(Hud).use(pinia))
     const group = html.match(/<div[^>]*data-testid="money-group"[^>]*>(.*?)<\/div>/)![1]!
-    const item = (id: string) => {
-      const inner = group.match(new RegExp(`data-testid="${id}"[^>]*>(.*?)</span>`))![1]!
+    // Money is the first item and storage the second one.
+    const [money, storage] = group.split(/(?=<span[^>]*data-testid="storage")/)
+    const item = (html: string) => {
+      const inner = html.replace(/^<span[^>]*>/, '')
       const svgs = inner.match(/<svg[^>]*>/g) ?? []
       return {
         icons: svgs.length,
@@ -80,9 +82,11 @@ describe('Hud money group (S58c)', () => {
           .trim(),
       }
     }
-    expect(item('storage')).toEqual({ icons: 1, hidden: true, text: 'Lager 0 / 100' })
+    expect(item(storage!)).toEqual({ icons: 1, hidden: true, text: 'Lager 0 / 100' })
+    // At 480 px or less the word "Lager" is hidden, so the tooltip and the label keep it.
+    expect(storage).toMatch(/^<span[^>]*title="Lager 0 \/ 100" aria-label="Lager 0 \/ 100"/)
     // 069-whole-cc can drop the decimals, so both forms pass.
-    expect(item('money')).toMatchObject({ icons: 1, hidden: true })
-    expect(item('money').text).toMatch(/^500(,00)? CC$/)
+    expect(item(money!)).toMatchObject({ icons: 1, hidden: true })
+    expect(item(money!).text).toMatch(/^500(,00)? CC$/)
   })
 })

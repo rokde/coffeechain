@@ -1348,6 +1348,63 @@ for (const [width, height] of [
   })
 }
 
+// 9.000 CC is the widest phase 2 chip ("Phase 2 · 88 %") with a long money text.
+for (const [width, height, money] of [
+  [1280, 800, 1_234_500],
+  [1280, 800, 900_000],
+  [390, 844, 1_234_500],
+  [360, 640, 1_234_500],
+] as const) {
+  test(`S58c: large values fit the top bar at ${width} px with ${money / 100} CC`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height })
+    await page.goto('/?seed=4294967295')
+    await page.getByTestId('save-button').click()
+    await page.getByTestId('save-slot-1').getByTestId('save-slot-save').click()
+    await page.evaluate((money) => {
+      const key = 'coffeechain.save.slot-1'
+      const save = JSON.parse(localStorage.getItem(key)!)
+      save.state.time = { ...save.state.time, hour: 998 * 24 + 8, speed: 0 }
+      save.state.money = money
+      // Two Lager-Ausbau stages give the largest capacity, 600.
+      save.state.buildings = { 0: { kind: 'storage' }, 1: { kind: 'storage' } }
+      save.state.storage = { batches: [{ variety: 'robusta', units: 120, quality: 100 }] }
+      localStorage.setItem(key, JSON.stringify(save))
+    }, money)
+    await page.getByTestId('save-panel-close').click()
+    await page.getByTestId('save-button').click()
+    await page.getByTestId('save-slot-1').getByTestId('save-slot-load').click()
+    await page.getByTestId('first-steps-close').click()
+    await expect(page.getByTestId('clock')).toHaveText('Tag 999 · 08:00')
+    // 069-whole-cc drops the decimals. Whole values are the same in both forms.
+    await expect(page.getByTestId('money')).toHaveText(
+      `${(money / 100).toLocaleString('de-DE')} CC`,
+    )
+    await expect(page.getByTestId('storage')).toHaveAttribute('title', 'Lager 120 / 600')
+
+    const bar = page.getByTestId('hud-top-bar')
+    expect(await bar.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+    const frame = (await bar.boundingBox())!
+    const boxes: { x: number; y: number; width: number; height: number }[] = []
+    for (const id of ['clock', 'money', 'storage', 'phase', 'save-button', 'help-button']) {
+      const part = page.getByTestId(id)
+      await expect(part).toBeInViewport({ ratio: 1 })
+      const b = (await part.boundingBox())!
+      expect(b.x, id).toBeGreaterThanOrEqual(frame.x)
+      expect(b.x + b.width, id).toBeLessThanOrEqual(frame.x + frame.width)
+      boxes.push(b)
+    }
+    boxes.push((await page.getByRole('group', { name: 'Spielgeschwindigkeit' }).boundingBox())!)
+    const apart = (a: (typeof boxes)[0], b: (typeof boxes)[0]) =>
+      a.x + a.width <= b.x || b.x + b.width <= a.x || a.y + a.height <= b.y || b.y + b.height <= a.y
+    for (const [i, a] of boxes.entries())
+      for (const b of boxes.slice(i + 1)) expect(apart(a, b), JSON.stringify([a, b])).toBe(true)
+    if (money === 1_234_500)
+      await page.screenshot({ path: `docs/progress/S58c-large-${width}.png` })
+  })
+}
+
 test('S46: process raw coffee and sell washed coffee in the market panel', async ({ page }) => {
   const errors: string[] = []
   page.on('console', (msg) => {
