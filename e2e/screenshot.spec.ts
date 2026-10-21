@@ -934,6 +934,24 @@ test('S35a: help button and overlay fit a narrow window', async ({ page }) => {
   expect(panel.x + panel.width).toBeLessThanOrEqual(360)
 })
 
+for (const [width, height] of [[1440, 900] as const, [800, 600] as const, [390, 700] as const]) {
+  test(`S62: help with washing and storage fits and scrolls at ${width} px`, async ({ page }) => {
+    await page.setViewportSize({ width, height })
+    await page.goto('/')
+    await page.getByTestId('help-button').click()
+    const panel = page.getByTestId('help-overlay')
+    const box = (await panel.boundingBox())!
+    expect(box.x).toBeGreaterThanOrEqual(0)
+    expect(box.x + box.width).toBeLessThanOrEqual(width)
+    expect(box.y + box.height).toBeLessThanOrEqual(height)
+    await expect(page.getByTestId('help-washing')).toContainText('Gewaschen verkaufen')
+    await expect(page.getByTestId('help-storage')).toContainText('Lager-Ausbau')
+    await panel.evaluate((el) => el.scrollTo(0, el.scrollHeight))
+    await expect(page.getByTestId('help-controls').locator('dd').last()).toBeInViewport()
+    await page.screenshot({ path: `docs/progress/help-buildings-${width}.png` })
+  })
+}
+
 test('S25: help keys work while the checklist is open', async ({ page }) => {
   await page.goto('/?seed=48213')
   await expect(page.getByTestId('first-steps')).toBeVisible()
