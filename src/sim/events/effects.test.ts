@@ -230,31 +230,51 @@ describe('event effects', () => {
     expect(fast).toEqual(slow)
   })
 
+  // The factors read only these inputs, so two days with the same key give the same factors.
+  const factorKey = (state: GameState, d: number) => {
+    const active = activeEvents(state, d)
+    const types = active.map((e) => e.type).sort()
+    const research = state.research.filter((start) => start <= d).length
+    const pests = active.find((e) => e.type === 'pests')?.startDay ?? null
+    return JSON.stringify([types, research, pests])
+  }
+
+  // Runs one seed over the days and checks the factors once for each new key.
+  const scan = (seed: number, days: number, key: (state: GameState, d: number) => string) => {
+    let state = createState(seed)
+    let most = 0
+    let low = 1
+    let high = 1
+    const factors = new Set<number>()
+    const check = (f: number) => {
+      low = Math.min(low, f)
+      high = Math.max(high, f)
+      factors.add(f)
+    }
+    const checked = new Set<string>()
+    for (let d = 1; d <= days; d++) {
+      most = Math.max(most, activeEvents(state, d).length)
+      const k = key(state, d)
+      if (!checked.has(k)) {
+        checked.add(k)
+        for (let i = 0; i < state.world.parcels.length; i++) check(yieldEventFactor(state, i, d))
+        for (const v of varieties) check(priceEventFactor(state, v, d))
+      }
+      state = nextDay(state)
+    }
+    return { most, low, high, factors: [...factors].sort((a, b) => a - b) }
+  }
+
+  it('the factor key loses nothing: 200 days give the same results as a check on each day', () => {
+    const keyed = scan(1, 200, factorKey)
+    expect(keyed).toEqual(scan(1, 200, (_, d) => String(d)))
+    // Pests give a different factor per parcel, so many values show that events occur.
+    expect(keyed.factors.length).toBeGreaterThan(10)
+  })
+
   it('AC-5: 1,000 days on 20 seeds keep at most 2 active events and factors in [0.7, 1.3]', () => {
     for (let s = 1; s <= 20; s++) {
-      let state = createState(s)
-      let most = 0
-      let low = 1
-      let high = 1
-      const check = (f: number) => {
-        low = Math.min(low, f)
-        high = Math.max(high, f)
-      }
-      // The factors depend only on the active events, so each set of active events is checked once.
-      const checked = new Set<string>()
-      for (let d = 1; d <= 1000; d++) {
-        const active = activeEvents(state, d)
-        most = Math.max(most, active.length)
-        const key = JSON.stringify(active)
-        if (!checked.has(key)) {
-          checked.add(key)
-          for (let i = 0; i < state.world.parcels.length; i++) {
-            check(yieldEventFactor(state, i, d))
-          }
-          for (const v of varieties) check(priceEventFactor(state, v, d))
-        }
-        state = nextDay(state)
-      }
+      const { most, low, high } = scan(s, 1000, factorKey)
       expect(most).toBe(2)
       expect(low).toBeGreaterThanOrEqual(0.7)
       expect(high).toBeLessThanOrEqual(1.3)
