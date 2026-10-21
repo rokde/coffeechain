@@ -30,6 +30,7 @@ const plant = z.object({
   pestProtected: z.boolean().optional(),
   pendingUnits: num.optional(),
   overripeFactor: num.optional(),
+  growthDelayHours: num.nonnegative().optional(),
 })
 
 // Shape check of a loaded state. The output type must stay assignable to GameState.

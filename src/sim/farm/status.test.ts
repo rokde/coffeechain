@@ -149,6 +149,14 @@ describe('fieldSummaries (S59)', () => {
     expect(row).toMatchObject({ stage: 'wachstum', percent: 41, state: 'care' })
   })
 
+  it('merge S51c: the monsoon delay lowers the progress and moves the ripe hour', () => {
+    // 12 delay hours: (30 - 12) / 72 gives 25 %.
+    const [row] = fieldSummaries(farm(30, { 0: robusta(0, { ...cared, growthDelayHours: 12 }) }))
+    expect(row).toMatchObject({ stage: 'wachstum', percent: 25, state: null })
+    const [late] = fieldSummaries(farm(72, { 0: robusta(0, { ...cared, growthDelayHours: 12 }) }))
+    expect(late).toMatchObject({ stage: 'bluete', percent: 83, state: null })
+  })
+
   it('AC-1: a field with mixed varieties gives the majority variety', () => {
     expect(balance().varieties.arabicaStandard.cycleDays).toBe(5)
     const arabica: PlantState = { variety: 'arabicaStandard', plantedHour: 0, ...cared }
