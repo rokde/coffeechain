@@ -1475,9 +1475,9 @@ test('S58: a brush stroke shows one money toast', async ({ page }) => {
   const spent = before - cents((await read()).money)
   // Three or more parcels at the price of the first one.
   expect(spent).toBeGreaterThanOrEqual(3 * 2140)
-  await page.clock.resume()
-  await page.waitForTimeout(2000)
-  await expect(page.getByTestId('money-toast')).toHaveCount(0, { timeout: 1 })
+  // The fake clock moves 2 s on, also when the machine is slow.
+  await page.clock.runFor(2000)
+  await expect(page.getByTestId('money-toast')).toHaveCount(0)
 })
 
 for (const [width, height, events] of [
@@ -1537,9 +1537,13 @@ for (const [width, height, events] of [
 
 test('S58: the money toast does not move with reduced motion', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.clock.install()
   await page.goto('/?seed=48213')
   await page.getByTestId('first-steps-close').click()
+  await page.getByTestId('speed-0').click()
   await page.getByTestId('tool-parcel').click()
+  // Stop the fake clock, so the toast stays for the check.
+  await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 1000)
   await page.locator('canvas#scene').click({ position: { x: 607, y: 357 } })
   const toast = page.getByTestId('money-toast')
   await expect(toast).toHaveCount(1)
