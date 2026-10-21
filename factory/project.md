@@ -6,16 +6,16 @@ refreshes it after each merge.
 
 ## Repo
 - Base: `main`, or the local target branch when it already contains the base
-  (local merges not pushed yet). Every job's worktree starts there. No `origin`
-  remote yet: worktrees start from local `main`.
-- Merge target: `main` (local, not pushed)
+  (local merges not pushed yet). Every job's worktree starts there.
+- Remote: `origin` = github.com/rokde/coffeechain (private). Push only when Robert asks.
+- Merge target: `main` (local; pushed on request)
 - Language / stack: planned (per `CLAUDE.md`, `PRD.md` §3): TypeScript (strict), Three.js, Vue 3 + Pinia (HUD), Vite, Tauri 2, Vitest, Playwright, `simplex-noise`. Versions in use: TypeScript 6, Vite 8, Vitest 5, ESLint 10, zod 4, Pinia 4, three 0.186. Rust stable is installed via rustup (`~/.cargo/bin`), so `npm run tauri dev` / `npm run tauri build` work locally.
 - Install: `npm install` (Playwright browsers: `npx playwright install chromium` once). Run it once in each new worktree.
 - Test command: `npm run test:ci` (Vitest, then the perf test alone). `npm test` skips `src/app/perf.test.ts` and takes a file filter (`npm test -- src/sim/rng`); `npm run test:perf` runs only the perf test. Browser check: `npm run screenshot` (Playwright, writes `docs/progress/`). Build: `npm run build`.
 - Lint / format: `npm run lint`, `npm run typecheck`, `npm run format` (ESLint + Prettier)
 
 ## Sources
-- GitHub issues: none (no `origin` remote yet; planned repo `rokde/coffeechain`; `gh` is logged in as `rokde`)
+- GitHub issues: repo `rokde/coffeechain` (private; `gh` is logged in as `rokde`); no issues used yet
 - Jira: none
 
 ## Conventions
