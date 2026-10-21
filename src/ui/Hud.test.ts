@@ -109,3 +109,64 @@ describe('Hud left panel (S59)', () => {
     expect(h).not.toContain('first-steps')
   })
 })
+
+describe('Hud overlay toggles (S60)', () => {
+  const render = async (setup: (pinia: ReturnType<typeof createPinia>) => void = () => {}) => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    setup(pinia)
+    return renderToString(createSSRApp(Hud).use(pinia))
+  }
+  const toolbar = (html: string) => html.split('data-testid="hud-toolbar"')[1]!.split('</nav>')[0]!
+  const button = (html: string, id: string) =>
+    toolbar(html).split(`data-testid="${id}"`)[1]!.split('</button>')[0]!
+  const tag = (html: string, id: string) =>
+    toolbar(html).match(new RegExp(`<button[^>]*data-testid="${id}"[^>]*>`))![0]
+
+  it('AC-1: the toolbar holds a labelled group with both toggles after the nine tools', async () => {
+    const html = await render()
+    expect(html).not.toContain('role="switch"')
+    const nav = toolbar(html)
+    const group = nav.split('role="group"')[1]!
+    expect(nav).toMatch(/<div[^>]*role="group"[^>]*aria-label="Karten-Overlays"/)
+    const ids = [...nav.matchAll(/data-testid="((?:tool|overlay)-[^"]+)"/g)].map((m) => m[1])
+    expect(ids.slice(0, 9).every((id) => id!.startsWith('tool-'))).toBe(true)
+    expect(ids.slice(9)).toEqual(['overlay-soil', 'overlay-zone'])
+    expect(group).toContain('data-testid="overlay-soil"')
+    expect(group).toContain('data-testid="overlay-zone"')
+    for (const [id, label, title, key] of [
+      ['overlay-soil', 'Boden', 'Bodenqualität (O)', 'O'],
+      ['overlay-zone', 'Lagen', 'Lagen (Z)', 'Z'],
+    ] as const) {
+      expect(tag(html, id)).toContain(`title="${title}"`)
+      expect(tag(html, id)).toContain(`aria-keyshortcuts="${key}"`)
+      expect(button(html, id)).toMatch(/<svg[^>]*aria-hidden="true"/)
+      expect(button(html, id)).toMatch(new RegExp(`<span[^>]*>${label}</span>`))
+    }
+  })
+
+  it('AC-2: aria-pressed follows the one overlay that is on', async () => {
+    const pressed = async (overlay: 'none' | 'soil' | 'zone') => {
+      const html = await render((pinia) => (useViewStore(pinia).overlay = overlay))
+      return ['overlay-soil', 'overlay-zone'].map(
+        (id) => tag(html, id).match(/aria-pressed="(\w+)"/)![1],
+      )
+    }
+    expect(await pressed('none')).toEqual(['false', 'false'])
+    expect(await pressed('soil')).toEqual(['true', 'false'])
+    expect(await pressed('zone')).toEqual(['false', 'true'])
+  })
+
+  it('AC-4: the soil toggle in the toolbar is the first-steps target, the legend shows only with an overlay', async () => {
+    let html = await render((pinia) => useFirstStepsStore(pinia))
+    expect(tag(html, 'overlay-soil')).toContain('data-guide="next"')
+    expect(html).not.toContain('overlay-legend')
+    expect(html).not.toContain('hud-overlay-panel')
+    html = await render((pinia) => useViewStore(pinia).toggle('soil'))
+    expect(html).toContain('data-testid="overlay-legend"')
+    expect(html).toContain('Dunkler Boden')
+    html = await render((pinia) => useViewStore(pinia).toggle('zone'))
+    expect(html).toContain('data-testid="overlay-legend"')
+    expect(html).not.toContain('Dunkler Boden')
+  })
+})

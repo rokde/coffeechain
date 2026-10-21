@@ -4,7 +4,7 @@ import { createSSRApp } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import { useViewStore } from '../app/view'
 import Hud from './Hud.vue'
-import { tools } from './toolbar'
+import { overlays, tools } from './toolbar'
 
 vi.stubGlobal('location', { search: '?seed=42' })
 vi.stubGlobal('sessionStorage', { getItem: () => null, removeItem: () => {} })
@@ -82,10 +82,20 @@ describe('tool keys and tooltips (S53)', () => {
     const html = await render(true)
     const controls = html.split('data-testid="help-controls"')[1]!.split('</dl>')[0]!
     const rows = [...controls.matchAll(/<dt[^>]*>([^<]*)<\/dt><dd[^>]*>([^<]*)<\/dd>/g)]
-    const old = rows.length - tools.length
+    const old = rows.length - tools.length - overlays.length
     expect(old).toBe(16)
-    expect(rows.slice(old).map((m) => [m[1], m[2]])).toEqual(
+    expect(rows.slice(old, old + tools.length).map((m) => [m[1], m[2]])).toEqual(
       tools.map((tool) => [tool.key, `Werkzeug ${tool.label}`]),
     )
+  })
+
+  it('S60 AC-3: the help lists O and Z with the overlay names after the tools', async () => {
+    const html = await render(true)
+    const controls = html.split('data-testid="help-controls"')[1]!.split('</dl>')[0]!
+    const rows = [...controls.matchAll(/<dt[^>]*>([^<]*)<\/dt><dd[^>]*>([^<]*)<\/dd>/g)]
+    expect(rows.slice(-2).map((m) => [m[1], m[2]])).toEqual([
+      ['O', 'Overlay Bodenqualität ein / aus'],
+      ['Z', 'Overlay Lagen ein / aus'],
+    ])
   })
 })

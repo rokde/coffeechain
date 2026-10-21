@@ -176,7 +176,7 @@ test('S6: props on the island', async ({ page }) => {
   expect(errors).toEqual([])
 })
 
-test('S7: soil and zone overlay switches', async ({ page }) => {
+test('S7: soil and zone overlay toggles', async ({ page }) => {
   const errors: string[] = []
   page.on('console', (msg) => {
     if (msg.type() === 'error') errors.push(msg.text())
@@ -186,16 +186,22 @@ test('S7: soil and zone overlay switches', async ({ page }) => {
   await page.goto('/?seed=48213')
   const soil = page.getByTestId('overlay-soil')
   const zone = page.getByTestId('overlay-zone')
-  await expect(soil).toHaveAttribute('aria-checked', 'false')
-  await expect(zone).toHaveAttribute('aria-checked', 'false')
+  await expect(soil).toHaveAttribute('aria-pressed', 'false')
+  await expect(zone).toHaveAttribute('aria-pressed', 'false')
+  await page.getByTestId('tool-plant').click()
 
+  // S60 AC-2: one overlay at a time, and the picked tool stays.
+  await soil.click()
+  await expect(soil).toHaveAttribute('aria-pressed', 'true')
   await zone.click()
-  await expect(zone).toHaveAttribute('aria-checked', 'true')
-  await expect(soil).toHaveAttribute('aria-checked', 'false')
+  await expect(zone).toHaveAttribute('aria-pressed', 'true')
+  await expect(soil).toHaveAttribute('aria-pressed', 'false')
 
   await soil.click()
-  await expect(soil).toHaveAttribute('aria-checked', 'true')
-  await expect(zone).toHaveAttribute('aria-checked', 'false')
+  await expect(soil).toHaveAttribute('aria-pressed', 'true')
+  await expect(zone).toHaveAttribute('aria-pressed', 'false')
+  await expect(page.getByTestId('tool-plant')).toHaveAttribute('aria-pressed', 'true')
+  await page.getByTestId('tool-select').click()
   const legend = page.getByTestId('overlay-legend')
   for (const name of ['Karg', 'Mittel', 'Gut', 'Sehr gut']) {
     await expect(legend.getByText(name, { exact: true })).toBeVisible()
@@ -203,24 +209,18 @@ test('S7: soil and zone overlay switches', async ({ page }) => {
   await page.screenshot({ path: 'docs/progress/S7.png', animations: 'disabled' })
 
   await soil.click()
-  await expect(soil).toHaveAttribute('aria-checked', 'false')
+  await expect(soil).toHaveAttribute('aria-pressed', 'false')
   await expect(legend).toHaveCount(0)
   expect(errors).toEqual([])
 })
 
-test('S7: overlay panel fits a narrow window', async ({ page }) => {
+test('S7: overlay legend fits a narrow window', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
   const panel = page.getByTestId('hud-overlay-panel')
   for (const mode of ['soil', 'zone']) {
     await page.getByTestId(`overlay-${mode}`).click()
-    const track = page.getByTestId(`overlay-${mode}`).locator('.track')
     const box = (await panel.boundingBox())!
-    const t = (await track.boundingBox())!
-    expect(t.width).toBe(46)
-    // The track must end at the inner edge of the panel, in line with the other switch.
-    const padding = await panel.evaluate((el) => parseFloat(getComputedStyle(el).paddingRight))
-    expect(t.x + t.width).toBeCloseTo(box.x + box.width - padding, 0)
     for (const item of await page.getByTestId('overlay-legend').locator('li').all()) {
       const fits = await item.evaluate((el) => el.scrollWidth <= el.clientWidth)
       const b = (await item.boundingBox())!
@@ -611,7 +611,10 @@ test('S18a: care and harvest tools, storage chip', async ({ page }) => {
   for (const position of clicks) await canvas.click({ position })
   await expect(money).toHaveText('453,2 CC')
 
-  const labels = await page.getByTestId('hud-toolbar').getByRole('button').allTextContents()
+  const labels = await page
+    .getByTestId('hud-toolbar')
+    .locator('[data-testid^="tool-"]')
+    .allTextContents()
   expect(labels.map((l) => l.trim())).toEqual([
     'Auswählen',
     'Parzelle',
@@ -1563,7 +1566,7 @@ for (const [width, height] of [
       if (box.y >= list.y && box.y + box.height <= list.y + list.height + 0.5) whole++
     }
     expect(whole).toBeGreaterThanOrEqual(width >= 800 ? 3 : 2)
-    for (const id of ['hud-overlay-panel', 'hud-top-bar', 'hud-right-panel']) {
+    for (const id of ['hud-toolbar', 'hud-top-bar', 'hud-right-panel']) {
       const box = (await page.getByTestId(id).boundingBox())!
       expect(apart(left, box), `${id} ${JSON.stringify([left, box])}`).toBe(true)
     }
@@ -1614,8 +1617,8 @@ test('S59: ten fields scroll inside the left panel at 800 px', async ({ page }) 
   expect(row.y).toBeGreaterThanOrEqual(box.y)
   expect(row.y + row.height).toBeLessThanOrEqual(box.y + box.height)
   const left = (await page.getByTestId('hud-left-panel').boundingBox())!
-  const overlay = (await page.getByTestId('hud-overlay-panel').boundingBox())!
-  expect(left.y + left.height).toBeLessThanOrEqual(overlay.y)
+  const toolbar = (await page.getByTestId('hud-toolbar').boundingBox())!
+  expect(left.y + left.height).toBeLessThanOrEqual(toolbar.y)
   await page.screenshot({ path: 'docs/progress/S59-scroll.png' })
 })
 
@@ -1732,3 +1735,40 @@ test('S58: the money toast does not move with reduced motion', async ({ page }) 
   })
   expect(durations).toEqual(['0s', '0s'])
 })
+
+for (const [width, height] of [
+  [1440, 900],
+  [800, 600],
+  [390, 844],
+] as const) {
+  test(`S60: overlay toggles fit the toolbar at ${width} px`, async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', (error) => errors.push(error.message))
+    await page.setViewportSize({ width, height })
+    await page.goto('/?seed=48213')
+    const ids = [...tools.map((tool) => `tool-${tool}`), 'overlay-soil', 'overlay-zone']
+    for (const id of ids) {
+      const button = page.getByTestId(id)
+      await expect(button).toBeInViewport({ ratio: 1 })
+      expect(await button.evaluate((el) => el.scrollWidth <= el.clientWidth), id).toBe(true)
+      expect((await button.boundingBox())!.height).toBeGreaterThanOrEqual(44)
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+    await expect(page.getByTestId('overlay-legend')).toHaveCount(0)
+    await page.getByTestId('overlay-soil').click()
+    const legend = page.getByTestId('hud-overlay-panel')
+    await expect(legend).toBeInViewport({ ratio: 1 })
+    const toolbar = (await page.getByTestId('hud-toolbar').boundingBox())!
+    expect(apart((await legend.boundingBox())!, toolbar)).toBe(true)
+    await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
+    await page.screenshot({ path: `docs/progress/S60-${width}.png`, animations: 'disabled' })
+    await page.getByTestId('overlay-zone').click()
+    await expect(page.getByTestId('overlay-soil')).toHaveAttribute('aria-pressed', 'false')
+    expect(apart((await legend.boundingBox())!, toolbar)).toBe(true)
+    await page.keyboard.press('z')
+    await expect(page.getByTestId('overlay-legend')).toHaveCount(0)
+    await page.keyboard.press('o')
+    await expect(page.getByTestId('overlay-soil')).toHaveAttribute('aria-pressed', 'true')
+    expect(errors).toEqual([])
+  })
+}

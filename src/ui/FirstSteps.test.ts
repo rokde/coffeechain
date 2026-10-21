@@ -97,7 +97,8 @@ describe('FirstSteps (S25)', () => {
     useFirstStepsStore(pinia) // created outside SSR, so its watcher runs
     let h = await html(pinia)
     expect(guides(h)).toEqual(['overlay-soil'])
-    expect(h).toContain('Boden-Overlay ein')
+    expect(h).toContain('Schalte unten „Boden“ ein (Taste O).')
+    expect(left(h)).not.toContain('links')
     view.toggle('soil')
     expect(guides(await html(pinia))).toEqual(['tool-parcel'])
     game.replace(s.owned)

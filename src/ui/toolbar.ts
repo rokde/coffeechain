@@ -19,3 +19,9 @@ export const tools: Tool[] = [
   { id: 'build', label: de.tools.build, key: 'B' },
   { id: 'market', label: de.tools.market, key: 'M' },
 ]
+
+// The overlay toggles after the tools. The label is short, the title is the full name.
+export const overlays = [
+  { id: 'soil', label: de.overlay.short.soil, title: de.overlay.soil, key: 'O' },
+  { id: 'zone', label: de.overlay.short.zone, title: de.overlay.zone, key: 'Z' },
+] as const
