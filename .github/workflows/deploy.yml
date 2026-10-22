@@ -1,0 +1,57 @@
+name: Deploy to GitHub Pages
+
+# Called by release-please.yml once a release has been created (see there for why not
+# `release: published`). Can also be run manually to redeploy main.
+on:
+  workflow_call: {}
+  workflow_dispatch:
+
+# Only one Pages deployment at a time, and never cancel one midway.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # `enablement: true` turns Pages on via the workflow token, so no manual visit
+      # to Settings -> Pages is needed.
+      - id: pages
+        uses: actions/configure-pages@v6
+        with:
+          enablement: true
+
+      # Project sites are served from a /<repo-name> subpath; vite.config.ts reads BASE_PATH.
+      - name: Build
+        run: npm run build
+        env:
+          BASE_PATH: ${{ steps.pages.outputs.base_path }}
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

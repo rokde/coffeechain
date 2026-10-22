@@ -1,0 +1,72 @@
+name: Release Please
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+# Never cancel a release run midway: a half-created release/tag is worse than a queued one.
+concurrency:
+  group: release-please-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release-please.outputs.release_created }}
+    steps:
+      - uses: googleapis/release-please-action@v5
+        id: release-please
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          # A PAT is optional. Pushes made with GITHUB_TOKEN don't trigger other workflows,
+          # so CI would not run on the release PR itself without it. The Pages deployment
+          # does not depend on it: deploy.yml is called from here.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+
+      # release-please writes CHANGELOG.md and package.json with its own formatting.
+      # Reformat with Prettier and push back onto its branch.
+      - name: Check out the release PR branch
+        if: ${{ steps.release-please.outputs.pr }}
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ fromJSON(steps.release-please.outputs.pr).headBranchName }}
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Set up Node
+        if: ${{ steps.release-please.outputs.pr }}
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        if: ${{ steps.release-please.outputs.pr }}
+        run: npm ci
+
+      - name: Format release PR
+        if: ${{ steps.release-please.outputs.pr }}
+        run: |
+          npx prettier --write CHANGELOG.md package.json
+          if ! git diff --quiet; then
+            git config user.name 'github-actions[bot]'
+            git config user.email 'github-actions[bot]@users.noreply.github.com'
+            git commit -am 'style: format release-please output'
+            git push
+          fi
+
+  # Publishing to Pages happens here, not on `release: published`: a release event runs
+  # in tag context, which the github-pages environment's branch protection rejects.
+  deploy:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/deploy.yml
