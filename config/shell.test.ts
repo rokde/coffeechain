@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
-const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
+const read = (path: string) =>
+  readFileSync(new URL(`../${path}`, import.meta.url), 'utf8').replace(/\r\n/g, '\n')
 
 describe('Tauri config', () => {
   const conf = JSON.parse(read('src-tauri/tauri.conf.json'))
