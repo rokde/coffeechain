@@ -81,8 +81,22 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [aarch64-apple-darwin, x86_64-apple-darwin]
-    runs-on: macos-latest
+        include:
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            bundles: app
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            bundles: app
+          # tauri.conf.json only lists the macOS `app` bundle, so Windows names its own.
+          # ARM64 is cross-compiled on the x64 runner.
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            bundles: nsis
+          - os: windows-latest
+            target: aarch64-pc-windows-msvc
+            bundles: nsis
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -101,4 +115,4 @@ jobs:
         with:
           tagName: ${{ needs.release-please.outputs.tag_name }}
           releaseDraft: false
-          args: --target ${{ matrix.target }}
+          args: --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
