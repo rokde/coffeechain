@@ -2,10 +2,9 @@
 
 ## [0.2.1](https://github.com/rokde/coffeechain/compare/v0.2.0...v0.2.1) (2026-10-22)
 
-
 ### Bug Fixes
 
-* **test:** normalize line endings in shell config test ([800144d](https://github.com/rokde/coffeechain/commit/800144df5eac96f7d80f1bbe9d2ac332615010e0))
+- **test:** normalize line endings in shell config test ([800144d](https://github.com/rokde/coffeechain/commit/800144df5eac96f7d80f1bbe9d2ac332615010e0))
 
 ## [0.2.0](https://github.com/rokde/coffeechain/compare/v0.1.0...v0.2.0) (2026-10-22)
 
