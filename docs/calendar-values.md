@@ -1,6 +1,6 @@
 # Kalenderzeit: neue Werte (#27)
 
-Entscheidung Robert, 2026-10-25. Quelle: Issue #27 und die Klärung im Factory-Import.
+Entscheidung Robert, 2026-10-25. Quelle: Issue #27 und die Klärung im Factory-Import. Läuft nach #8 (Events raus) und #17 (Vulkan raus).
 
 **Faktor 30:** Ein alter Spieltag wird ein Monat (30 Kalendertage). Raten pro Tag
 gelten künftig pro Monat, Dauern in Tagen werden ×30. Geänderte Werte bekommen in
@@ -34,7 +34,7 @@ schneller).
 | `varieties.robusta.cycleDays` | 3 | 90 | 3 Monate, bei 1× ≈ 60 s | offen | offen | Zwischenstand bis #6 |
 | `varieties.arabicaStandard.cycleDays` | 5 | 150 | 5 Monate, ≈ 100 s | offen | offen | Zwischenstand bis #6 |
 | `varieties.arabicaPremium.cycleDays` | 10 | 300 | 10 Monate; in Phase 2 (Wochen) ≈ 14 min | offen | offen | Zwischenstand bis #6 |
-| `varieties.specialty.cycleDays` | 15 | 450 | 15 Monate; in Phase 3 (Wochen) ≈ 21 min | offen | offen | Zwischenstand bis #6 |
+| `varieties.specialty.cycleDays` | 15 | 450 | 15 Monate; in Phase 3 (Wochen) ≈ 21 min | offen | offen | Zwischenstand bis #6; wächst ab #17 auf kühlem Hochland |
 | `farm.overripe.graceDays` | 2 | 60 | 2 Monate | offen | offen | |
 | `farm.overripe.lossPerDay` | 0,15 | 0,005 | 15 % pro Monat | offen | offen | |
 | `soil.fertilityRecoveryPerFallowDay` | 0,5 | 0,5 pro Monat, am Monatswechsel | monatlich gebucht | offen | – | |
@@ -59,17 +59,7 @@ schneller).
 
 ## Events
 
-| Wert | Alt | Neu | Lesart | Sim | Spiel | Notiz |
-|---|---|---|---|---|---|---|
-| `events.maxDurationDays` | 7 | 210 | 7 Monate | offen | – | |
-| `events.warningDays` | 1 | 30 | 1 Monat | offen | offen | |
-| `events.graceDaysAtStart` | 5 | 150 | 5 Monate | offen | – | |
-| Frost: `durationDays` / `everyDays` | 3–5 / 14 | 90–150 / 420 | | offen | offen | |
-| Monsun: `durationDays` / `everyDays` | 5–7 / 21 | 150–210 / 630 | | offen | offen | |
-| Boom: `durationDays` / `everyDays` | 3 / 14 | 90 / 420 | | offen | offen | |
-| Krise: `durationDays` / `everyDays` | 3 / 21 | 90 / 630 | | offen | offen | |
-| Schädlinge: `durationDays` / `everyDays` | 2–4 / 28 | 60–120 / 840 | | offen | offen | |
-| Forschung: `everyDays` | 42 | 1.260 | 3,5 Jahre | offen | – | |
+Entfällt: Events und Schädlingsschutz werden mit #8 vollständig entfernt (Robert 2026-10-25). Kommen Events später zurück, hängen Frost und Monsun an Kalendermonaten (Saisons) statt an Zufallsintervallen.
 
 ## Speichern, Anzeige, Balance-Bot
 
@@ -88,12 +78,10 @@ schneller).
 2. Wie lange dauert Phase 1 in Echtzeit bei 1× (Monatsstufe, 20 s pro Monat)? Ziel: schneller Einstieg.
 3. Bleibt das Lager pro Monat bezahlbar, und lohnt sich der Lager-Ausbau noch?
 4. Wie viele Aufträge pro Jahr, und schafft der Bot sie in der Frist?
-5. Events: wie viele pro Jahr, wie lange aktiv, nie mehr als 2 gleichzeitig?
 
 **Echtes Spiel** (`npm run tauri dev`, danach `npm run run30` angepasst):
 1. Erste Ernte: Robusta nach ≈ 60 s bei 1×. Fühlt sich das gut an?
 2. Überreife: 2 Monate ≈ 40 s bei 1×, bei 16× ≈ 2,5 s. Bemerkt man das rechtzeitig (#12)?
 3. Umschaltung auf Wochen bei 2.000 CC: Meldung sichtbar? Bleibt Zeit, den Markt zu beobachten?
 4. Lesbarkeit von Datum und Einheit in der Topbar bei 1440, 800 und 390 px.
-5. Event-Warnung 1 Monat: genug Zeit zu reagieren, in beiden Stufen?
-6. Autosave 1× pro Monat: bei 16× in der Monatsstufe alle 1,25 s. Ruckelt oder stört das?
+5. Autosave 1× pro Monat: bei 16× in der Monatsstufe alle 1,25 s. Ruckelt oder stört das?
