@@ -28,6 +28,7 @@ function render(
   used = 0,
   plantA = robusta,
   milestones: GameState['milestones'] = { harvested: 0 },
+  weeksFromDay?: number,
 ) {
   const pinia = createPinia()
   const game = useGameStore(pinia)
@@ -36,7 +37,7 @@ function render(
   if (dayB !== undefined) plants[5] = { ...robusta, plantedDay: dayB }
   game.replace({
     ...state,
-    time: { ...state.time, day },
+    time: { ...state.time, day, weeksFromDay },
     milestones,
     farm: {
       parcels: { 0: 0, 5: 1 },
@@ -92,5 +93,15 @@ describe('MessagePanel (S18b)', () => {
     expect(items(await render(10 + messageDays - 1, undefined, 0, robusta, m))).toEqual([text])
     expect(items(await render(10 + messageDays, undefined, 0, robusta, m))).toEqual([])
     expect(items(await render(10))).toEqual([])
+  })
+
+  it('AC-3 (085): shows the weeks message for harvestProMessageDays days from the switch', async () => {
+    const text = 'Ab jetzt läuft die Zeit in Wochen'
+    const m = { harvested: 0 }
+    expect(items(await render(400, undefined, 0, robusta, m, 400))).toEqual([text])
+    const last = 400 + messageDays - 1
+    expect(items(await render(last, undefined, 0, robusta, m, 400))).toEqual([text])
+    expect(items(await render(400 + messageDays, undefined, 0, robusta, m, 400))).toEqual([])
+    expect(items(await render(400))).toEqual([])
   })
 })

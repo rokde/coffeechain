@@ -1,6 +1,7 @@
 import type { Balance } from '../../../config/balance.schema'
 import { balance } from '../balance'
 import { dailyOrders } from '../market/orders'
+import { phase } from '../progression/capital'
 import type { GameState } from '../state'
 import { monthlyUpkeep } from '../storage/daily'
 
@@ -12,6 +13,8 @@ export interface TimeState {
   day: number
   speed: number
   stage: TimeStage
+  // The day of the switch to weeks. The stage never goes back to months.
+  weeksFromDay?: number
 }
 
 export interface SetSpeed {
@@ -28,7 +31,11 @@ export interface CalendarDate {
 
 export function step(state: GameState): GameState {
   const day = state.time.day + 1
-  const next = { ...state, time: { ...state.time, day } }
+  const weeks = state.time.stage === 'months' && phase(state) >= balance().time.weeksFromPhase
+  const time = weeks
+    ? { ...state.time, day, stage: 'weeks' as const, weeksFromDay: day }
+    : { ...state.time, day }
+  const next = { ...state, time }
   return dailyOrders(day % balance().time.daysPerMonth === 0 ? monthlyUpkeep(next) : next)
 }
 

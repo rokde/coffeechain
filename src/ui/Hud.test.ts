@@ -221,3 +221,23 @@ describe('Hud clock (#27)', () => {
     expect(shown).not.toMatch(/Uhr|\d+:\d+/)
   })
 })
+
+describe('Hud time unit (085)', () => {
+  it.each([
+    ['months', 'Monate'],
+    ['weeks', 'Wochen'],
+  ] as const)(
+    'AC-4: shows the unit for the %s stage beside the speed buttons',
+    async (stage, text) => {
+      const pinia = createPinia()
+      setActivePinia(pinia)
+      const game = useGameStore(pinia)
+      const state = game.state as GameState
+      game.replace({ ...state, time: { ...state.time, stage } })
+      const html = await renderToString(createSSRApp(Hud).use(pinia))
+      const time = html.split('class="time"')[1]!.split('class="stats"')[0]!
+      expect(time.indexOf('class="speeds"')).toBeLessThan(time.indexOf('data-testid="time-unit"'))
+      expect(time.match(/data-testid="time-unit"[^>]*>([^<]*)</)![1]).toBe(text)
+    },
+  )
+})

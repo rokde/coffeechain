@@ -401,4 +401,18 @@ describe('calendar migration (#27)', () => {
     delete state.time.stage
     expect(() => deserialize(JSON.stringify({ version: 12, state }))).toThrow(/time\.stage/)
   })
+
+  it('AC-5 (085): round-trips the weeks stage, and a version 12 save without weeksFromDay loads', () => {
+    const base = createState(5)
+    const weeks: GameState = { ...base, time: { ...base.time, stage: 'weeks', weeksFromDay: 400 } }
+    expect(deserialize(serialize(weeks)).time).toEqual({
+      day: 0,
+      speed: 1,
+      stage: 'weeks',
+      weeksFromDay: 400,
+    })
+    expect(SAVE_VERSION).toBe(12)
+    const old = JSON.stringify({ version: 12, state: base })
+    expect(deserialize(old).time).toEqual({ day: 0, speed: 1, stage: 'months' })
+  })
 })

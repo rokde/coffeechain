@@ -19,6 +19,8 @@ const messages = computed(() => {
   const { harvestProDay } = milestones
   const days = balance().progression.harvestProMessageDays
   if (harvestProDay !== undefined && time.day < harvestProDay + days) list.push(t.harvestPro)
+  const { weeksFromDay } = time
+  if (weeksFromDay !== undefined && time.day < weeksFromDay + days) list.push(de.time.weeksStarted)
   return list
 })
 </script>

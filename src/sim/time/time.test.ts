@@ -66,6 +66,30 @@ describe('time stage (#27)', () => {
   })
 })
 
+describe('weeks stage from phase 2 (085)', () => {
+  const withMoney = (money: number): GameState => ({ ...createState(1), money })
+
+  it('AC-1: stays in months below 2,000 CC and switches at 2,000 CC', () => {
+    expect(balance().time.weeksFromPhase).toBe(2)
+    expect(raw.time.weeksFromPhase.src).toBe('NEU')
+    const below = step(withMoney(199_999))
+    expect(below.time.stage).toBe('months')
+    expect(below.time.weeksFromDay).toBeUndefined()
+    const at = step(withMoney(200_000))
+    expect(at.time).toMatchObject({ day: 1, stage: 'weeks', weeksFromDay: 1 })
+  })
+
+  it('AC-2: never switches back when the capital falls below 2,000 CC', () => {
+    let state: GameState = { ...step(withMoney(200_000)), money: 0 }
+    for (let i = 0; i < 100; i++) {
+      state = step(state)
+      expect(state.time.stage).toBe('weeks')
+      expect(state.time.weeksFromDay).toBe(1)
+    }
+    expect(state.time.day).toBe(101)
+  })
+})
+
 describe('calendar', () => {
   it.each([
     [0, { dayOfMonth: 1, month: 1, year: 1 }],
