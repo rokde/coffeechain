@@ -161,11 +161,12 @@ Hütte am Startpunkt, ein Markt am Ufer, ein Weg dazwischen, Bäume auf ungünst
 
 | Sorte | Zyklus | Saatgut | Ertrag pro Parzelle | Referenzwert/Einheit |
 |---|---|---|---|---|
-| Robusta | 3 Spieltage | 2 CC | 20 Einheiten | 0,5 CC |
-| Arabica Standard | 5 Spieltage | 4 CC | 15 Einheiten | 1 CC |
-| Arabica Premium | 10 Spieltage | 8 CC | 8 Einheiten | 3 CC |
-| Spezialität | 15 Spieltage | 15 CC | 4 Einheiten | 10 CC |
+| Robusta | 3 Monate (90 Tage) | 2 CC | 20 Einheiten | 0,5 CC |
+| Arabica Standard | 5 Monate (150 Tage) | 4 CC | 15 Einheiten | 1 CC |
+| Arabica Premium | 10 Monate (300 Tage) | 8 CC | 8 Einheiten | 3 CC |
+| Spezialität | 15 Monate (450 Tage) | 15 CC | 4 Einheiten | 10 CC |
 
+- Die Zyklen sind Zwischenwerte bis #6 (mehrjährige Pflanzen).
 - Zu Beginn sind Robusta und Arabica Standard freigeschaltet. Arabica Premium ab 2.000 CC Kapital, Spezialität ab 10.000 CC (Übergänge Phase 1 → 2 → 3 aus GDD 12.1).
 - Mengen werden in **Einheiten** geführt (wie im GDD), nicht in kg.
 
@@ -194,7 +195,7 @@ menge = basisErtrag(sorte)
 - `sim/farm/yield.ts` ist eine reine Funktion mit Tabellentests.
 
 ### Überreife (NEU, im Entwurf)
-- Reife Pflanzen bleiben 2 Spieltage bei voller Menge, danach verlieren sie pro Spieltag 15 % der Menge (`farm.overripe.*`).
+- Reife Pflanzen bleiben 2 Monate (60 Tage) bei voller Menge, danach verlieren sie 15 % der Menge pro Monat (`farm.overripe.lossPerDay` 0,005 pro Tag).
 - Erzeugt Erntedruck. Muss von Robert bestätigt werden, bis dahin abschaltbar (`farm.overripe.enabled`).
 
 ---
@@ -203,15 +204,15 @@ menge = basisErtrag(sorte)
 
 ### Lager (GDD 5.5, 6.5)
 - Kapazität in Einheiten, Start: 100 Einheiten (`NEU`). Ausbaustufen über das Bauen-Menü.
-- Lagerkosten pro Einheit und Spieltag (Startwert: 0,02 CC, `NEU`).
-- Qualitätsverlust über die Zeit: Rohkaffee langsam (Startwert: −1 Qualitätspunkt pro Spieltag, `NEU`).
+- Lagerkosten pro Einheit und Monat, gebucht am Monatswechsel (Startwert: 0,02 CC, `NEU`).
+- Qualitätsverlust über die Zeit: Rohkaffee langsam (Startwert: −1 Qualitätspunkt pro Monat, am Monatswechsel, `NEU`).
 - Ernte über Kapazität: Die Ernte wird nur so weit eingefahren, wie Platz ist. Der Rest bleibt an der Pflanze (und kann überreif werden). Der Spieler bekommt eine Meldung.
 
 ### Aufbereitung (GDD 5.4 Phase 4, 11.2)
 - Ersetzt den „Trockenplatz“ aus den Mockups. Im GDD heißt das **Washing/Natural** und ist dort bereits definiert.
 - Gebäude „Aufbereitung“ muss gebaut werden. Kosten: Startwert 150 CC (`NEU`, angelehnt an GDD 11.6 „Aufbereitung + Einkauf ~150 CC“).
 - Kosten 0,3 CC pro Einheit, Wert danach +50 % (GDD 11.2).
-- Dauer: 1 Spieltag pro Charge (`NEU`), Kapazität 50 Einheiten pro Charge (`NEU`).
+- Dauer: 1 Monat (30 Tage) pro Charge (`NEU`), Kapazität 50 Einheiten pro Charge (`NEU`).
 
 ---
 
@@ -226,13 +227,13 @@ menge = basisErtrag(sorte)
 - **Preisbildung pro Ware (GDD 3.4, 11.3):**
   ```
   preis = referenz × angebotsFaktor × nachfrageFaktor
-  angebotsFaktor  0,7–1,1   sinkt mit der Menge, die der Spieler in den letzten 3 Spieltagen verkauft hat
-  nachfrageFaktor 0,9–1,3   steigt mit der Menge, die der Spieler in den letzten 3 Spieltagen gekauft hat
+  angebotsFaktor  0,7–1,1   sinkt mit der Menge, die der Spieler in den letzten 3 Monaten (90 Tage, `market.volumeWindowDays`) verkauft hat
+  nachfrageFaktor 0,9–1,3   steigt mit der Menge, die der Spieler in den letzten 3 Monaten gekauft hat
   Ergebnis immer zwischen 50 % und 150 % des Referenzpreises
   ```
   Wie stark die Faktoren auf Mengen reagieren und wie schnell sie zurückkehren, ist `NEU` (`market.*`).
 - Keine Transaktionsgebühren bei der Bank (GDD 3.7).
-- Preisverlauf der letzten 14 Spieltage pro Ware, im Markt-Panel als Linie.
+- Preisverlauf der letzten 12 Monate (`market.historyMonths`) pro Ware, ein Punkt pro Monat, im Markt-Panel als Linie.
 - Keine Öffnungszeiten.
 
 ---
@@ -280,7 +281,7 @@ Die alten Werte stehen in `docs/gdd.md` 11.8.
 
 ### HUD (Vue)
 Aufbau wie in den Mockups:
-- **Topbar:** Spielname, Welt-Seed, Tag und Uhrzeit, Geschwindigkeit, CC, Lagerstand.
+- **Topbar:** Spielname, Welt-Seed, Datum mit Jahr (z. B. „12. März, Jahr 2“) und Zeiteinheit („Monate“/„Wochen“), Geschwindigkeit, CC, Lagerstand.
 - **Links:** Tutorial-Checkliste bzw. Feldübersicht, darunter Meldungen (z. B. „Feld A ist erntereif“, „Lager voll“).
 - **Rechts:** Kontextpanel, entweder Parzellen-Inspektor (Lage, Boden, passende Sorte, Ertragsprognose, Aktion) oder Markt.
 - **Unten:** Werkzeugleiste: Auswählen, Parzelle, Pflanzen, Düngen, Wässern, Ernten, Bauen, Markt.
@@ -297,8 +298,8 @@ Aufbau wie in den Mockups:
 | # | Frage | Vorschlag | Status |
 |---|---|---|---|
 | 1 | **Das Farmer-Balancing aus dem GDD ist allein zu langsam.** Robusta bringt pro Parzelle 20 × 0,4 CC = 8 CC an die Bank, minus 2 CC Saatgut, also 6 CC je 3 Spieltage. Mit dem Startkapital lassen sich 5 Parzellen anlegen, das ergibt 10 CC pro Spieltag. Grobe Rechnung ohne Dünger, Events und Lagerkosten: Wer danach nur spart, braucht rund 195 Spieltage bis 2.000 CC (ca. 13 Stunden Spielzeit). Wer alles sofort in neue Parzellen steckt, braucht rund 72 Spieltage (ca. 5 Stunden), wenn man die Parzellen zum Kapital zählt. Das GDD sieht für Phase 1 aber nur 4 Spielwochen vor, also 28 Spieltage. Außerdem ist das GDD hier nicht einheitlich (11.10: „~8 CC/Tag“, aber „~175 CC/Woche“). | Erst in M4 mit der Bot-Simulation messen. Danach eine von drei Stellschrauben drehen: günstigere Parzellen (z. B. 20 CC flach), höhere Erträge pro Parzelle oder niedrigere Phasengrenzen. | offen, blockiert nicht |
-| 2 | Überreife übernehmen? | Ja, 2 Spieltage, dann −15 % pro Tag | offen |
-| 3 | 1 Spieltag = 4 Minuten? | Ja | offen |
+| 2 | Überreife übernehmen? | Ja, 2 Monate (60 Tage), dann −15 % pro Monat | offen |
+| 3 | Wie lang dauern die Zeitstufen? | 1 Monat = 20 s und 1 Woche = 20 s bei 1× | Kalender entschieden 2026-10-25 (#27). Sekunden pro Stufe offen bis zum Play-Test |
 | 4 | Soll die Qualität einer Charge den Verkaufspreis beeinflussen? | Ja, ab v1.1: Preis × (0,8 + 0,4 × Qualität/100) | entschieden 2026-10-21: über Aufträge virtueller Käufer mit Mindestqualität und Aufpreis; die Bank bleibt ohne Qualitätsfaktor |
 | 5 | Alle mit `NEU` markierten Startwerte (Bodenfaktoren, Lagerkosten, Zonen-Multiplikatoren, Düngerbonus …) | Nach M4-Bot-Simulation gemeinsam prüfen | offen |
 | 6 | Name der Mac-App | „CoffeeChain“ | offen |
@@ -329,7 +330,7 @@ Jeder Meilenstein endet mit: grünen Tests, `npm run build` ohne Fehler, Screens
 - Spielzeit mit Pause, 1×, 2×, 4×.
 - Parzellen anlegen (Einzel- und Mehrfachauswahl), Kosten nach Lage, Felder benennen.
 - Pflanzen von Robusta und Arabica Standard, sichtbare Wachstumsphasen.
-- ✅ Test: Robusta ist nach exakt 3 Spieltagen reif, bei 1× und bei 4×.
+- ✅ Test: Robusta ist nach exakt 90 Kalendertagen reif, bei 1× und bei 4×.
 - ✅ Test: Die erste Tiefland-Parzelle kostet 15 CC, jede weitere 25 CC × Bodenfaktor (S21d).
 
 ### M3: Pflege, Ernte und Lager
@@ -341,14 +342,14 @@ Jeder Meilenstein endet mit: grünen Tests, `npm run build` ohne Fehler, Screens
 
 ### M4: Markt und Balancing-Messung
 - Bank mit Ankauf und Verkauf, Preisformel, Preisverlauf.
-- `tools/balance-sim.ts`: ein Bot spielt ohne Grafik über 200 Spieltage (pflanzen, düngen, ernten, verkaufen, reinvestieren in neue Parzellen) auf 20 verschiedenen Seeds.
+- `tools/balance-sim.ts`: ein Bot spielt ohne Grafik über 6.000 Kalendertage (200 Monate, ca. 16,7 Jahre) (pflanzen, düngen, ernten, verkaufen, reinvestieren in neue Parzellen) auf 20 verschiedenen Seeds.
 - ✅ Test: Die Bank kauft Robusta bei neutralem Markt für 0,4 CC und verkauft Saatgut zum Wert aus `balance.json`.
 - ✅ Test: Preise bleiben über 1.000 simulierte Tage immer zwischen 50 % und 150 % der Referenz.
-- ✅ Ergebnis: `docs/balance-report.md` mit Kapitalkurve, Spieltag beim Erreichen von 2.000 und 10.000 CC und einer Empfehlung zu Abschnitt 12, Punkt 1. **Hier stoppt Claude Code und wartet auf Roberts Entscheidung, bevor Werte geändert werden.**
+- ✅ Ergebnis: `docs/balance-report.md` mit Kapitalkurve, Kalendertag beim Erreichen von 2.000 und 10.000 CC und einer Empfehlung zu Abschnitt 12, Punkt 1. **Hier stoppt Claude Code und wartet auf Roberts Entscheidung, bevor Werte geändert werden.**
 
 ### M5: Speichern und Tutorial
 - Spielstände speichern und laden über Tauri (`~/Library/Application Support/CoffeeChain/saves`), mit Versionsnummer und Migrationen.
-- Autosave jeden Spieltag.
+- Autosave 1× pro Monat.
 - Tutorial-Checkliste aus Abschnitt 10.
 - ✅ Test: Speichern → Laden → 50 Tage weiterspielen ergibt denselben State wie ohne Unterbrechung.
 
