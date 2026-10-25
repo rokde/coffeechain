@@ -360,7 +360,8 @@
     "play": "Spiel starten",
     "welcome": "Willkommen zurück",
     "continue": "Weiterspielen",
-    "newGame": "Neues Spiel"
+    "newGame": "Neues Spiel",
+    "back": "Zurück zum Spielstand"
   },
   "savePanel": {
     "open": "Spielstand",

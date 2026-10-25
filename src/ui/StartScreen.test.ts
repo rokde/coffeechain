@@ -29,6 +29,7 @@ describe('StartScreen (#3)', () => {
     expect(html).toMatch(/<button type="submit"[^>]*data-testid="start-play"[^>]*>\s*Spiel starten/)
     expect(html).not.toMatch(/data-testid="start-play"[^>]*disabled/)
     expect(has(html, 'start-continue')).toBe(false)
+    expect(has(html, 'start-back')).toBe(false)
     expect(has(html, 'hud-top-bar')).toBe(false)
   })
 
@@ -69,5 +70,6 @@ describe('StartScreen (#3)', () => {
     expect(has(html, 'start-seed')).toBe(true)
     expect(has(html, 'start-play')).toBe(true)
     expect(has(html, 'start-continue')).toBe(false)
+    expect(text(html, 'start-back').trim()).toBe('Zurück zum Spielstand')
   })
 })

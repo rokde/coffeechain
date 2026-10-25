@@ -68,18 +68,35 @@ describe('start screen store (#3)', () => {
     },
   )
 
-  it('AC-2: a new game becomes the autosave', async () => {
+  it.each(['{broken', JSON.stringify({ version: 999 })])(
+    'AC-2: a first start keeps an unreadable autosave %j',
+    async (text) => {
+      local.set(AUTOSAVE, text)
+      const screen = useStartScreenStore()
+      screen.seedText = '48213'
+      expect((await screen.play())?.world.seed).toBe(48213)
+      expect(local.get(AUTOSAVE)).toBe(text)
+    },
+  )
+
+  it('a second play call gives no second game', async () => {
     const screen = useStartScreenStore()
+    screen.save = saved()
+    screen.newGame = true
     screen.seedText = '48213'
-    const state = await screen.play()
-    expect(deserialize(local.get(AUTOSAVE)!)).toEqual(state)
+    const [first, second] = await Promise.all([screen.play(), screen.play()])
+    expect(first?.world.seed).toBe(48213)
+    expect(second).toBeNull()
+    expect(await screen.play()).toBeNull()
   })
 
-  it('AC-2: a failed autosave write still starts the game', async () => {
+  it('AC-4: a failed autosave write still starts the game', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.mocked(isTauri).mockReturnValue(true)
     vi.mocked(invoke).mockRejectedValue('disk full')
     const screen = useStartScreenStore()
+    screen.save = saved()
+    screen.newGame = true
     screen.seedText = '48213'
     expect((await screen.play())?.world.seed).toBe(48213)
     expect(error).toHaveBeenCalled()

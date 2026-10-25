@@ -24,10 +24,15 @@ export const useStartScreenStore = defineStore('startScreen', () => {
     seedText.value = String(pickSeed(''))
   }
 
-  // A new game becomes the autosave, so the next launch offers it and not the lost game.
+  // True after the first play call. A second click must not start a second game.
+  let starting = false
+  // A new game over the confirmed save becomes the autosave, so the next launch does not offer the lost game.
+  // Without a readable save the monthly autosave writes it, so an unreadable or newer save stays.
   async function play(): Promise<GameState | null> {
     const state = preview.value
-    if (state === null || welcome.value) return state
+    if (state === null || starting) return null
+    starting = true
+    if (welcome.value || save.value === null) return state
     try {
       await writeSlot('autosave', serialize(state))
     } catch (error) {

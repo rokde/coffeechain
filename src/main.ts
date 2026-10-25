@@ -17,7 +17,14 @@ import { skipResume, startState } from './app/resume'
 import { setStartState, useGameStore } from './app/store'
 import { useStartScreenStore } from './app/startScreen'
 import { useViewStore } from './app/view'
-import { CAMERA, createCamera, gestureZoomDelta, startView, wheelZoomDelta } from './render/camera'
+import {
+  CAMERA,
+  createCamera,
+  gestureZoomDelta,
+  islandView,
+  startView,
+  wheelZoomDelta,
+} from './render/camera'
 import { createFieldMarks, FIELD_LABEL_STYLE, fieldAnchors, hoveredField } from './render/fields'
 import { loadModel, MODEL_IDS } from './render/models'
 import { createBuildings } from './render/buildings'
@@ -32,6 +39,7 @@ import { balance } from './sim/balance'
 import type { FarmState } from './sim/farm/parcels'
 import type { GameState } from './sim/state'
 import { msPerStep, step } from './sim/time/time'
+import type { World } from './sim/world/types'
 import Hud from './ui/Hud.vue'
 import StartScreen from './ui/StartScreen.vue'
 import de from './ui/i18n/de.json'
@@ -101,7 +109,7 @@ type Stage = ReturnType<typeof createStage>
 // The start screen shows the island of the save or of the seed. It has no input on the scene.
 function showStartScreen(stage: Stage, save: GameState | null) {
   const { canvas, renderer, scene, view } = stage
-  let preview: { group: Group; owned: Mesh[] } | null = null
+  let preview: { group: Group; owned: Mesh[]; world: World } | null = null
   const clear = () => {
     if (!preview) return
     scene.remove(preview.group)
@@ -116,7 +124,7 @@ function showStartScreen(stage: Stage, save: GameState | null) {
     clear()
     const owned = [createTerrain(state.world), createPath(state.world, state.props.path)]
     const group = new Group().add(...owned)
-    preview = { group, owned }
+    preview = { group, owned, world: state.world }
     scene.add(group)
     canvas.dataset.preview = String(state.world.seed)
     delete canvas.dataset.props
@@ -127,34 +135,68 @@ function showStartScreen(stage: Stage, save: GameState | null) {
         canvas.dataset.props = 'ready'
       })
       .catch((error: unknown) => console.error('Props did not load:', error))
-    const { target, zoom } = startView(
-      state.world,
-      state.props,
-      window.innerWidth / window.innerHeight,
-    )
+    aim()
+  }
+  // Fits the whole island into the screen part that the panel leaves free: right of it, or above it.
+  const aim = () => {
+    if (!preview) return
+    const w = window.innerWidth
+    const h = window.innerHeight
+    const panel = document
+      .querySelector('[data-testid="start-screen"] main')
+      ?.getBoundingClientRect()
+    const free = { left: 0, top: 0, width: w, height: h }
+    if (panel && panel.width > w * 0.6) free.height = panel.top
+    else if (panel) free.left = panel.right
+    free.width = w - free.left
+    // A margin keeps the coast off the screen edge and the panel edge.
+    const fx = (0.9 * free.width) / w
+    const fy = (0.9 * free.height) / h
+    const { target, zoom } = islandView(preview.world, w / h, {
+      left: -fx,
+      right: fx,
+      bottom: -fy,
+      top: fy,
+    })
     view.frame(target, zoom)
+    // The preview can zoom out past the game limit, so a narrow screen shows the whole island.
+    view.camera.zoom = zoom
+    // The offset moves the screen centre to the centre of the free part.
+    view.camera.setViewOffset(
+      w,
+      h,
+      w / 2 - (free.left + free.width / 2),
+      h / 2 - free.height / 2,
+      w,
+      h,
+    )
   }
   renderer.setAnimationLoop(() => renderer.render(scene, view.camera))
 
   const pinia = createPinia()
   const screen = useStartScreenStore(pinia)
   screen.save = save
+  // After the DOM update, so that aim reads the new panel size.
   const stop = watch(
     () => screen.preview,
     (state) => state && show(state),
-    { immediate: true },
+    { immediate: true, flush: 'post' },
   )
+  window.addEventListener('resize', aim)
   const app = createApp(StartScreen, {
     onPlay: (state: GameState) => {
       stop()
+      window.removeEventListener('resize', aim)
       app.unmount()
       clear()
+      view.camera.clearViewOffset()
       delete canvas.dataset.preview
       delete canvas.dataset.props
       play(stage, state)
     },
   })
   app.use(pinia).mount('#hud')
+  aim()
 }
 
 function start({ canvas, renderer, scene, view }: Stage) {

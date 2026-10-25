@@ -281,9 +281,9 @@ Die alten Werte stehen in `docs/gdd.md` 11.8.
 
 ### Startbildschirm (Issue #3, Entwurf A „Inselansicht“)
 - Beim Start zeigt die App zuerst den Startbildschirm, nicht sofort die Welt. Vorlage: `docs/mockups/start-screen/startscreen-a-*.png` (ohne Vulkan).
-- Hintergrund ist die echte Szene: die Insel des Seeds bzw. des Spielstands, in der Startansicht der Kamera, ohne Drehen und Zoomen. Links ein dunkelbraunes Panel im HUD-Stil.
-- Ohne lesbaren Autosave: Seed-Feld, Knopf für einen neuen Zufalls-Seed und „Spiel starten“. Jede Seed-Änderung zeigt die Insel neu. „Spiel starten“ startet genau diese Welt und schreibt sie in den Autosave.
-- Mit Autosave: „Willkommen zurück“ mit Kalenderdatum, „Welt #<Seed>“ und CC des Autosaves. „Weiterspielen“ lädt ihn. „Neues Spiel“ fragt erst „Das laufende Spiel geht verloren“ und zeigt danach das Seed-Feld.
+- Hintergrund ist die echte Szene: die ganze Insel des Seeds bzw. des Spielstands, mittig im freien Bereich rechts vom Panel (schmal: über dem Panel), ohne Drehen und Zoomen. Links ein dunkelbraunes Panel im HUD-Stil.
+- Ohne lesbaren Autosave: Seed-Feld, Knopf für einen neuen Zufalls-Seed und „Spiel starten“. Jede Seed-Änderung zeigt die Insel neu. „Spiel starten“ startet genau diese Welt. Einen unlesbaren Autosave überschreibt erst der Monats-Autosave.
+- Mit Autosave: „Willkommen zurück“ mit Kalenderdatum, „Welt #<Seed>“ und CC des Autosaves. „Weiterspielen“ lädt ihn. „Neues Spiel“ fragt erst „Das laufende Spiel geht verloren“ und zeigt danach das Seed-Feld mit „Zurück zum Spielstand“. „Spiel starten“ schreibt dann die neue Welt sofort in den Autosave.
 - „Neues Spiel“ im Spielstand-Dialog öffnet nach der Bestätigung den Startbildschirm mit dem Seed-Feld.
 - `?seed=<n>` und `?debug=models` überspringen den Startbildschirm (e2e-Tests, Debug-Links). Ein „Laden“ im Spiel überspringt ihn auch.
 - Später (eigener Job): Spielstandliste rechts mit Speicherzeit, Lageanteile und Hütten-Hinweis unter dem Seed-Feld.

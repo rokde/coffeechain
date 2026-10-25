@@ -68,8 +68,10 @@ test('#3 AC-3: "Weiterspielen" continues the autosave', async ({ page }) => {
   await expect(page.getByTestId('start-save-money')).toHaveText('1.240 CC')
   await expect(page.locator('canvas#scene')).toHaveAttribute('data-preview', '48213')
   await expect(page.getByTestId('hud-top-bar')).toHaveCount(0)
-  await page.getByTestId('start-continue').click()
+  // A double click starts one game, so one HUD.
+  await page.getByTestId('start-continue').dblclick()
   await expect(page.getByTestId('clock')).toHaveText('11. März, Jahr 1')
+  await expect(page.getByTestId('hud-top-bar')).toHaveCount(1)
   await expect(page.getByTestId('money')).toHaveText('1.240 CC')
   await expect(page.getByTestId('world-seed')).toHaveText('Welt #48213')
   expect(errors).toEqual([])
@@ -92,6 +94,11 @@ test('#3 AC-4: "Neues Spiel" asks first and then starts the seed world', async (
   await expect(page.getByTestId('start-save-date')).toHaveText('11. März, Jahr 1')
   expect(await page.evaluate(() => localStorage.getItem('coffeechain.save.autosave'))).toBe(kept)
 
+  await page.getByTestId('start-new-game').click()
+  await page.getByTestId('start-new-game-confirm').click()
+  // The back button returns to the save offer.
+  await page.getByTestId('start-back').click()
+  await expect(page.getByTestId('start-continue')).toBeVisible()
   await page.getByTestId('start-new-game').click()
   await page.getByTestId('start-new-game-confirm').click()
   const seed = page.getByTestId('start-seed')

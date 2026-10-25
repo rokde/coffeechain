@@ -31,6 +31,11 @@ async function confirmNewGame() {
   await nextTick()
   seedInput.value?.focus()
 }
+async function back() {
+  screen.newGame = false
+  await nextTick()
+  newGameButton.value?.focus()
+}
 </script>
 
 <template>
@@ -157,6 +162,9 @@ async function confirmNewGame() {
           >
             {{ t.play }} <span aria-hidden="true">→</span>
           </button>
+          <button v-if="screen.save" type="button" data-testid="start-back" @click="back">
+            {{ t.back }}
+          </button>
         </div>
       </form>
     </main>
@@ -255,7 +263,7 @@ input[aria-invalid='true'] {
 .hint {
   margin: 8px 0 0;
   font-size: 12px;
-  opacity: 0.6;
+  opacity: 0.8;
 }
 .hint.invalid {
   color: #f2c48d;
