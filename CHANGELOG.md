@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.3.0](https://github.com/rokde/coffeechain/compare/v0.2.1...v0.3.0) (2026-10-25)
+
+### ⚠ BREAKING CHANGES
+
+- **time:** the save version is 12. Version 11 saves migrate. The balance values with a time unit change by factor 30.
+- saves below version 11 do not load.
+- the ProtectPests command is gone.
+- remove world events
+
+### Features
+
+- **market:** show a 12-month price history with a month axis ([c613257](https://github.com/rokde/coffeechain/commit/c61325752d4eed7c24b0520240162fc4a3ad18db)), closes [#27](https://github.com/rokde/coffeechain/issues/27)
+- remove pest protection ([b943e80](https://github.com/rokde/coffeechain/commit/b943e8041339d525aa2d41ad54525a5089575cfc)), closes [#8](https://github.com/rokde/coffeechain/issues/8)
+- remove the volcano zone ([a519295](https://github.com/rokde/coffeechain/commit/a519295ebc62ad435bbfd79d7f4bb5cc5d5ed74c)), closes [#17](https://github.com/rokde/coffeechain/issues/17)
+- remove world events ([e32a286](https://github.com/rokde/coffeechain/commit/e32a286758f40537c911b8c001aefe261fb82303)), closes [#8](https://github.com/rokde/coffeechain/issues/8)
+- **time:** step the sim in calendar days ([b29c0fb](https://github.com/rokde/coffeechain/commit/b29c0fb90a0b4cd8369171d79fac22a2c8644d91)), closes [#27](https://github.com/rokde/coffeechain/issues/27)
+- **time:** switch the time scale to weeks from phase 2 ([d0478db](https://github.com/rokde/coffeechain/commit/d0478dbdb8722966501366381fe5b0b535dabd56)), closes [#27](https://github.com/rokde/coffeechain/issues/27)
+- **ui:** list the saves on the start screen ([a89512f](https://github.com/rokde/coffeechain/commit/a89512f9f3baae6ae8a330a22250ea86e1e5a217)), closes [#3](https://github.com/rokde/coffeechain/issues/3)
+- **ui:** show a start screen with an island preview ([a1970c8](https://github.com/rokde/coffeechain/commit/a1970c820391ae58d0813ed344a3d443cc45f5fe)), closes [#3](https://github.com/rokde/coffeechain/issues/3)
+- **ui:** show calendar dates in orders, inspector and processing ([ad8329a](https://github.com/rokde/coffeechain/commit/ad8329a865533d4ba793faafc94b692cfd0a978e)), closes [#27](https://github.com/rokde/coffeechain/issues/27)
+- **ui:** show island facts on the start screen ([041a869](https://github.com/rokde/coffeechain/commit/041a8695ebbb1945e7c6eadf541b2b23fbcd2e30)), closes [#3](https://github.com/rokde/coffeechain/issues/3)
+
+### Bug Fixes
+
+- **hud:** fit the long date in the top bar and use days in e2e saves ([a383565](https://github.com/rokde/coffeechain/commit/a383565809812d717e7da0f044486481d543bf57)), closes [#27](https://github.com/rokde/coffeechain/issues/27)
+- **ui:** frame the whole island and guard the start screen play ([a3000b6](https://github.com/rokde/coffeechain/commit/a3000b6db4fd98737451e3b94d5120e9984da138)), closes [#3](https://github.com/rokde/coffeechain/issues/3)
+
 ## [0.2.1](https://github.com/rokde/coffeechain/compare/v0.2.0...v0.2.1) (2026-10-22)
 
 ### Bug Fixes
