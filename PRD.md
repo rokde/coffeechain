@@ -94,7 +94,7 @@ tools/
 
 **Grundregeln**
 1. `sim/` ist deterministisch: gleicher Seed + gleiche Commands = gleicher State.
-2. Spieleraktionen laufen nur über Commands (`CreateParcels`, `Plant`, `Fertilize`, `Irrigate`, `ProtectPests`, `Harvest`, `Process`, `Sell`, `Buy`, `Build`). UI und Render ändern den State nie direkt.
+2. Spieleraktionen laufen nur über Commands (`CreateParcels`, `Plant`, `Fertilize`, `Irrigate`, `Harvest`, `Process`, `Sell`, `Buy`, `Build`). UI und Render ändern den State nie direkt.
 3. Die Simulation tickt in festen Schritten: **1 Tick = 1 Spielstunde**. Rendering läuft unabhängig mit `requestAnimationFrame`.
 4. `GameState` ist reines JSON, ohne Klasseninstanzen und ohne Zyklen.
 5. Geldbeträge werden intern als ganze Zahlen in **Hundertstel CC** gespeichert, damit keine Rundungsfehler entstehen (das GDD rechnet mit 0,4 oder 0,3 CC).
@@ -173,7 +173,6 @@ Hütte am Startpunkt, ein Markt am Ufer, ein Weg dazwischen, Bäume auf ungünst
 |---|---|---|
 | Dünger | 1 / 2 / 4 / 6 CC | Ertrag steigt (Startwert: +25 %, `NEU`) und `fertility` wird teilweise aufgefüllt |
 | Bewässerung | 1 / 2 / 3 / 5 CC | Ertragsverlust bei Dürre-Event wird halbiert (`NEU`) |
-| Schädlingsschutz | 1 / 2 / 3 / 5 CC | Ertragsverlust bei Schädlings-Event wird halbiert (`NEU`) |
 
 Jede Maßnahme kann einmal pro Zyklus und Parzelle angewendet werden, solange die Pflanze noch nicht reif ist. Den Dünger bezahlt der Spieler mit den Pflegekosten der Sorte, ein eigenes Dünger-Lager gibt es in v1 nicht.
 
@@ -282,7 +281,7 @@ Aufbau wie in den Mockups:
 - **Topbar:** Spielname, Welt-Seed, Tag und Uhrzeit, Geschwindigkeit, CC, Lagerstand.
 - **Links:** Tutorial-Checkliste bzw. Feldübersicht, darunter Meldungen (z. B. „Feld A ist erntereif“, „Lager voll“).
 - **Rechts:** Kontextpanel, entweder Parzellen-Inspektor (Lage, Boden, passende Sorte, Ertragsprognose, Aktion) oder Markt.
-- **Unten:** Werkzeugleiste: Auswählen, Parzelle, Pflanzen, Düngen, Wässern, Schutz, Ernten, Bauen, Markt.
+- **Unten:** Werkzeugleiste: Auswählen, Parzelle, Pflanzen, Düngen, Wässern, Ernten, Bauen, Markt.
 - Die Ertragsprognose im Inspektor nutzt dieselbe Funktion wie die Simulation (`yield.ts`, ohne Zufall).
 - Sprache: Deutsch, Texte in `src/ui/i18n/de.json`.
 
@@ -332,7 +331,7 @@ Jeder Meilenstein endet mit: grünen Tests, `npm run build` ohne Fehler, Screens
 - ✅ Test: Die erste Tiefland-Parzelle kostet 15 CC, jede weitere 25 CC × Bodenfaktor (S21d).
 
 ### M3: Pflege, Ernte und Lager
-- Düngen, Wässern, Schädlingsschutz, Ernten, Ertragsformel, Bodenverbrauch.
+- Düngen, Wässern, Ernten, Ertragsformel, Bodenverbrauch.
 - Lager mit Kapazität, Lagerkosten, Qualitätsverlust, Überreife (abschaltbar).
 - ✅ Test: Robusta auf „Gut“, passende Lage, ohne Dünger, Zufall fixiert auf 1,0 → genau 20 Einheiten.
 - ✅ Test: Tabellentests der Ertragsformel für alle Sorten und Bodenklassen.
