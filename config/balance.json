@@ -20,8 +20,7 @@
     "maxAttempts": { "v": 50, "src": "NEU" },
     "zoneMinHeight": { "v": { "tiefland": 0.1, "hochland": 0.4, "hochlandKuehl": 0.6 }, "src": "NEU" },
     "falloffPower": { "v": 2, "src": "NEU" },
-    "noiseScale": { "v": { "height": 0.08, "fertility": 0.12, "waterRetention": 0.1 }, "src": "NEU" },
-    "volcanoSize": { "v": 12, "src": "NEU" }
+    "noiseScale": { "v": { "height": 0.08, "fertility": 0.12, "waterRetention": 0.1 }, "src": "NEU" }
   },
 
   "soil": {
@@ -39,7 +38,7 @@
     "firstCost": { "v": 15, "src": "Robert 2026-10-20 (Parzellen billiger; vorher 48, GDD 11.6)" },
     "baseCost": { "v": 25, "src": "Robert 2026-10-20 (Parzellen billiger; vorher 100, GDD 11.6)" },
     "zoneMultiplier": {
-      "v": { "tiefland": 1.0, "hochland": 1.5, "hochlandKuehl": 2.0, "vulkan": 4.0 },
+      "v": { "tiefland": 1.0, "hochland": 1.5, "hochlandKuehl": 2.0 },
       "src": "NEU (Reihenfolge aus GDD 5.3 Landpreis)"
     },
     "maxSlope": { "v": 0.15, "src": "NEU" },
@@ -77,7 +76,7 @@
       "unlockCapital": { "v": 2000, "src": "GDD 12.1" }
     },
     "specialty": {
-      "zone": { "v": "vulkan", "src": "GDD 5.3" },
+      "zone": { "v": "hochlandKuehl", "src": "Robert 2026-10-25 (#17)" },
       "cycleDays": { "v": 15, "src": "GDD 11.1" },
       "seedCost": { "v": 15, "src": "GDD 11.2" },
       "baseYield": { "v": 4, "src": "GDD 11.2" },

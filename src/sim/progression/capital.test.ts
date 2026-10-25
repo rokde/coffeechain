@@ -3,7 +3,7 @@ import { buildMenu } from '../buildings/build'
 import { dispatch } from '../commands'
 import { bankBuyPrice } from '../market/market'
 import { isFree } from '../farm/parcels'
-import { deserialize } from '../save/save'
+import { deserialize, MIGRATIONS, SAVE_VERSION } from '../save/save'
 import { createState, type GameState } from '../state'
 import { capital, isVarietyUnlocked, phase, phaseProgress } from './capital'
 
@@ -124,7 +124,11 @@ describe('save (S47)', () => {
   it('AC-5: loads a version 5 save with invested 0', () => {
     const old: Record<string, unknown> = { ...createState(5) }
     delete old.invested
-    const loaded = deserialize(JSON.stringify({ version: 5, state: old }))
+    const loaded = deserialize(JSON.stringify({ version: 5, state: old }), {
+      version: SAVE_VERSION,
+      minVersion: 1,
+      migrations: MIGRATIONS,
+    })
     expect(loaded.invested).toBe(0)
     expect(loaded).toEqual(createState(5))
   })

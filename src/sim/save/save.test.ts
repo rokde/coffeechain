@@ -5,9 +5,13 @@ import { createState, type GameState } from '../state'
 import { step } from '../time/time'
 import { growth } from '../farm/plants'
 import type { Parcel } from '../world/types'
-import { deserialize, SAVE_VERSION, serialize } from './save'
+import { deserialize, MIGRATIONS, SAVE_VERSION, serialize } from './save'
 
 const perDay = () => balance().time.ticksPerGameDay
+
+// The old migrations stay, but the default format rejects saves below version 11 (#17).
+const legacy = { version: SAVE_VERSION, minVersion: 1, migrations: MIGRATIONS }
+const loadOld = (text: string) => deserialize(text, legacy)
 
 // A flat 4x4 world with two planted Robusta parcels.
 function populated(): GameState {
@@ -79,8 +83,8 @@ describe('save format', () => {
 
   it('AC-4: rejects text that is not JSON or has no state', () => {
     expect(() => deserialize('{nope')).toThrow(/JSON/)
-    expect(() => deserialize(JSON.stringify({ version: 1 }))).toThrow(/state/)
-    expect(() => deserialize(JSON.stringify({ version: 1, state: 3 }))).toThrow(/state/)
+    expect(() => deserialize(JSON.stringify({ version: SAVE_VERSION }))).toThrow(/state/)
+    expect(() => deserialize(JSON.stringify({ version: SAVE_VERSION, state: 3 }))).toThrow(/state/)
     expect(() => deserialize('[]')).toThrow(/state/)
   })
 
@@ -93,7 +97,7 @@ describe('save format', () => {
       ...s,
       money: Number(s.a) * 1000 + Number(s.b) * 100,
     })
-    const format = { version: 3, migrations: [m1, m2] }
+    const format = { version: 3, minVersion: 1, migrations: [m1, m2] }
     expect(deserialize(text, format).money).toBe(1200)
     const v2 = JSON.stringify({ version: 2, state: { ...state, a: 1, b: 5 } })
     expect(deserialize(v2, format).money).toBe(1500)
@@ -134,7 +138,7 @@ describe('save format', () => {
     const old: Record<string, unknown> = { ...createState(1) }
     delete old.events
     delete old.milestones
-    const loaded = deserialize(JSON.stringify({ version: 1, state: old }))
+    const loaded = loadOld(JSON.stringify({ version: 1, state: old }))
     expect(loaded.milestones).toEqual({ harvested: 0 })
     expect(loaded).toEqual(createState(1))
   })
@@ -142,7 +146,7 @@ describe('save format', () => {
   it('loads a version 2 save with the milestones default', () => {
     const old: Record<string, unknown> = { ...createState(1) }
     delete old.milestones
-    const loaded = deserialize(JSON.stringify({ version: 2, state: old }))
+    const loaded = loadOld(JSON.stringify({ version: 2, state: old }))
     expect(loaded).toEqual(createState(1))
   })
 })
@@ -151,14 +155,14 @@ describe('events migration', () => {
   it('loads a version 1 save without an event list', () => {
     const old: Record<string, unknown> = { ...createState(5) }
     delete old.milestones
-    const loaded = deserialize(JSON.stringify({ version: 1, state: old }))
+    const loaded = loadOld(JSON.stringify({ version: 1, state: old }))
     expect(loaded).toEqual(createState(5))
   })
 })
 
 describe('research migration', () => {
   it('loads a version 3 save without a research list', () => {
-    const loaded = deserialize(JSON.stringify({ version: 3, state: createState(5) }))
+    const loaded = loadOld(JSON.stringify({ version: 3, state: createState(5) }))
     expect(loaded).toEqual(createState(5))
   })
 })
@@ -187,9 +191,7 @@ describe('washed batches (S46)', () => {
     const raw = { variety: 'robusta', units: 3, quality: 80, readyHour: 24 }
     const bad = serialize({ ...base, storage: { batches: [raw as never] } })
     expect(() => deserialize(bad)).toThrow(/readyHour needs washed/)
-    expect(deserialize(old).storage.batches).toEqual([
-      { variety: 'robusta', units: 3, quality: 80 },
-    ])
+    expect(loadOld(old).storage.batches).toEqual([{ variety: 'robusta', units: 3, quality: 80 }])
   })
 })
 
@@ -236,7 +238,7 @@ describe('orders migration (S56)', () => {
     expect(SAVE_VERSION).toBeGreaterThanOrEqual(7)
     const old: Record<string, unknown> = { ...createState(5) }
     delete old.orders
-    const loaded = deserialize(JSON.stringify({ version: 6, state: old }))
+    const loaded = loadOld(JSON.stringify({ version: 6, state: old }))
     expect(loaded.orders).toEqual({ open: [], nextId: 0 })
     expect(loaded).toEqual(createState(5))
   })
@@ -244,7 +246,7 @@ describe('orders migration (S56)', () => {
 
 describe('whole CC migration (S57)', () => {
   const load = (version: number, money: number, invested: number) =>
-    deserialize(JSON.stringify({ version, state: { ...createState(5), money, invested } }))
+    loadOld(JSON.stringify({ version, state: { ...createState(5), money, invested } }))
 
   it('AC-4: floors money and invested of a version 7 save to whole CC', () => {
     expect(load(7, 12345, 4599)).toMatchObject({ money: 12300, invested: 4500 })
@@ -262,7 +264,7 @@ describe('whole CC migration (S57)', () => {
 
   it('AC-4: still rejects a version 7 save with a bad money value', () => {
     const old = JSON.stringify({ version: 7, state: { ...createState(5), money: 'x' } })
-    expect(() => deserialize(old)).toThrow(/money/)
+    expect(() => loadOld(old)).toThrow(/money/)
   })
 })
 
@@ -285,7 +287,7 @@ describe('remove events migration (#8)', () => {
 
   it('AC-4: has version 9 and drops events, research and growthDelayHours of a version 8 save', () => {
     expect(SAVE_VERSION).toBeGreaterThanOrEqual(9)
-    const loaded = deserialize(oldSave())
+    const loaded = loadOld(oldSave())
     expect(loaded).not.toHaveProperty('events')
     expect(loaded).not.toHaveProperty('research')
     for (const plant of Object.values(loaded.farm.plants))
@@ -294,20 +296,41 @@ describe('remove events migration (#8)', () => {
   })
 
   it('AC-4: save, load and 50 more days of a version 8 save equal 50 days without a break', () => {
-    const loaded = deserialize(oldSave())
+    const loaded = loadOld(oldSave())
     expect(runDays(deserialize(serialize(loaded)), 50)).toEqual(runDays(populated(), 50))
   })
 })
 
 describe('remove pest protection migration (#8)', () => {
   it('AC-4: has version 10 and drops pestProtected of a version 9 save', () => {
-    expect(SAVE_VERSION).toBe(10)
+    expect(SAVE_VERSION).toBeGreaterThanOrEqual(10)
     const state = populated()
     const cared = { ...state.farm.plants[0]!, fertilized: true, irrigated: true }
     const plants = { ...state.farm.plants, 0: { ...cared, pestProtected: true } }
     const old = { ...state, farm: { ...state.farm, plants } }
-    const loaded = deserialize(JSON.stringify({ version: 9, state: old }))
+    const loaded = loadOld(JSON.stringify({ version: 9, state: old }))
     expect(loaded.farm.plants[0]).not.toHaveProperty('pestProtected')
     expect(loaded.farm.plants[0]).toEqual(cared)
+  })
+})
+
+describe('remove volcano zone (#17)', () => {
+  it('AC-3: rejects a save below version 11 with "unknown or old version"', () => {
+    expect(SAVE_VERSION).toBe(11)
+    for (const version of [1, 9, 10]) {
+      const text = JSON.stringify({ version, state: createState(5) })
+      expect(() => deserialize(text)).toThrow('unknown or old version')
+    }
+  })
+
+  it('AC-3: loads a save with version 11', () => {
+    const state = createState(5)
+    expect(deserialize(JSON.stringify({ version: 11, state }))).toEqual(state)
+  })
+
+  it('AC-3: rejects a version 11 save with a vulkan parcel', () => {
+    const state = structuredClone(createState(5))
+    ;(state.world.parcels[0] as { zone: string }).zone = 'vulkan'
+    expect(() => deserialize(serialize(state))).toThrow(/world\.parcels\.0\.zone/)
   })
 })

@@ -1,6 +1,5 @@
-import { deserialize } from '../sim/save/save'
 import type { GameState } from '../sim/state'
-import { readSlot, takePendingLoad } from './saves'
+import { loadAtStart, readSlot, takePendingLoad } from './saves'
 import { seedParam } from './seed'
 
 const SKIP = 'coffeechain.skipResume'
@@ -15,13 +14,14 @@ export async function startState(search: string): Promise<GameState | null> {
     sessionStorage.removeItem(SKIP)
     return null
   }
+  let text: string | null
   try {
-    const text = await readSlot('autosave')
-    return text === null ? null : deserialize(text)
+    text = await readSlot('autosave')
   } catch (error) {
     console.error('Autosave is not readable, a new game starts', error)
     return null
   }
+  return text === null ? null : loadAtStart(text, 'Autosave')
 }
 
 // The start failed with a loaded state. The reload starts a new world, so the app does not stay blank.

@@ -1,4 +1,4 @@
-export type Zone = 'wasser' | 'tiefland' | 'hochland' | 'hochlandKuehl' | 'vulkan'
+export type Zone = 'wasser' | 'tiefland' | 'hochland' | 'hochlandKuehl'
 export type SoilClass = 'karg' | 'mittel' | 'gut' | 'sehrGut'
 
 export type Parcel = {

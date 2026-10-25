@@ -27,7 +27,7 @@ describe('buildTerrainGeometry', () => {
         )
       }
     })
-    expect(new Set(Object.values(ZONE_COLORS)).size).toBe(5)
+    expect(new Set(Object.values(ZONE_COLORS)).size).toBe(4)
   })
 
   it('has no gaps and puts water-only corners below y = 0', () => {

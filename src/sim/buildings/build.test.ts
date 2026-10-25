@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { balance } from '../balance'
 import { dispatch } from '../commands'
 import { isFree } from '../farm/parcels'
-import { deserialize, serialize } from '../save/save'
+import { deserialize, MIGRATIONS, SAVE_VERSION, serialize } from '../save/save'
 import { createState, type GameState } from '../state'
 import { buildMenu, type Build } from './build'
 
@@ -93,7 +93,11 @@ describe('Build (S44)', () => {
   it('loads a version 4 save with no buildings', () => {
     const old: Record<string, unknown> = { ...createState(5) }
     delete old.buildings
-    const loaded = deserialize(JSON.stringify({ version: 4, state: old }))
+    const loaded = deserialize(JSON.stringify({ version: 4, state: old }), {
+      version: SAVE_VERSION,
+      minVersion: 1,
+      migrations: MIGRATIONS,
+    })
     expect(loaded.buildings).toEqual({})
     expect(loaded).toEqual(createState(5))
   })

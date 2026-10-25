@@ -3,6 +3,7 @@ import { invoke, isTauri } from '@tauri-apps/api/core'
 import { serialize } from '../sim/save/save'
 import { createState } from '../sim/state'
 import { skipResume, startState } from './resume'
+import { pendingLoadError } from './saves'
 
 vi.mock('@tauri-apps/api/core', () => ({ isTauri: vi.fn(() => false), invoke: vi.fn() }))
 
@@ -58,6 +59,16 @@ describe('startState (S43b)', () => {
       expect(error).toHaveBeenCalled()
     },
   )
+
+  it('AC-3 (#17): returns null for a version 10 autosave and keeps the reason', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    local.set(AUTOSAVE, JSON.stringify({ version: 10, state: saved() }))
+    await expect(startState('')).resolves.toBeNull()
+    expect(pendingLoadError()).toMatch(/unknown or old version/)
+    local.set(AUTOSAVE, serialize(saved()))
+    expect(await startState('')).toEqual(saved())
+    expect(pendingLoadError()).toBeNull()
+  })
 
   it('AC-1: returns null for a save whose parcel count does not match the size', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})

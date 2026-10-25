@@ -7,7 +7,7 @@ const val = <T extends z.ZodType>(schema: T) =>
 const num = z.number()
 const int = z.number().int()
 const range = z.tuple([num, num])
-const zone = z.enum(['tiefland', 'hochland', 'hochlandKuehl', 'vulkan'])
+const zone = z.enum(['tiefland', 'hochland', 'hochlandKuehl'])
 
 const variety = z.object({
   zone: val(zone),
@@ -36,7 +36,6 @@ export const balanceSchema = z.object({
     zoneMinHeight: val(z.object({ tiefland: num, hochland: num, hochlandKuehl: num })),
     falloffPower: val(num),
     noiseScale: val(z.object({ height: num, fertility: num, waterRetention: num })),
-    volcanoSize: val(int),
   }),
   soil: z.object({
     yieldFactor: val(z.object({ karg: num, mittel: num, gut: num, sehrGut: num })),

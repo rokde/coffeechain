@@ -7,7 +7,7 @@ import { useSavePanelStore } from '../app/savePanel'
 import { startState } from '../app/resume'
 import { pendingLoadError } from '../app/saves'
 import { setStartState, useGameStore } from '../app/store'
-import { deserialize, serialize } from '../sim/save/save'
+import { deserialize, SAVE_VERSION, serialize } from '../sim/save/save'
 import { createState, type GameState } from '../sim/state'
 import { clock } from '../sim/time/time'
 import Hud from './Hud.vue'
@@ -100,7 +100,10 @@ describe('SavePanel (S42b)', () => {
   })
 
   it('AC-3: a slot that deserialize rejects shows "ungültig" and cannot load', async () => {
-    local.set('coffeechain.save.slot-3', JSON.stringify({ version: 1, state: { money: 'a lot' } }))
+    local.set(
+      'coffeechain.save.slot-3',
+      JSON.stringify({ version: SAVE_VERSION, state: { money: 'a lot' } }),
+    )
     local.set('coffeechain.save.slot-1', 'not json')
     const { pinia, panel } = setup()
     await panel.refresh()
@@ -140,10 +143,23 @@ describe('SavePanel (S42b)', () => {
 
   it('AC-5: an invalid pending save starts a new game with the dialog open', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
-    session.set(PENDING, JSON.stringify({ version: 1, state: { money: 1 } }))
+    session.set(PENDING, JSON.stringify({ version: SAVE_VERSION, state: { money: 1 } }))
     const { pinia, game, panel } = await start()
     expect(game.state).toEqual(createState(42))
     expect(pendingLoadError()).toMatch(/invalid/)
+    expect(panel.open).toBe(true)
+    expect(await html(pinia, Hud)).toContain('Der geladene Spielstand ist ungültig.')
+  })
+
+  it('AC-3 (#17): an old autosave at start shows the invalid-save message and a new game', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.stubGlobal('location', { search: '', pathname: '/', reload, replace })
+    const old = { ...createState(7), money: 4300 }
+    local.set('coffeechain.save.autosave', JSON.stringify({ version: 10, state: old }))
+    const { pinia, game, panel } = await start()
+    expect(game.state).toEqual(createState(game.state.world.seed))
+    expect(game.state.money).not.toBe(4300)
+    expect(pendingLoadError()).toMatch(/unknown or old version/)
     expect(panel.open).toBe(true)
     expect(await html(pinia, Hud)).toContain('Der geladene Spielstand ist ungültig.')
   })

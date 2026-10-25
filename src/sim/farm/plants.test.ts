@@ -5,8 +5,9 @@ import { createState, type GameState } from '../state'
 import { step } from '../time/time'
 import type { Parcel, World } from '../world/types'
 import { bankSellPrice } from '../market/market'
-import { canPlant, growth, quotePlant } from './plants'
-import type { Variety } from './yield'
+import { forecastYield } from './forecast'
+import { growth, quotePlant } from './plants'
+import { computeYield, type Variety } from './yield'
 
 function testWorld(size = 4): World {
   const parcels: Parcel[] = []
@@ -305,30 +306,38 @@ describe('Plant with bought seed (S19b)', () => {
   )
 })
 
-describe('Premium and Specialty (S48)', () => {
-  // Parcel (1,0) is volcano soil. Capital is the balance here: no stock and nothing invested.
+describe('Premium and Specialty (S48, #17)', () => {
+  // Parcel (1,0) is cool highland, (0,0) is lowland. Capital is the balance here: no stock and nothing invested.
   function zoned(money: number): GameState {
     const state = testState(money)
     const parcels = state.world.parcels.map((p) =>
-      p.x === 1 && p.y === 0 ? { ...p, zone: 'vulkan' as const } : p,
+      p.x === 1 && p.y === 0 ? { ...p, zone: 'hochlandKuehl' as const } : p,
     )
     return { ...state, world: { ...state.world, parcels } }
   }
 
-  it('AC-1: Specialty needs 10.000 CC capital and a volcano parcel', () => {
-    expect(canPlant(zoned(999999), 'specialty', 1, 0)).toBe(false)
-    expect(canPlant(zoned(1000000), 'specialty', 1, 0)).toBe(true)
-    expect(canPlant(zoned(1000000), 'specialty', 0, 0)).toBe(false)
-    expect(canPlant(zoned(1000000), 'robusta', 1, 0)).toBe(true)
+  it('AC-2: Specialty plants on lowland and cool highland from 10.000 CC capital', () => {
+    const below = zoned(999999)
+    const before = structuredClone(below)
+    expect(() => plant(below, 'specialty', [0, 0])).toThrow(/locked/)
+    expect(() => plant(below, 'specialty', [1, 0])).toThrow(/locked/)
+    expect(below).toEqual(before)
+    const next = plant(zoned(1000000), 'specialty', [0, 0], [1, 0])
+    expect(next.farm.plants[0]?.variety).toBe('specialty')
+    expect(next.farm.plants[1]?.variety).toBe('specialty')
   })
 
-  it('AC-1: a Plant command for Specialty on a lowland parcel throws and keeps the state', () => {
-    const state = zoned(1000000)
-    const before = structuredClone(state)
-    expect(() => plant(state, 'specialty', [0, 0])).toThrow()
-    expect(() => plant(state, 'specialty', [1, 0], [0, 0])).toThrow()
-    expect(state).toEqual(before)
-    expect(plant(state, 'specialty', [1, 0]).farm.plants[1]?.variety).toBe('specialty')
+  it('AC-2: the Specialty forecast has the off-zone factor on lowland only', () => {
+    expect(balance().varieties.specialty.zone).toBe('hochlandKuehl')
+    const next = plant(zoned(1000000), 'specialty', [0, 0], [1, 0])
+    const full = (zoneMatches: boolean) =>
+      computeYield({ variety: 'specialty', soilClass: 'gut', zoneMatches, fertilized: false })
+    const { baseYield } = balance().varieties.specialty
+    expect(full(true)).toBe(Math.floor(baseYield + 1e-9))
+    expect(full(false)).toBe(Math.floor(baseYield * balance().world.offZoneYieldFactor + 1e-9))
+    expect(forecastYield(next, 1, 0)).toBe(full(true))
+    expect(forecastYield(next, 0, 0)).toBe(full(false))
+    expect(full(false)).toBeLessThan(full(true))
   })
 
   it('AC-2: Arabica Premium plants at 2.000 CC capital and takes the seed cost', () => {

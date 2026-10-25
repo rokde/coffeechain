@@ -12,7 +12,6 @@ describe('inspectParcel', () => {
     ['tiefland', 'robusta'],
     ['hochland', 'arabicaStandard'],
     ['hochlandKuehl', 'arabicaPremium'],
-    ['vulkan', 'specialty'],
     ['wasser', null],
   ])('AC-2: %s gives the variety %s', (zone, variety) => {
     const parcel = world.parcels.find((p) => p.zone === zone)!

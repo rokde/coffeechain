@@ -81,8 +81,7 @@
       "wasser": "Wasser",
       "tiefland": "Tiefland",
       "hochland": "Hochland",
-      "hochlandKuehl": "Kühles Hochland",
-      "vulkan": "Vulkan"
+      "hochlandKuehl": "Kühles Hochland"
     },
     "soilClasses": {
       "karg": "Karg",
@@ -133,7 +132,7 @@
     "plant": "Pflanzen",
     "tooExpensive": "Nicht genug CC.",
     "locked": "ab Phase {phase} · Kapital {capital}",
-    "specialtyZone": "nur auf Vulkanboden"
+    "specialtyZone": "passt zu kühlem Hochland"
   },
   "buildTool": {
     "heading": "Bauen",

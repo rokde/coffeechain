@@ -5,7 +5,9 @@ import { gameStateSchema } from './schema'
 // When a slice adds a state field: increase SAVE_VERSION by one and append one migration
 // to MIGRATIONS that fills the default value. Migration i turns version i + 1 into i + 2.
 // Never edit an old migration.
-export const SAVE_VERSION = 10
+export const SAVE_VERSION = 11
+// #17 removes the volcano zone without a migration (Robert 2026-10-25), so older saves do not load.
+export const MIN_SAVE_VERSION = 11
 
 export type Migration = (state: Record<string, unknown>) => Record<string, unknown>
 
@@ -54,10 +56,13 @@ export const MIGRATIONS: Migration[] = [
     )
     return { ...state, farm: { ...farm, plants } }
   },
+  // 10 -> 11: #17 removes the volcano zone. MIN_SAVE_VERSION rejects the older saves.
+  (state) => state,
 ]
 
 export interface SaveFormat {
   version: number
+  minVersion: number
   migrations: Migration[]
 }
 
@@ -70,7 +75,11 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
 
 export function deserialize(
   text: string,
-  format: SaveFormat = { version: SAVE_VERSION, migrations: MIGRATIONS },
+  format: SaveFormat = {
+    version: SAVE_VERSION,
+    minVersion: MIN_SAVE_VERSION,
+    migrations: MIGRATIONS,
+  },
 ): GameState {
   let data: unknown
   try {
@@ -80,8 +89,8 @@ export function deserialize(
   }
   if (!isObject(data)) throw new Error('Save has no state object')
   const { version } = data
-  if (typeof version !== 'number' || !Number.isInteger(version) || version < 1) {
-    throw new Error(`Save has an invalid version: ${String(version)}`)
+  if (typeof version !== 'number' || !Number.isInteger(version) || version < format.minVersion) {
+    throw new Error(`Save has an unknown or old version: ${String(version)}`)
   }
   if (version > format.version) {
     throw new Error(`Save version ${version} is newer than supported version ${format.version}`)
