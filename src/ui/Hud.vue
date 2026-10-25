@@ -97,6 +97,9 @@ const phaseText = computed(() => {
             <template v-else>{{ de.time.speed.replace('{speed}', String(speed)) }}</template>
           </button>
         </div>
+        <span class="time-unit" data-testid="time-unit">{{
+          de.time.units[store.state.time.stage]
+        }}</span>
       </div>
       <div class="stats">
         <div class="money-group" data-testid="money-group">
@@ -373,6 +376,11 @@ const phaseText = computed(() => {
   outline: 2px solid #f2c48d;
   outline-offset: 2px;
 }
+.time-unit {
+  font-size: 12px;
+  font-weight: 400;
+  opacity: 0.8;
+}
 /* Below 1440 px a long date does not fit in one line, so date and year get two lines. */
 @media (max-width: 1439px) {
   .clock {
@@ -423,8 +431,9 @@ const phaseText = computed(() => {
   .name strong {
     display: none;
   }
-  /* The bar has no room for the seed, so it hangs below the bar as a tab. */
-  .name small {
+  /* The bar has no room for the seed and the time unit, so they hang below the bar as tabs. */
+  .name small,
+  .time-unit {
     position: absolute;
     top: calc(100% + 4px);
     left: 12px;
@@ -434,6 +443,11 @@ const phaseText = computed(() => {
     font-size: 11px;
     line-height: 13px;
     white-space: nowrap;
+  }
+  .time-unit {
+    left: auto;
+    right: 12px;
+    opacity: 1;
   }
   .time {
     gap: 4px;

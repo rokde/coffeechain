@@ -27,6 +27,7 @@ export const balanceSchema = z.object({
     monthsPerYear: val(int),
     speeds: val(z.array(num)),
     daysPerWeek: val(int),
+    weeksFromPhase: val(int),
   }),
   economy: z.object({ startCapital: val(num) }),
   world: z.object({

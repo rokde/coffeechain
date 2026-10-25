@@ -10,6 +10,7 @@ Values in `config/balance.json` with `src: "NEU"` that the world generation (S3)
 | `time.realSecondsPerWeek` | 20 | How many real seconds at speed 1 does one week take while the time runs in weeks? |
 | `time.daysPerMonth` | 30 | How many days does one month have? The calendar uses equal months (#27). |
 | `time.monthsPerYear` | 12 | How many months does one year have? |
+| `time.weeksFromPhase` | 2 | From which progression phase does the time run in weeks? Phase 2 starts at 2,000 CC capital. The switch only goes forward (#27). |
 | `world.startReach` | 6 | How far (Chebyshev distance in parcels) from the start must the guaranteed parcels be? |
 | `world.maxAttempts` | 50 | How many seeds does the generator try before it stops with an error? |
 | `world.zoneMinHeight` | tiefland 0.1, hochland 0.4, hochlandKuehl 0.6 | Which height (0–1) starts each zone? Lower heights are water. |

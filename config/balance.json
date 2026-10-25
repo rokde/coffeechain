@@ -7,7 +7,8 @@
     "daysPerMonth": { "v": 30, "src": "NEU" },
     "monthsPerYear": { "v": 12, "src": "NEU" },
     "speeds": { "v": [0, 1, 2, 4, 8, 16], "src": "Robert 2026-10-20" },
-    "daysPerWeek": { "v": 7, "src": "GDD 11.1" }
+    "daysPerWeek": { "v": 7, "src": "GDD 11.1" },
+    "weeksFromPhase": { "v": 2, "src": "NEU" }
   },
 
   "economy": {
