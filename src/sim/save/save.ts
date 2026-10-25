@@ -5,7 +5,7 @@ import { gameStateSchema } from './schema'
 // When a slice adds a state field: increase SAVE_VERSION by one and append one migration
 // to MIGRATIONS that fills the default value. Migration i turns version i + 1 into i + 2.
 // Never edit an old migration.
-export const SAVE_VERSION = 9
+export const SAVE_VERSION = 10
 
 export type Migration = (state: Record<string, unknown>) => Record<string, unknown>
 
@@ -40,6 +40,19 @@ export const MIGRATIONS: Migration[] = [
       }),
     )
     return { ...next, farm: { ...farm, plants } }
+  },
+  // 9 -> 10: #8 removes the pest protection.
+  (state) => {
+    const farm = state.farm as { plants?: Record<string, Record<string, unknown>> } | undefined
+    if (!farm?.plants) return state
+    const plants = Object.fromEntries(
+      Object.entries(farm.plants).map(([k, plant]) => {
+        const copy = { ...plant }
+        delete copy.pestProtected
+        return [k, copy]
+      }),
+    )
+    return { ...state, farm: { ...farm, plants } }
   },
 ]
 

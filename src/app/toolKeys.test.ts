@@ -16,12 +16,11 @@ const map = {
   l: 'plant',
   g: 'fertilize',
   r: 'irrigate',
-  t: 'protect',
   n: 'harvest',
   b: 'build',
   m: 'market',
 }
-const other = ['w', 'a', 's', 'd', 'q', 'e', 'h', 'f', '0', '1', '5', ' ', 'Escape']
+const other = ['t', 'w', 'a', 's', 'd', 'q', 'e', 'h', 'f', '0', '1', '5', ' ', 'Escape']
 
 describe('toolForKey (S53)', () => {
   it('AC-1: each tool key gives its tool in lower and upper case', () => {

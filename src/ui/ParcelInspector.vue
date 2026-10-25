@@ -47,7 +47,7 @@ const careDone = computed(() => {
   const done = (Object.keys(t.careDone) as (keyof typeof t.careDone)[]).filter((c) => s.cares[c])
   return done.length ? done.map((c) => t.careDone[c]).join(', ') : t.careNone
 })
-const careCost = (command: 'Fertilize' | 'Irrigate' | 'ProtectPests') =>
+const careCost = (command: 'Fertilize' | 'Irrigate') =>
   quoteCare(game.state as GameState, { type: command, parcels: [selection.parcel!] })
 
 // Only for a parcel that the farm can buy.

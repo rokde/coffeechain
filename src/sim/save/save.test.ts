@@ -284,7 +284,7 @@ describe('remove events migration (#8)', () => {
   }
 
   it('AC-4: has version 9 and drops events, research and growthDelayHours of a version 8 save', () => {
-    expect(SAVE_VERSION).toBe(9)
+    expect(SAVE_VERSION).toBeGreaterThanOrEqual(9)
     const loaded = deserialize(oldSave())
     expect(loaded).not.toHaveProperty('events')
     expect(loaded).not.toHaveProperty('research')
@@ -296,5 +296,18 @@ describe('remove events migration (#8)', () => {
   it('AC-4: save, load and 50 more days of a version 8 save equal 50 days without a break', () => {
     const loaded = deserialize(oldSave())
     expect(runDays(deserialize(serialize(loaded)), 50)).toEqual(runDays(populated(), 50))
+  })
+})
+
+describe('remove pest protection migration (#8)', () => {
+  it('AC-4: has version 10 and drops pestProtected of a version 9 save', () => {
+    expect(SAVE_VERSION).toBe(10)
+    const state = populated()
+    const cared = { ...state.farm.plants[0]!, fertilized: true, irrigated: true }
+    const plants = { ...state.farm.plants, 0: { ...cared, pestProtected: true } }
+    const old = { ...state, farm: { ...state.farm, plants } }
+    const loaded = deserialize(JSON.stringify({ version: 9, state: old }))
+    expect(loaded.farm.plants[0]).not.toHaveProperty('pestProtected')
+    expect(loaded.farm.plants[0]).toEqual(cared)
   })
 })

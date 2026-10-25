@@ -54,18 +54,15 @@
     "careTooExpensive": "Zu wenig Geld: kostet {cost}",
     "careDone": {
       "fertilized": "gedüngt",
-      "irrigated": "gewässert",
-      "pestProtected": "geschützt"
+      "irrigated": "gewässert"
     },
     "careHints": {
       "Fertilize": "Düngen möglich",
-      "Irrigate": "Wässern möglich",
-      "ProtectPests": "Schützen möglich"
+      "Irrigate": "Wässern möglich"
     },
     "careActions": {
       "Fertilize": "Düngen",
-      "Irrigate": "Wässern",
-      "ProtectPests": "Schützen"
+      "Irrigate": "Wässern"
     },
     "price": "Preis",
     "tips": {
@@ -115,7 +112,6 @@
     "plant": "Pflanzen",
     "fertilize": "Düngen",
     "irrigate": "Wässern",
-    "protect": "Schutz",
     "harvest": "Ernten",
     "build": "Bauen",
     "market": "Markt"
@@ -221,11 +217,6 @@
       "hint": "Klicke Parzellen mit einer unreifen, ungewässerten Pflanze an, um sie sofort zu wässern; halte die linke Maustaste und ziehe, um mehrere Parzellen zu wässern. Oder markiere zuerst Parzellen mit „Auswählen“ und bestätige hier.",
       "action": "Wässern"
     },
-    "protect": {
-      "heading": "Schädlingsschutz",
-      "hint": "Klicke Parzellen mit einer unreifen, ungeschützten Pflanze an, um sie sofort zu schützen; halte die linke Maustaste und ziehe, um mehrere Parzellen zu schützen. Oder markiere zuerst Parzellen mit „Auswählen“ und bestätige hier.",
-      "action": "Schützen"
-    },
     "harvest": {
       "heading": "Ernten",
       "hint": "Klicke Parzellen mit einer reifen Pflanze an, um sie sofort zu ernten; halte die linke Maustaste und ziehe, um mehrere Parzellen zu ernten. Was nicht ins Lager passt, bleibt an der Pflanze. Oder markiere zuerst Parzellen mit „Auswählen“ und bestätige hier.",
@@ -277,7 +268,7 @@
     "loop": [
       { "name": "Parzelle", "text": "Kaufe eine Parzelle auf der Insel." },
       { "name": "Pflanzen", "text": "Setze eine Kaffeepflanze auf dein Feld." },
-      { "name": "Pflegen", "text": "Dünge, wässere und schütze die Pflanzen." },
+      { "name": "Pflegen", "text": "Dünge und wässere die Pflanzen." },
       { "name": "Ernten", "text": "Ernte die reifen Pflanzen, bevor sie überreif sind." },
       { "name": "Verkaufen", "text": "Verkaufe den Kaffee aus dem Lager am Markt." },
       { "name": "Reinvestieren", "text": "Kaufe mit dem Geld neue Parzellen und pflanze mehr an." }
@@ -357,7 +348,6 @@
     "plant": "Pflanzen",
     "fertilize": "Dünger",
     "irrigate": "Bewässerung",
-    "protect": "Schutz",
     "harvest": "Ernte",
     "sell": "Verkauf",
     "buy": "Einkauf",

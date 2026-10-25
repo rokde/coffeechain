@@ -14,7 +14,7 @@ import FieldList from './FieldList.vue'
 vi.stubGlobal('location', { search: '?seed=42' })
 vi.stubGlobal('sessionStorage', { getItem: () => null, removeItem: () => {} })
 
-const cared = { fertilized: true, irrigated: true, pestProtected: true }
+const cared = { fertilized: true, irrigated: true }
 const day = balance().time.ticksPerGameDay
 const late = (balance().varieties.robusta.cycleDays + balance().farm.overripe.graceDays + 1) * day
 

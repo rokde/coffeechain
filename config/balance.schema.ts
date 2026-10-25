@@ -15,7 +15,7 @@ const variety = z.object({
   seedCost: val(num),
   baseYield: val(num),
   referencePrice: val(num),
-  careCost: val(z.object({ fertilizer: num, irrigation: num, pestControl: num })),
+  careCost: val(z.object({ fertilizer: num, irrigation: num })),
   unlockCapital: val(num),
 })
 
@@ -63,7 +63,6 @@ export const balanceSchema = z.object({
   farm: z.object({
     fertilizerYieldBonus: val(num),
     irrigationDroughtLossReduction: val(num),
-    pestControlLossReduction: val(num),
     yieldRandomRange: val(range),
     visualStages: val(z.object({ setzling: num, wachstum: num, bluete: num, fruchtansatz: num })),
     overripe: z.object({
