@@ -236,10 +236,27 @@ describe('MarketPanel processing (S46)', () => {
     html = await render(pinia)
     expect(field(html, 'stock')).toBe('10')
     expect(field(html, 'washed-stock')).toBe('0')
-    expect(field(html, 'processing')!.trim()).toBe('Aufbereitung läuft bis Tag 30')
+    expect(field(html, 'processing')!.trim()).toBe('Aufbereitung läuft bis 1. Februar, Jahr 1')
     expect(button(html, 'process')).toContain('disabled')
     expect(button(html, 'process')).toContain('title="Es läuft schon eine Aufbereitung."')
     expect(button(html, 'sell-washed')).toContain('disabled')
+  })
+
+  it('AC-4 (087): shows the end of a running batch as a calendar date', async () => {
+    const { pinia, game } = processing(true)
+    const state = game.state as GameState
+    game.replace({
+      ...state,
+      time: { ...state.time, day: 400 },
+      storage: {
+        batches: [
+          ...state.storage.batches,
+          { variety: 'arabicaStandard', units: 50, quality: 100, washed: true, readyDay: 431 },
+        ],
+      },
+    })
+    const html = await render(pinia)
+    expect(field(html, 'processing')!.trim()).toBe('Aufbereitung läuft bis 12. März, Jahr 2')
   })
 
   it('AC-5: after 30 days the washed units show and sell at the washed price', async () => {

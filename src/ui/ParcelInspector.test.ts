@@ -87,7 +87,7 @@ describe('ParcelInspector field status (S21e)', () => {
     const html = await renderToString(createSSRApp(ParcelInspector).use(pinia))
     expect(text(html, 'inspector-stage')).toEqual([de.inspector.stages[status.stage]])
     expect(text(html, 'inspector-growth')).toEqual([`${status.percent} %`])
-    expect(text(html, 'inspector-days')).toEqual([`Reif in ${status.daysToRipe} Tagen`])
+    expect(text(html, 'inspector-days')).toEqual(['Reif im April'])
     expect(html).toContain('Pflege')
     expect(text(html, 'inspector-care')).toEqual(['gewässert'])
     expect(text(html, 'inspector-care-hint')).toEqual(['Düngen möglich'])
@@ -95,6 +95,28 @@ describe('ParcelInspector field status (S21e)', () => {
     expect(buttons(html).every((b) => !b.includes('disabled'))).toBe(true)
     expect(buttons(html).every((b) => !b.includes('title='))).toBe(true)
     expect(html).toMatch(/<dt[^>]*>Fortschritt<\/dt>/)
+  })
+
+  it('AC-3 (087): shows the month of ripeness and of overripeness, without days', async () => {
+    const sown = setupStatus((s) => s)
+    expect(sown.game.state.time.day).toBe(0)
+    const html = await renderToString(createSSRApp(ParcelInspector).use(sown.pinia))
+    // Ripe on day 90, the 1st of April.
+    expect(text(html, 'inspector-days')).toEqual(['Reif im April'])
+    expect(html).not.toMatch(/Tag/)
+
+    const ripe = setupStatus((s) => ({ ...s, time: { ...s.time, day: ripeDays } }))
+    const status = fieldStatus(ripe.game.state as GameState, ripe.parcel.x, ripe.parcel.y)!
+    // Overripe on day 90 + 60 + 1 = 151, in June.
+    expect(ripeDays + status.daysToOverripe!).toBe(151)
+    const ripeHtml = await renderToString(createSSRApp(ParcelInspector).use(ripe.pinia))
+    expect(text(ripeHtml, 'inspector-days')).toEqual(['Überreif im Juni'])
+    expect(ripeHtml).not.toMatch(/Tag/)
+  })
+
+  it('AC-5 (087): de.json has no day texts for the inspector', () => {
+    for (const key of ['daysToRipe', 'daysToRipeOne', 'daysToOverripe', 'daysToOverripeOne'])
+      expect(de.inspector).not.toHaveProperty(key)
   })
 
   it('AC-3: shows no status rows for an empty parcel', async () => {

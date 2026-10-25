@@ -701,7 +701,7 @@ test('S21e: field status and care buttons in the inspector', async ({ page }) =>
 
   await expect(page.getByTestId('inspector-stage')).toHaveText('Setzling')
   await expect(page.getByTestId('inspector-growth')).toHaveText(/^\d+ %$/)
-  await expect(page.getByTestId('inspector-days')).toHaveText(/^Reif in (\d+ Tagen|1 Tag)$/)
+  await expect(page.getByTestId('inspector-days')).toHaveText('Reif im April')
   await expect(page.getByTestId('inspector-care')).toHaveText('keine')
   await expect(page.getByTestId('inspector-care-action')).toHaveText(['Düngen', 'Wässern'])
   await expect(page.getByTestId('field-row').getByTestId('field-state')).toHaveText(
@@ -1398,7 +1398,9 @@ test('S46: process raw coffee and sell washed coffee in the market panel', async
   await expect(sellWashed).toBeDisabled()
   await process.click()
   await expect(block.getByTestId('market-stock')).toHaveText('10')
-  await expect(block.getByTestId('market-processing')).toHaveText('Aufbereitung läuft bis Tag 40')
+  await expect(block.getByTestId('market-processing')).toHaveText(
+    'Aufbereitung läuft bis 11. Februar, Jahr 1',
+  )
   await expect(process).toBeDisabled()
   await expect(page.getByTestId('money')).toHaveText('485 CC')
 
@@ -1519,6 +1521,7 @@ test('S56: deliver a buyer order in the market panel', async ({ page }) => {
   const order = page.getByTestId('order-0')
   await expect(order).toContainText('Rösterei Nord')
   await expect(order).toContainText('30 Robusta')
+  await expect(order.getByTestId('order-deadline')).toHaveText('11. Januar, Jahr 1')
   await expect(order.getByTestId('order-price')).toHaveText('0,6 CC (Bank 0,4 CC)')
   await expect(order.getByTestId('order-stock')).toHaveCount(0)
   await expect(page.getByTestId('market-robusta').getByTestId('market-stock')).toHaveText('60')
