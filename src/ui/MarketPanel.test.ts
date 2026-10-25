@@ -83,7 +83,7 @@ describe('MarketPanel (S20)', () => {
     const html = await renderToString(createSSRApp(MarketPanel).use(pinia))
     const n = Math.round(1 / balance().storage.costPerUnitPerDay)
     const hint = field(html, 'hint')!
-    expect(hint).toContain(`Das Lager kostet jeden Tag 1 CC je angefangene ${n} Einheiten.`)
+    expect(hint).toContain(`Das Lager kostet jeden Monat 1 CC je angefangene ${n} Einheiten.`)
     expect(hint).toContain('Ein leeres Lager kostet nichts.')
     expect(hint).not.toContain('mindestens')
     expect(hint).not.toContain('{units}')
@@ -211,16 +211,19 @@ describe('MarketPanel processing (S46)', () => {
     html = await render(pinia)
     expect(field(html, 'stock')).toBe('10')
     expect(field(html, 'washed-stock')).toBe('0')
-    expect(field(html, 'processing')!.trim()).toBe('Aufbereitung läuft bis Tag 2')
+    expect(field(html, 'processing')!.trim()).toBe('Aufbereitung läuft bis Tag 30')
     expect(button(html, 'process')).toContain('disabled')
     expect(button(html, 'process')).toContain('title="Es läuft schon eine Aufbereitung."')
     expect(button(html, 'sell-washed')).toContain('disabled')
   })
 
-  it('AC-5: after one day the washed units show and sell at the washed price', async () => {
+  it('AC-5: after 30 days the washed units show and sell at the washed price', async () => {
     const { pinia, game } = processing(true)
     processAll(game, 'arabicaStandard')
-    game.replace({ ...(game.state as GameState), time: { hour: 24, speed: 1 } })
+    game.replace({
+      ...(game.state as GameState),
+      time: { day: 30, speed: 1, stage: 'months' as const },
+    })
     const html = await render(pinia)
     expect(field(html, 'washed-stock')).toBe('50')
     expect(field(html, 'washed-sell-price')).toBe('1,2 CC')
@@ -265,7 +268,7 @@ describe('MarketPanel processing (S46)', () => {
     const batches = [{ variety: 'arabicaStandard' as const, units: 7, quality: 100 }]
     // 15 sold units lower the bank price to 0.8 × (1 − 0.3 × 15 / 300) = 0.788 CC.
     const volumes = [
-      { kind: 'coffee' as const, variety: 'arabicaStandard' as const, day: 1, units: 15 },
+      { kind: 'coffee' as const, variety: 'arabicaStandard' as const, day: 0, units: 15 },
     ]
     game.replace({ ...state, money: 300, storage: { batches }, market: { volumes, seeds: {} } })
     let html = await render(pinia)

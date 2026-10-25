@@ -37,10 +37,9 @@ function states() {
   const owned = dispatch(start, { type: 'CreateParcels', parcels: list })
   const planted = dispatch(owned, { type: 'Plant', variety: 'robusta', parcels: list })
   const fertilized = dispatch(planted, { type: 'Fertilize', parcels: list })
-  const hour =
-    fertilized.time.hour + balance().varieties.robusta.cycleDays * balance().time.ticksPerGameDay
+  const hour = fertilized.time.day + balance().varieties.robusta.cycleDays
   const harvested = dispatch(
-    { ...fertilized, time: { ...fertilized.time, hour } },
+    { ...fertilized, time: { ...fertilized.time, day: hour } },
     { type: 'Harvest', parcels: list },
   )
   const sold = dispatch(harvested, { type: 'Sell', variety: 'robusta', units: 1 })
@@ -105,7 +104,7 @@ describe('FirstSteps (S25)', () => {
     expect(guides(await html(pinia))).toEqual(['tool-plant'])
     game.replace(s.fertilized)
     expect(guides(await html(pinia))).toEqual([])
-    game.replace({ ...s.fertilized, time: { ...s.fertilized.time, hour: s.harvested.time.hour } })
+    game.replace({ ...s.fertilized, time: { ...s.fertilized.time, day: s.harvested.time.day } })
     h = await html(pinia)
     expect(guides(h)).toEqual(['tool-harvest'])
     expect(h).toContain('Ernten')

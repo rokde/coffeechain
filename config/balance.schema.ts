@@ -21,8 +21,10 @@ const variety = z.object({
 
 export const balanceSchema = z.object({
   time: z.object({
-    realSecondsPerGameDay: val(num),
-    ticksPerGameDay: val(int),
+    realSecondsPerMonth: val(num),
+    realSecondsPerWeek: val(num),
+    daysPerMonth: val(int),
+    monthsPerYear: val(int),
     speeds: val(z.array(num)),
     daysPerWeek: val(int),
   }),

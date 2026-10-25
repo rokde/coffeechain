@@ -5,7 +5,6 @@ import { roundCost, roundIncome } from '../money'
 import { isRunning } from '../processing/process'
 import type { GameState } from '../state'
 import type { Batch } from '../storage/storage'
-import { clock } from '../time/time'
 
 // The bank buys raw and washed coffee and sells seed.
 export interface Good {
@@ -85,7 +84,7 @@ export function bankBuyPrice(
   washed = false,
 ): number {
   const cfg = balance()
-  const day = clock(state.time.hour).day
+  const day = state.time.day
   const good: Good = { kind: washed ? 'washed' : 'coffee', variety }
   return marketPrice(state.market, good, day, cfg, units / 2) * cfg.market.bankBuyFactor
 }
@@ -97,14 +96,14 @@ export const sellIncome = (state: GameState, variety: Variety, units: number, wa
 // Price in CC per unit that the bank asks for seed today.
 // With units, it is the price for each unit of a purchase of that size, at the mid volume of the purchase.
 export function bankSellPrice(state: GameState, variety: Variety, units = 0): number {
-  const day = clock(state.time.hour).day
+  const day = state.time.day
   return marketPrice(state.market, { kind: 'seed', variety }, day, balance(), units / 2)
 }
 
 // Market prices of the last historyDays game days, from the oldest day to today.
 export function priceHistory(state: GameState, good: Good): number[] {
   const cfg = balance()
-  const today = clock(state.time.hour).day
+  const today = state.time.day
   const days = cfg.market.historyDays
   return Array.from({ length: days }, (_, i) => {
     return marketPrice(state.market, good, today - days + 1 + i, cfg)
@@ -138,7 +137,7 @@ export function sell(state: GameState, command: Sell): GameState {
   // A washed sale takes only ready washed batches. A raw sale takes only raw batches.
   const sellable = (b: Batch) =>
     b.variety === variety &&
-    (washed ? b.washed === true && !isRunning(b, state.time.hour) : !b.washed)
+    (washed ? b.washed === true && !isRunning(b, state.time.day) : !b.washed)
   const stored = state.storage.batches.filter(sellable).reduce((sum, b) => sum + b.units, 0)
   if (units > stored) throw new Error(`Not enough ${variety} in storage: ${stored} < ${units}`)
 
@@ -154,7 +153,7 @@ export function sell(state: GameState, command: Sell): GameState {
     })
     .filter((b) => b.units > 0)
 
-  const day = clock(state.time.hour).day
+  const day = state.time.day
   const volumes = record(
     state.market,
     { kind: washed ? 'washed' : 'coffee', variety },
@@ -178,7 +177,7 @@ export function buy(state: GameState, command: Buy): GameState {
   if (cost > state.money)
     throw new Error(`Not enough money: cost ${cost / 100} CC, balance ${state.money / 100} CC`)
 
-  const day = clock(state.time.hour).day
+  const day = state.time.day
   const volumes = record(state.market, { kind: 'seed', variety }, units, day, cfg)
   const seeds = { ...state.market.seeds, [variety]: (state.market.seeds[variety] ?? 0) + units }
   return { ...state, money: state.money - cost, market: { volumes, seeds } }

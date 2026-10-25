@@ -8,7 +8,6 @@ import { bankBuyPrice, bankSellPrice, marketPrice, priceHistory, type Good } fro
 
 const cfg = balance()
 const m = cfg.market
-const hoursPerDay = cfg.time.ticksPerGameDay
 const varieties = Object.keys(cfg.varieties) as Variety[]
 
 // Stores two old Robusta batches and one Arabica batch, oldest first.
@@ -28,7 +27,7 @@ function testState(): GameState {
 
 const atDay = (state: GameState, day: number): GameState => ({
   ...state,
-  time: { ...state.time, hour: (day - 1) * hoursPerDay },
+  time: { ...state.time, day },
 })
 
 describe('market', () => {
@@ -73,8 +72,8 @@ describe('market', () => {
       market: {
         seeds: {},
         volumes: [
-          { kind: 'coffee', variety: 'robusta', day: 1, units: 30 },
-          { kind: 'seed', variety: 'robusta', day: 1, units: 20 },
+          { kind: 'coffee', variety: 'robusta', day: 0, units: 30 },
+          { kind: 'seed', variety: 'robusta', day: 0, units: 20 },
         ],
       },
     }
@@ -134,8 +133,8 @@ describe('market', () => {
     }
     state = dispatch(state, { type: 'Sell', variety: 'robusta', units: m.supplyUnitsForMinFactor })
     expect(bankBuyPrice(state, 'robusta')).toBeCloseTo(0.7 * neutral)
-    expect(bankBuyPrice(atDay(state, m.volumeWindowDays), 'robusta')).toBeCloseTo(0.7 * neutral)
-    expect(bankBuyPrice(atDay(state, 1 + m.volumeWindowDays), 'robusta')).toBeCloseTo(neutral)
+    expect(bankBuyPrice(atDay(state, m.volumeWindowDays - 1), 'robusta')).toBeCloseTo(0.7 * neutral)
+    expect(bankBuyPrice(atDay(state, m.volumeWindowDays), 'robusta')).toBeCloseTo(neutral)
   })
 
   it('AC-3: demand raises the seed price to 1.3 × seedCost', () => {
@@ -206,7 +205,7 @@ describe('market', () => {
 })
 
 describe('washed coffee (S46)', () => {
-  // 10 washed Arabica Standard units from a Process at hour 0, and 5 raw units.
+  // 10 washed Arabica Standard units from a Process on day 0, and 5 raw units.
   function washedState(): GameState {
     const state = createState(1)
     const raw = { variety: 'arabicaStandard' as const, units: 15, quality: 90 }
@@ -218,17 +217,17 @@ describe('washed coffee (S46)', () => {
   const sell = (units: number, washed?: true) =>
     ({ type: 'Sell', variety: 'arabicaStandard', units, ...(washed && { washed }) }) as const
 
-  it('AC-3: sells washed units only after 24 game hours, at the washed price', () => {
+  it('AC-3: sells washed units only after 30 days, at the washed price', () => {
     const fresh = washedState()
     expect(() => dispatch(fresh, sell(1, true))).toThrow(/Not enough/)
-    const state = { ...fresh, time: { ...fresh.time, hour: 24 } }
+    const state = { ...fresh, time: { ...fresh.time, day: 30 } }
     const price = bankBuyPrice(state, 'arabicaStandard', 10, true)
     expect(price).toBeCloseTo(1.5 * m.bankBuyFactor * (1 - 0.3 * (5 / 300)))
     const next = dispatch(state, sell(10, true))
     expect(next.money).toBe(state.money + Math.floor(10 * price) * 100)
     expect(next.storage.batches).toEqual([{ variety: 'arabicaStandard', units: 5, quality: 90 }])
     expect(next.market.volumes).toEqual([
-      { kind: 'washed', variety: 'arabicaStandard', day: 2, units: 10 },
+      { kind: 'washed', variety: 'arabicaStandard', day: 30, units: 10 },
     ])
     // Washed sales do not lower the raw price.
     expect(bankBuyPrice(next, 'arabicaStandard')).toBeCloseTo(
@@ -237,7 +236,7 @@ describe('washed coffee (S46)', () => {
   })
 
   it('AC-3: a raw sale never takes washed units, a washed sale never takes raw units', () => {
-    const state = { ...washedState(), time: { hour: 24, speed: 1 } }
+    const state = { ...washedState(), time: { day: 30, speed: 1, stage: 'months' as const } }
     expect(() => dispatch(state, sell(6))).toThrow(/Not enough/)
     const rawSold = dispatch(state, sell(5))
     expect(rawSold.storage.batches.every((b) => b.washed)).toBe(true)

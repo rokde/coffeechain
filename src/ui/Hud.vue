@@ -10,7 +10,7 @@ import { capital, phase, phaseProgress } from '../sim/progression/capital'
 import type { GameState } from '../sim/state'
 import { storageCapacity } from '../sim/storage/capacity'
 import { storageUsed } from '../sim/storage/storage'
-import { clock } from '../sim/time/time'
+import { dateParts } from './date'
 import de from './i18n/de.json'
 import { formatMoney } from './money'
 import FieldList from './FieldList.vue'
@@ -36,13 +36,7 @@ const steps = useFirstStepsStore()
 const view = useViewStore()
 const savePanel = useSavePanelStore()
 const speeds = balance().time.speeds
-const clockText = computed(() => {
-  const { day, hourOfDay } = clock(store.state.time.hour)
-  return {
-    day: de.time.day.replace('{day}', String(day)),
-    hour: de.time.hour.replace('{hour}', String(hourOfDay).padStart(2, '0')),
-  }
-})
+const dateText = computed(() => dateParts(store.state.time.day))
 const moneyText = computed(() => formatMoney(store.state.money))
 // The helpers only read the state, so the cast of the readonly snapshot is safe.
 const storageText = computed(() => {
@@ -82,9 +76,9 @@ const phaseText = computed(() => {
       </div>
       <div class="time">
         <span class="chip clock" data-testid="clock"
-          ><span>{{ clockText.day }}</span
+          ><span>{{ dateText[0] }}</span
           ><span class="clock-separator">{{ de.time.separator }}</span
-          ><span>{{ clockText.hour }}</span></span
+          ><span>{{ dateText[1] }}</span></span
         >
         <div class="speeds" role="group" :aria-label="de.time.speeds">
           <button
@@ -434,7 +428,7 @@ const phaseText = computed(() => {
     padding: 8px 4px;
     font-size: 14px;
   }
-  /* Day and hour in two lines, so a long day number still fits. */
+  /* Date and year in two lines, so a long month name still fits. */
   .clock {
     display: flex;
     flex-direction: column;

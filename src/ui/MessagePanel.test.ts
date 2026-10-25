@@ -14,17 +14,17 @@ import MessagePanel from './MessagePanel.vue'
 vi.stubGlobal('location', { search: '?seed=42' })
 vi.stubGlobal('sessionStorage', { getItem: () => null, removeItem: () => {} })
 
-const day = balance().time.ticksPerGameDay
-const ripeHour = balance().varieties.robusta.cycleDays * day
-const lateHour = ripeHour + (balance().farm.overripe.graceDays + 1) * day
+const ripeDay = balance().varieties.robusta.cycleDays
+const lateDay = ripeDay + balance().farm.overripe.graceDays + 1
+const messageDays = balance().progression.harvestProMessageDays
 // The plant has all cares.
 const cared = { fertilized: true, irrigated: true }
-const robusta: PlantState = { variety: 'robusta', plantedHour: 0, ...cared }
+const robusta: PlantState = { variety: 'robusta', plantedDay: 0, ...cared }
 
-// Field A has a plant on parcel 0, field B on parcel 5. The B plant is planted at hourB.
+// Field A has a plant on parcel 0, field B on parcel 5. The B plant is planted at dayB.
 function render(
-  hour: number,
-  hourB?: number,
+  day: number,
+  dayB?: number,
   used = 0,
   plantA = robusta,
   milestones: GameState['milestones'] = { harvested: 0 },
@@ -33,10 +33,10 @@ function render(
   const game = useGameStore(pinia)
   const state = game.state as GameState
   const plants: Record<number, PlantState> = { 0: plantA }
-  if (hourB !== undefined) plants[5] = { ...robusta, plantedHour: hourB }
+  if (dayB !== undefined) plants[5] = { ...robusta, plantedDay: dayB }
   game.replace({
     ...state,
-    time: { ...state.time, hour },
+    time: { ...state.time, day },
     milestones,
     farm: {
       parcels: { 0: 0, 5: 1 },
@@ -70,13 +70,13 @@ describe('MessagePanel (S18b)', () => {
   })
 
   it('round 1 (S59): ripe, overripe and uncared fields give no message', async () => {
-    expect(growth(robusta, ripeHour).stage).toBe('reif')
-    expect(overripeFactor(robusta, lateHour)).toBeLessThan(1)
-    const bare: PlantState = { variety: 'robusta', plantedHour: 0 }
-    expect(items(await render(ripeHour))).toEqual([])
-    expect(items(await render(lateHour))).toEqual([])
+    expect(growth(robusta, ripeDay).stage).toBe('reif')
+    expect(overripeFactor(robusta, lateDay)).toBeLessThan(1)
+    const bare: PlantState = { variety: 'robusta', plantedDay: 0 }
+    expect(items(await render(ripeDay))).toEqual([])
+    expect(items(await render(lateDay))).toEqual([])
     expect(items(await render(0, undefined, 0, bare))).toEqual([])
-    expect(await render(ripeHour, 0, 0, bare)).not.toContain('message-panel')
+    expect(await render(ripeDay, 0, 0, bare)).not.toContain('message-panel')
   })
 
   it('AC-5: shows "Lager voll" only when storageUsed reaches startCapacity', async () => {
@@ -85,12 +85,12 @@ describe('MessagePanel (S18b)', () => {
     expect(await render(0, undefined, capacity - 1)).not.toContain('Lager voll')
   })
 
-  it('AC-4 (S49): shows the Ernte-Profi message for one game day', async () => {
-    const m = { harvested: 1000, harvestProHour: 10 }
+  it('AC-4 (S49): shows the Ernte-Profi message for harvestProMessageDays days', async () => {
+    const m = { harvested: 1000, harvestProDay: 10 }
     const text = 'Meilenstein Ernte-Profi erreicht: +5 % Erntequalität'
     expect(items(await render(10, undefined, 0, robusta, m))).toEqual([text])
-    expect(items(await render(10 + day - 1, undefined, 0, robusta, m))).toEqual([text])
-    expect(items(await render(10 + day, undefined, 0, robusta, m))).toEqual([])
+    expect(items(await render(10 + messageDays - 1, undefined, 0, robusta, m))).toEqual([text])
+    expect(items(await render(10 + messageDays, undefined, 0, robusta, m))).toEqual([])
     expect(items(await render(10))).toEqual([])
   })
 })

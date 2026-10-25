@@ -5,7 +5,6 @@ import { roundIncome } from '../money'
 import { mulberry32 } from '../rng'
 import type { GameState } from '../state'
 import type { Batch } from '../storage/storage'
-import { clock } from '../time/time'
 
 // An NPC buyer order. The UI gives the buyer a name from the id.
 export interface Order {
@@ -15,7 +14,7 @@ export interface Order {
   minQuality: number
   // Hundredths of CC per unit.
   price: number
-  // The last game day on which the player can deliver.
+  // The last day on which the player can deliver.
   deadlineDay: number
 }
 
@@ -39,11 +38,11 @@ const qualifies = (order: Order) => (b: Batch) =>
 export const deliverableUnits = (state: GameState, order: Order): number =>
   state.storage.batches.filter(qualifies(order)).reduce((sum, b) => sum + b.units, 0)
 
-// Runs once per game day: drops expired orders and may post one new order.
+// Runs once per day: drops expired orders and may post one new order.
 export function dailyOrders(state: GameState): GameState {
   const cfg = balance()
   const o = cfg.orders
-  const day = clock(state.time.hour).day
+  const day = state.time.day
   const open = state.orders.open.filter((order) => order.deadlineDay >= day)
   let nextId = state.orders.nextId
   const random = mulberry32(harvestSeed(state.world.seed, day, ORDERS_STREAM))
@@ -67,7 +66,7 @@ export function dailyOrders(state: GameState): GameState {
 export function deliverOrder(state: GameState, command: DeliverOrder): GameState {
   const order = state.orders.open.find((o) => o.id === command.id)
   if (!order) throw new Error(`No open order: ${command.id}`)
-  if (clock(state.time.hour).day > order.deadlineDay) {
+  if (state.time.day > order.deadlineDay) {
     throw new Error(`Order ${order.id} is past its deadline day ${order.deadlineDay}`)
   }
   const stock = deliverableUnits(state, order)

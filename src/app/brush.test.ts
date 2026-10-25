@@ -18,7 +18,7 @@ const planted = dispatch(owned, { type: 'Plant', variety: 'robusta', parcels: [a
 const { cycleDays } = balance().varieties.robusta
 const ripe = {
   ...planted,
-  time: { ...planted.time, hour: planted.time.hour + cycleDays * balance().time.ticksPerGameDay },
+  time: { ...planted.time, day: planted.time.day + cycleDays },
 }
 const care = balance().varieties.robusta.careCost
 const careCost = (key: keyof typeof care) => Math.round(care[key] * 100)

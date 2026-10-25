@@ -31,7 +31,7 @@ export function canSelect(state: GameState, tool: string, p: ParcelPos): boolean
   const index = p.y * state.world.size + p.x
   const owned = index in state.farm.parcels
   const plant = state.farm.plants[index]
-  const ripe = plant !== undefined && growth(plant, state.time.hour).progress >= 1
+  const ripe = plant !== undefined && growth(plant, state.time.day).progress >= 1
   if (tool === 'plant') return owned && !plant && !(index in state.buildings)
   if (tool === 'build') return canBuild(state, p.x, p.y)
   if (tool === 'harvest') return owned && ripe

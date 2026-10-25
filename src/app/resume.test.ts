@@ -30,7 +30,7 @@ beforeEach(() => {
 
 const saved = () => {
   const state = createState(7)
-  return { ...state, time: { ...state.time, hour: 24 * 3 + 5 }, money: 4300 }
+  return { ...state, time: { ...state.time, day: 24 * 3 + 5 }, money: 4300 }
 }
 
 describe('startState (S43b)', () => {

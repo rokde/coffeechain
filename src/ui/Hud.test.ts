@@ -124,7 +124,7 @@ describe('Hud left panel (S59)', () => {
         ...state.farm,
         parcels: { 0: 0 },
         fields: [{ id: 0, name: 'A' }],
-        plants: { 0: { variety: 'robusta', plantedHour: 0, fertilized: true } },
+        plants: { 0: { variety: 'robusta', plantedDay: 0, fertilized: true } },
       },
       market: {
         ...state.market,
@@ -198,5 +198,26 @@ describe('Hud overlay toggles (S60)', () => {
     html = await render((pinia) => useViewStore(pinia).toggle('zone'))
     expect(html).toContain('data-testid="overlay-legend"')
     expect(html).not.toContain('Dunkler Boden')
+  })
+})
+
+describe('Hud clock (#27)', () => {
+  it.each([
+    [0, '1. Januar, Jahr 1'],
+    [431, '12. März, Jahr 2'],
+  ])('AC-1: day %i shows "%s" and no hour', async (day, text) => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const game = useGameStore(pinia)
+    const state = game.state as GameState
+    game.replace({ ...state, time: { ...state.time, day } })
+    const html = await renderToString(createSSRApp(Hud).use(pinia))
+    const clock = html.split('data-testid="clock"')[1]!.split('<div')[0]!
+    const shown = clock
+      .replace(/^[^>]*>/, '')
+      .replace(/<[^>]*>/g, '')
+      .trim()
+    expect(shown).toBe(text)
+    expect(shown).not.toMatch(/Uhr|\d+:\d+/)
   })
 })

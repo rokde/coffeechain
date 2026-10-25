@@ -5,7 +5,7 @@ import { gameStateSchema } from './schema'
 // When a slice adds a state field: increase SAVE_VERSION by one and append one migration
 // to MIGRATIONS that fills the default value. Migration i turns version i + 1 into i + 2.
 // Never edit an old migration.
-export const SAVE_VERSION = 11
+export const SAVE_VERSION = 12
 // #17 removes the volcano zone without a migration (Robert 2026-10-25), so older saves do not load.
 export const MIN_SAVE_VERSION = 11
 
@@ -58,6 +58,44 @@ export const MIGRATIONS: Migration[] = [
   },
   // 10 -> 11: #17 removes the volcano zone. MIN_SAVE_VERSION rejects the older saves.
   (state) => state,
+  // 11 -> 12: #27 steps in calendar days. One old game day (24 hours) becomes one month (30 days).
+  (state) => {
+    const day = (hour: unknown) => (typeof hour === 'number' ? Math.floor((hour * 30) / 24) : hour)
+    // Old day numbers start at 1. New days start at 0.
+    const fromOldDay = (d: unknown) => (typeof d === 'number' ? (d - 1) * 30 : d)
+    type Obj = Record<string, unknown>
+    const { hour, ...time } = (state.time ?? {}) as Obj
+    const farm = state.farm as { plants?: Record<string, Obj> } | undefined
+    const plants =
+      farm?.plants &&
+      Object.fromEntries(
+        Object.entries(farm.plants).map(([k, { plantedHour, ...plant }]) => [
+          k,
+          { ...plant, plantedDay: day(plantedHour) },
+        ]),
+      )
+    const storage = state.storage as { batches?: Obj[] } | undefined
+    const batches = storage?.batches?.map(({ readyHour, ...b }) =>
+      readyHour === undefined ? b : { ...b, readyDay: day(readyHour) },
+    )
+    const market = state.market as { volumes?: Obj[] } | undefined
+    const volumes = market?.volumes?.map((v) => ({ ...v, day: fromOldDay(v.day) }))
+    const orders = state.orders as { open?: Obj[] } | undefined
+    const open = orders?.open?.map((o) => ({ ...o, deadlineDay: fromOldDay(o.deadlineDay) }))
+    const { harvestProHour, ...milestones } = (state.milestones ?? {}) as Obj
+    return {
+      ...state,
+      time: { ...time, day: day(hour), stage: 'months' },
+      ...(farm && { farm: { ...farm, plants } }),
+      ...(storage && { storage: { ...storage, batches } }),
+      ...(market && { market: { ...market, volumes } }),
+      ...(orders && { orders: { ...orders, open } }),
+      milestones:
+        harvestProHour === undefined
+          ? milestones
+          : { ...milestones, harvestProDay: day(harvestProHour) },
+    }
+  },
 ]
 
 export interface SaveFormat {

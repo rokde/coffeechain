@@ -16,11 +16,9 @@ const messages = computed(() => {
   // Field states are not here: the badges of the field list above show them.
   const list: string[] = []
   if (storageUsed(storage) >= storageCapacity(state)) list.push(t.storageFull)
-  const { harvestProHour } = milestones
-  const { ticksPerGameDay } = balance().time
+  const { harvestProDay } = milestones
   const days = balance().progression.harvestProMessageDays
-  if (harvestProHour !== undefined && time.hour < harvestProHour + days * ticksPerGameDay)
-    list.push(t.harvestPro)
+  if (harvestProDay !== undefined && time.day < harvestProDay + days) list.push(t.harvestPro)
   return list
 })
 </script>

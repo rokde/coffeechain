@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, useTemplateRef, watch } from 'vue'
 import { slots, useSavePanelStore, type SlotStatus } from '../app/savePanel'
+import { formatDate } from './date'
 import de from './i18n/de.json'
 
 const t = de.savePanel
@@ -11,7 +12,7 @@ onUnmounted(() => (panel.confirmNewGame = false))
 
 function statusText(status: SlotStatus | undefined) {
   if (status === undefined) return ''
-  if (typeof status === 'object') return t.day.replace('{day}', String(status.day))
+  if (typeof status === 'object') return formatDate(status.day)
   return t[status]
 }
 const messageText = computed(() => {

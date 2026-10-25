@@ -34,7 +34,7 @@ export function care(state: GameState, command: Fertilize | Irrigate): GameState
     if (!(index in state.farm.parcels)) throw new Error(`Parcel ${x},${y} is not owned`)
     const plant = plants[index]
     if (!plant) throw new Error(`Parcel ${x},${y} has no plant`)
-    if (growth(plant, state.time.hour, cfg).progress >= 1)
+    if (growth(plant, state.time.day, cfg).progress >= 1)
       throw new Error(`Plant on parcel ${x},${y} is ripe`)
     if (plant[flag]) throw new Error(`Parcel ${x},${y} already has ${flag} or is listed twice`)
     plants[index] = { ...plant, [flag]: true }

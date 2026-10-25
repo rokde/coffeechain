@@ -15,7 +15,6 @@ import { bankBuyPrice, bankSellPrice, priceHistory, sellIncome } from '../sim/ma
 import { isVarietyUnlocked } from '../sim/progression/capital'
 import { hasProcessing, isRunning, processCost, runningUntil } from '../sim/processing/process'
 import type { GameState } from '../sim/state'
-import { clock } from '../sim/time/time'
 import de from './i18n/de.json'
 import { formatMoney, formatUnitPrice } from './money'
 import OrdersPanel from './OrdersPanel.vue'
@@ -68,7 +67,7 @@ function points(prices: number[]) {
 const blocks = computed(() => {
   // The sim functions only read the state, so the cast of the readonly snapshot is safe.
   const state = game.state as GameState
-  const busy = state.storage.batches.some((b) => isRunning(b, state.time.hour))
+  const busy = state.storage.batches.some((b) => isRunning(b, state.time.day))
   return varieties.value.map((variety) => {
     const units = processUnits(state, variety)
     const until = runningUntil(state, variety)
@@ -96,8 +95,7 @@ const blocks = computed(() => {
             : cost > state.money
               ? t.processWhy.money
               : null,
-      runningUntil:
-        until === undefined ? null : t.processing.replace('{day}', String(clock(until).day)),
+      runningUntil: until === undefined ? null : t.processing.replace('{day}', String(until)),
       seeds: state.market.seeds[variety] ?? 0,
       sellPrice: bankBuyPrice(state, variety),
       buyPrice: bankSellPrice(state, variety),

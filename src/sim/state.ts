@@ -24,13 +24,13 @@ export interface GameState {
   storage: StorageState
   market: MarketState
   orders: OrdersState
-  milestones: { harvested: number; harvestProHour?: number }
+  milestones: { harvested: number; harvestProDay?: number }
 }
 
 export function createState(seed: number): GameState {
   const world = generateWorld(seed, balance())
   return {
-    time: { hour: 0, speed: 1 },
+    time: { day: 0, speed: 1, stage: 'months' },
     world,
     props: placeProps(world, balance()),
     money: Math.round(balance().economy.startCapital * 100),

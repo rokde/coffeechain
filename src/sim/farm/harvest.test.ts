@@ -26,19 +26,19 @@ function testWorld(): World {
 // Owns (0,0) to (3,0). Ripe Robusta on (0,0) and (1,0), unripe Robusta on (2,0), (3,0) is empty.
 function testState(): GameState {
   const state = createState(1)
-  const ripeHour = 5 + balance().varieties.robusta.cycleDays * balance().time.ticksPerGameDay
+  const ripeDay = 5 + balance().varieties.robusta.cycleDays
   return {
     ...state,
     world: testWorld(),
-    time: { ...state.time, hour: ripeHour },
+    time: { ...state.time, day: ripeDay },
     farm: {
       ...state.farm,
       parcels: { 0: 0, 1: 0, 2: 0, 3: 0 },
       fields: [{ id: 0, name: 'A' }],
       plants: {
-        0: { variety: 'robusta', plantedHour: 5 },
-        1: { variety: 'robusta', plantedHour: 5 },
-        2: { variety: 'robusta', plantedHour: ripeHour },
+        0: { variety: 'robusta', plantedDay: 5 },
+        1: { variety: 'robusta', plantedDay: 5 },
+        2: { variety: 'robusta', plantedDay: ripeDay },
       },
     },
   }
@@ -48,7 +48,7 @@ const harvest = (state: GameState, ...parcels: [number, number][]) =>
   dispatch(state, { type: 'Harvest', parcels: parcels.map(([x, y]) => ({ x, y })) })
 
 function expectedYield(state: GameState, index: number, fertilized: boolean): number {
-  const random = yieldRandom(mulberry32(harvestSeed(seed, state.time.hour, index)))
+  const random = yieldRandom(mulberry32(harvestSeed(seed, state.time.day, index)))
   return computeYield({
     variety: 'robusta',
     soilClass: 'gut',
@@ -122,12 +122,12 @@ describe('capacity limit', () => {
     expect(storageUsed(next.storage)).toBe(100)
     expect(next.farm.plants[0]).toEqual({
       variety: 'robusta',
-      plantedHour: 5,
+      plantedDay: 5,
       pendingUnits: units - 10,
     })
 
     const emptied = { ...next, storage: { batches: [] } }
-    const later = { ...emptied, time: { ...emptied.time, hour: emptied.time.hour + 3 } }
+    const later = { ...emptied, time: { ...emptied.time, day: emptied.time.day + 3 } }
     const last = harvest(later, [0, 0])
     expect(last.storage.batches).toEqual([{ variety: 'robusta', units: units - 10, quality: 100 }])
     expect(last.farm.plants[0]).toBeUndefined()
@@ -194,36 +194,37 @@ describe('rejected harvest', () => {
 
 describe('overripe', () => {
   const cfg = balance()
-  const day = cfg.time.ticksPerGameDay
+  // One month of late days costs as much as one late game day before #27.
+  const month = cfg.time.daysPerMonth
   const { graceDays } = cfg.farm.overripe
-  // testState() has its plants ripe at its start hour.
-  const at = (state: GameState, hour: number): GameState => ({
+  // testState() has its plants ripe at its start day.
+  const at = (state: GameState, day: number): GameState => ({
     ...state,
-    time: { ...state.time, hour },
+    time: { ...state.time, day },
   })
-  const late = (days: number) => {
+  const late = (months: number) => {
     const state = testState()
-    return at(state, state.time.hour + (graceDays + days) * day)
+    return at(state, state.time.day + graceDays + months * month)
   }
 
   afterEach(() => {
     cfg.farm.overripe.enabled = true
   })
 
-  it('AC-3: enabled, one late day gives 85 % and the grace period gives the full yield', () => {
+  it('AC-3: enabled, one late month gives 85 % and the grace period gives the full yield', () => {
     expect(cfg.farm.overripe.enabled).toBe(true)
     const state = late(1)
     const units = harvest(state, [0, 0]).storage.batches[0]!.units
     expect(units).toBe(Math.floor(expectedYield(state, 0, false) * 0.85 + 1e-9))
     expect(units).toBeLessThan(expectedYield(state, 0, false))
 
-    const grace = at(testState(), testState().time.hour + graceDays * day + 23)
+    const grace = at(testState(), testState().time.day + graceDays)
     expect(harvest(grace, [0, 0]).storage.batches[0]!.units).toBe(expectedYield(grace, 0, false))
   })
 
-  it('AC-4: disabled, a harvest 5 days after ripeness gives the full yield', () => {
+  it('AC-4: disabled, a harvest 150 days after ripeness gives the full yield', () => {
     cfg.farm.overripe.enabled = false
-    const state = at(testState(), testState().time.hour + 5 * day)
+    const state = at(testState(), testState().time.day + 150)
     expect(harvest(state, [0, 0]).storage.batches[0]!.units).toBe(expectedYield(state, 0, false))
   })
 
@@ -240,14 +241,14 @@ describe('overripe', () => {
     expect(next.farm.plants[0]!.pendingUnits).toBe(pending)
     expect(next.farm.plants[0]!.overripeFactor).toBeCloseTo(0.85, 9)
 
-    const emptied = at({ ...next, storage: { batches: [] } }, next.time.hour + day)
+    const emptied = at({ ...next, storage: { batches: [] } }, next.time.day + month)
     const last = harvest(emptied, [0, 0])
     expect(last.storage.batches).toEqual([
       { variety: 'robusta', units: Math.floor((pending * 0.7) / 0.85 + 1e-9), quality: 100 },
     ])
     expect(last.farm.plants[0]).toBeUndefined()
 
-    const rotten = at({ ...next, storage: { batches: [] } }, next.time.hour + 10 * day)
+    const rotten = at({ ...next, storage: { batches: [] } }, next.time.day + 10 * month)
     const gone = harvest(rotten, [0, 0])
     expect(gone.storage.batches).toEqual([])
     expect(gone.farm.plants[0]).toBeUndefined()
@@ -279,14 +280,14 @@ describe('Harvest milestone (S49)', () => {
     expect(harvest(full, [0, 0]).milestones.harvested).toBe(0)
   })
 
-  it('AC-2: sets harvestProHour once at the threshold', () => {
+  it('AC-2: sets harvestProDay once at the threshold', () => {
     const limit = balance().progression.harvestProUnits
     const state = withMilestones(testState(), { harvested: limit - 1 })
     const next = harvest(state, [0, 0])
-    expect(next.milestones.harvestProHour).toBe(state.time.hour)
-    const later = harvest({ ...next, time: { ...next.time, hour: next.time.hour + 5 } }, [1, 0])
-    expect(later.milestones.harvestProHour).toBe(state.time.hour)
-    expect(harvest(testState(), [0, 0]).milestones.harvestProHour).toBeUndefined()
+    expect(next.milestones.harvestProDay).toBe(state.time.day)
+    const later = harvest({ ...next, time: { ...next.time, day: next.time.day + 5 } }, [1, 0])
+    expect(later.milestones.harvestProDay).toBe(state.time.day)
+    expect(harvest(testState(), [0, 0]).milestones.harvestProDay).toBeUndefined()
   })
 
   it('AC-3: applies the bonus from the next harvest, capped at 100', () => {
@@ -295,7 +296,7 @@ describe('Harvest milestone (S49)', () => {
       ...balance(),
       storage: { ...balance().storage, harvestQuality: q },
     })
-    const pro = withMilestones(state, { harvested: 5000, harvestProHour: 1 })
+    const pro = withMilestones(state, { harvested: 5000, harvestProDay: 1 })
     expect(harvestQuality(state, cfg(80))).toBe(80)
     expect(harvestQuality(pro, cfg(80))).toBeCloseTo(84)
     expect(harvestQuality(pro, cfg(100))).toBe(100)
@@ -307,7 +308,7 @@ describe('Harvest milestone (S49)', () => {
     storage.harvestQuality = 80
     try {
       const reach = harvest(withMilestones(testState(), { harvested: 999 }), [0, 0])
-      expect(reach.milestones.harvestProHour).toBeDefined()
+      expect(reach.milestones.harvestProDay).toBeDefined()
       expect(reach.storage.batches[0]!.quality).toBe(80)
       const next = harvest(reach, [1, 0])
       expect(next.storage.batches[1]!.quality).toBeCloseTo(84)

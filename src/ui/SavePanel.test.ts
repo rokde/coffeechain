@@ -9,7 +9,6 @@ import { pendingLoadError } from '../app/saves'
 import { setStartState, useGameStore } from '../app/store'
 import { deserialize, SAVE_VERSION, serialize } from '../sim/save/save'
 import { createState, type GameState } from '../sim/state'
-import { clock } from '../sim/time/time'
 import Hud from './Hud.vue'
 import SavePanel from './SavePanel.vue'
 
@@ -83,14 +82,14 @@ describe('SavePanel (S42b)', () => {
     }
   })
 
-  it('AC-2: save writes the current state and shows the game day', async () => {
+  it('AC-2: save writes the current state and shows the game date', async () => {
     const { pinia, game, panel } = setup()
     const state = game.state as GameState
-    game.replace({ ...state, time: { ...state.time, hour: 24 * 4 + 5 }, money: 777 })
+    game.replace({ ...state, time: { ...state.time, day: 431 }, money: 777 })
     await panel.save('slot-2')
     expect(local.get('coffeechain.save.slot-2')).toBe(serialize(game.state as GameState))
     const r = row(await html(pinia), 2)
-    expect(status(r)).toBe('Tag 5')
+    expect(status(r)).toBe('12. März, Jahr 2')
     expect(loadButton(r)).not.toContain('disabled')
     expect(status(row(await html(pinia), 1))).toBe('leer')
 
@@ -175,7 +174,7 @@ describe('SavePanel (S42b)', () => {
     expect(await html(pinia, Hud)).not.toContain('data-testid="save-panel"')
   })
 
-  it('S43 AC-3: the autosave row shows its day and loads, but has no save button', async () => {
+  it('S43 AC-3: the autosave row shows its date and loads, but has no save button', async () => {
     const autosaveRow = (text: string) =>
       text.split('data-testid="save-autosave"')[1]!.split('</li>')[0]!
     const { pinia, game, panel } = setup()
@@ -190,11 +189,11 @@ describe('SavePanel (S42b)', () => {
     const state = game.state as GameState
     local.set(
       'coffeechain.save.autosave',
-      serialize({ ...state, time: { ...state.time, hour: 24 * 2 } }),
+      serialize({ ...state, time: { ...state.time, day: 60 } }),
     )
     await panel.refresh()
     r = autosaveRow(await html(pinia))
-    expect(status(r)).toBe('Tag 3')
+    expect(status(r)).toBe('1. März, Jahr 1')
     expect(loadButton(r)).not.toContain('disabled')
 
     await panel.load('autosave')
@@ -239,14 +238,14 @@ describe('SavePanel (S42b)', () => {
     it('AC-3: confirm pauses, writes a day-1 world to the autosave one time, then reloads', async () => {
       const { game, panel } = setup()
       const state = game.state as GameState
-      game.replace({ ...state, time: { ...state.time, hour: 24 * 6, speed: 16 } })
+      game.replace({ ...state, time: { ...state.time, day: 180, speed: 16 } })
       panel.confirmNewGame = true
       const setItem = vi.spyOn(localStorage, 'setItem')
       await panel.newGame()
       expect(setItem).toHaveBeenCalledOnce()
       expect(setItem.mock.calls[0]![0]).toBe(AUTOSAVE)
       const fresh = deserialize(local.get(AUTOSAVE)!)
-      expect(clock(fresh.time.hour).day).toBe(1)
+      expect(fresh.time.day).toBe(0)
       expect(fresh.money).toBe(createState(1).money)
       expect([...local.keys()]).toEqual([AUTOSAVE])
       expect(game.state.time.speed).toBe(0)

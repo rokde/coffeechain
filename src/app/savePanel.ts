@@ -2,7 +2,6 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { deserialize, serialize } from '../sim/save/save'
 import { createState, type GameState } from '../sim/state'
-import { clock } from '../sim/time/time'
 import { errorMessage, loadSlot, pendingLoadError, readSlot, writeSlot } from './saves'
 import { pickSeed } from './seed'
 import { useGameStore } from './store'
@@ -36,7 +35,7 @@ export const useSavePanelStore = defineStore('savePanel', () => {
         }
         if (text === null) return void (status.value[slot] = 'empty')
         try {
-          status.value[slot] = { day: clock(deserialize(text).time.hour).day }
+          status.value[slot] = { day: deserialize(text).time.day }
         } catch {
           status.value[slot] = 'invalid'
         }

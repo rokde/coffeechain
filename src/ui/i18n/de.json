@@ -9,9 +9,39 @@
     "seed": "Welt #{seed}"
   },
   "time": {
-    "day": "Tag {day}",
-    "separator": " · ",
-    "hour": "{hour}:00",
+    "date": "{day}. {month}",
+    "separator": ", ",
+    "year": "Jahr {year}",
+    "months": [
+      "Januar",
+      "Februar",
+      "März",
+      "April",
+      "Mai",
+      "Juni",
+      "Juli",
+      "August",
+      "September",
+      "Oktober",
+      "November",
+      "Dezember"
+    ],
+    "monthsShort": [
+      "Jan",
+      "Feb",
+      "Mär",
+      "Apr",
+      "Mai",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Okt",
+      "Nov",
+      "Dez"
+    ],
+    "units": { "months": "Monate", "weeks": "Wochen" },
+    "weeksStarted": "Ab jetzt läuft die Zeit in Wochen",
     "speeds": "Spielgeschwindigkeit",
     "pause": "Pause",
     "speed": "{speed}×"
@@ -150,7 +180,7 @@
   },
   "marketPanel": {
     "heading": "Markt",
-    "hint": "Die Bank kauft Roh- und gewaschenen Kaffee und verkauft Saatgut. Verkäufe senken den Preis, Käufe heben ihn. Das Lager kostet jeden Tag 1 CC je angefangene {units} Einheiten. Ein leeres Lager kostet nichts.",
+    "hint": "Die Bank kauft Roh- und gewaschenen Kaffee und verkauft Saatgut. Verkäufe senken den Preis, Käufe heben ihn. Das Lager kostet jeden Monat 1 CC je angefangene {units} Einheiten. Ein leeres Lager kostet nichts.",
     "stock": "Im Lager",
     "seeds": "Saatgut",
     "sellPrice": "Bank zahlt je Einheit",
@@ -292,8 +322,8 @@
     ],
     "storageStage": "Stufe {n}: Gesamtplatz {capacity} Einheiten, Kosten {cost} CC, ab Phase {phase}.",
     "storageAfter": [
-      "Das Lager kostet jeden Tag 1 CC je angefangene {units} Einheiten.",
-      "Kaffee im Lager verliert Qualität. Verlust je Tag in Qualitätspunkten: {loss}."
+      "Das Lager kostet jeden Monat 1 CC je angefangene {units} Einheiten.",
+      "Kaffee im Lager verliert Qualität. Verlust je Monat in Qualitätspunkten: {loss}."
     ],
     "controlsHeading": "Steuerung",
     "toolKey": "Werkzeug {label}",
@@ -331,7 +361,6 @@
     "autosave": "Automatisch",
     "save": "Speichern",
     "load": "Laden",
-    "day": "Tag {day}",
     "empty": "leer",
     "invalid": "ungültig",
     "saveFailed": "Speichern fehlgeschlagen: {reason}",

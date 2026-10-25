@@ -30,7 +30,7 @@ import { createTerrain } from './render/terrain'
 import { balance } from './sim/balance'
 import type { FarmState } from './sim/farm/parcels'
 import type { GameState } from './sim/state'
-import { step } from './sim/time/time'
+import { msPerStep, step } from './sim/time/time'
 import Hud from './ui/Hud.vue'
 import de from './ui/i18n/de.json'
 import { toolCursor } from './ui/toolCursor'
@@ -213,8 +213,8 @@ function start() {
       },
     )
     watch(
-      () => plantsKey(store.state.farm.plants, store.state.time.hour),
-      () => plants.show(store.state.farm.plants, store.state.time.hour),
+      () => plantsKey(store.state.farm.plants, store.state.time.day),
+      () => plants.show(store.state.farm.plants, store.state.time.day),
       { immediate: true },
     )
     // A load reloads the page, so the immediate run also shows the loaded buildings.
@@ -389,8 +389,6 @@ function start() {
       marking = null
     })
   }
-  const { realSecondsPerGameDay, ticksPerGameDay } = balance().time
-  const msPerTick = (realSecondsPerGameDay * 1000) / ticksPerGameDay
   let carryMs = 0
   let last: number | undefined
   let lastCameraKey = ''
@@ -400,7 +398,7 @@ function start() {
   // setAnimationLoop runs on requestAnimationFrame.
   renderer.setAnimationLoop((now) => {
     const frameMs = now - (last ?? now)
-    const due = advance(carryMs, frameMs, store.state.time.speed, msPerTick)
+    const due = advance(carryMs, frameMs, store.state.time.speed, msPerStep(store.state.time.stage))
     last = now
     frameTimes.push(frameMs)
     if (frameTimes.length > 60) frameTimes.shift()
