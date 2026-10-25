@@ -48,7 +48,13 @@ const sale = (state: GameState, variety: Variety, units: number, washed: boolean
     why: units > 0 && income === 0 ? t.sellZero : null,
   }
 }
-const lineLabel = (text: string) => text.replace('{days}', String(cfg.market.historyDays))
+const lineLabel = (text: string) => text.replace('{months}', String(cfg.market.historyMonths))
+// Short name of the month `back` months before the month of day. Months before the start wrap.
+const monthShort = (day: number, back: number) => {
+  const n = cfg.time.monthsPerYear
+  const month = Math.floor(day / cfg.time.daysPerMonth) - back
+  return de.time.monthsShort[((month % n) + n) % n]!
+}
 
 const W = 100
 const H = 40
@@ -68,6 +74,10 @@ const blocks = computed(() => {
   // The sim functions only read the state, so the cast of the readonly snapshot is safe.
   const state = game.state as GameState
   const busy = state.storage.batches.some((b) => isRunning(b, state.time.day))
+  const axis = [
+    monthShort(state.time.day, cfg.market.historyMonths - 1),
+    monthShort(state.time.day, 0),
+  ]
   return varieties.value.map((variety) => {
     const units = processUnits(state, variety)
     const until = runningUntil(state, variety)
@@ -103,6 +113,7 @@ const blocks = computed(() => {
         priceHistory(state, { kind: 'coffee', variety }).map((p) => p * cfg.market.bankBuyFactor),
       ),
       seedLine: points(priceHistory(state, { kind: 'seed', variety })),
+      axis,
     }
   })
 })
@@ -147,6 +158,10 @@ const blocks = computed(() => {
               vector-effect="non-scaling-stroke"
             />
           </svg>
+          <div class="axis" data-testid="market-axis" aria-hidden="true">
+            <span>{{ b.axis[0] }}</span
+            ><span>{{ b.axis[1] }}</span>
+          </div>
         </figure>
       </div>
       <button
@@ -267,6 +282,12 @@ svg {
   width: 100%;
   height: 28px;
   border-bottom: 1px solid rgb(255 255 255 / 12%);
+}
+.axis {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  opacity: 0.7;
 }
 button + button {
   margin-top: 8px;

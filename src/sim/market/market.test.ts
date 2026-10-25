@@ -145,26 +145,45 @@ describe('market', () => {
     expect(bankSellPrice(state, 'robusta')).toBeCloseTo(1.3 * cfg.varieties.robusta.seedCost)
   })
 
-  it('AC-4: priceHistory gives one price per day, and a sale shows for the window days', () => {
-    const day = 20
-    const sold = dispatch(atDay(testState(), day), { type: 'Sell', variety: 'robusta', units: 300 })
+  it('AC-1 (#27): priceHistory gives one price per month, the last day of each past month', () => {
+    const day = 431
+    const good: Good = { kind: 'coffee', variety: 'robusta' }
+    // Volumes on many days make each day's price different.
+    const volumes = Array.from({ length: 450 }, (_, d) => ({ ...good, day: d, units: d % 7 }))
+    const state = atDay({ ...testState(), market: { volumes, seeds: {} } }, day)
+    const history = priceHistory(state, good)
+    expect(history).toHaveLength(12)
+    expect(history[11]).toBe(marketPrice(state.market, good, 431))
+    expect(history[10]).toBe(marketPrice(state.market, good, 419))
+    expect(history[0]).toBe(marketPrice(state.market, good, 119))
+    for (let i = 0; i < 11; i++) {
+      expect(history[i]).toBe(marketPrice(state.market, good, 449 - 30 * (11 - i)))
+    }
+  })
+
+  it('AC-2 (#27): a sale on day 400 lowers only the last two months on day 431', () => {
+    const sold = dispatch(atDay(testState(), 400), { type: 'Sell', variety: 'robusta', units: 300 })
     const good: Good = { kind: 'coffee', variety: 'robusta' }
     const neutral = cfg.varieties.robusta.referencePrice
-    const low = marketPrice(sold.market, good, day)
-    expect(low).toBeLessThan(neutral)
-
-    const later = atDay(sold, day + 5)
-    const history = priceHistory(later, good)
-    expect(history).toHaveLength(m.historyDays)
-    // The last entry is day + 5, so day N has index historyDays − 6.
-    const first = m.historyDays - 6
+    const history = priceHistory(atDay(sold, 431), good)
     history.forEach((price, i) => {
-      const inWindow = i >= first && i < first + m.volumeWindowDays
-      expect(price).toBeCloseTo(inWindow ? low : neutral)
+      if (i >= 10) expect(price).toBeLessThan(neutral)
+      else expect(price).toBeCloseTo(neutral)
     })
   })
 
-  it('AC-5: 1,000 random days keep prices in range and the volumes small', () => {
+  it('AC-3 (#27): a volume stays for 449 days and goes on day 450', () => {
+    const keep = m.historyMonths * cfg.time.daysPerMonth + m.volumeWindowDays
+    expect(keep).toBe(450)
+    const first = dispatch(atDay(testState(), 0), { type: 'Sell', variety: 'robusta', units: 1 })
+    const trade = (day: number) =>
+      dispatch(atDay(first, day), { type: 'Sell', variety: 'arabicaStandard', units: 1 }).market
+        .volumes
+    expect(trade(449).some((v) => v.day === 0)).toBe(true)
+    expect(trade(450).some((v) => v.day === 0)).toBe(false)
+  })
+
+  it('AC-5, AC-3 (#27): 1,000 random days keep prices in range and the volumes small', () => {
     const rand = mulberry32(12345)
     const pick = () => varieties[Math.floor(rand() * varieties.length)]!
     const goods: Good[] = varieties.flatMap((variety) => [
@@ -198,7 +217,7 @@ describe('market', () => {
         expect(price).toBeLessThanOrEqual(m.priceCeiling * ref + 1e-9)
       }
       expect(state.market.volumes.length).toBeLessThanOrEqual(
-        (m.historyDays + m.volumeWindowDays) * goods.length,
+        (m.historyMonths * cfg.time.daysPerMonth + m.volumeWindowDays) * goods.length,
       )
     }
   })

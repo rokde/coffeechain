@@ -113,6 +113,7 @@ describe('balance.json', () => {
       ['farm.overripe.lossPerDay', cfg.farm.overripe.lossPerDay, 0.005],
       ['processing.washed.durationDays', cfg.processing.washed.durationDays, 30],
       ['market.volumeWindowDays', cfg.market.volumeWindowDays, 90],
+      ['market.historyMonths', cfg.market.historyMonths, 12],
       ['orders.chancePerDay', cfg.orders.chancePerDay, 0.01],
       ['orders.deadlineDays', cfg.orders.deadlineDays, [150, 300]],
       ['progression.harvestProMessageDays', cfg.progression.harvestProMessageDays, 30],
@@ -123,6 +124,9 @@ describe('balance.json', () => {
       expect(value, path).toEqual(expected)
       expect(src[path], path).toBe('Robert 2026-10-25 (#27, Faktor 30)')
     }
+    // AC-4 (086): historyMonths replaces historyDays.
+    expect(raw.market).not.toHaveProperty('historyDays')
+    expect(cfg.market).not.toHaveProperty('historyDays')
     for (const key of ['ticksPerGameDay', 'realSecondsPerGameDay']) {
       expect(raw.time, key).not.toHaveProperty(key)
       expect(cfg.time, key).not.toHaveProperty(key)

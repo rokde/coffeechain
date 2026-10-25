@@ -100,13 +100,17 @@ export function bankSellPrice(state: GameState, variety: Variety, units = 0): nu
   return marketPrice(state.market, { kind: 'seed', variety }, day, balance(), units / 2)
 }
 
-// Market prices of the last historyDays game days, from the oldest day to today.
+// Market prices of the last historyMonths months, from the oldest month to the current month.
+// A past month gives the price of its last day. The current month gives the price of today.
 export function priceHistory(state: GameState, good: Good): number[] {
   const cfg = balance()
   const today = state.time.day
-  const days = cfg.market.historyDays
-  return Array.from({ length: days }, (_, i) => {
-    return marketPrice(state.market, good, today - days + 1 + i, cfg)
+  const months = cfg.market.historyMonths
+  const perMonth = cfg.time.daysPerMonth
+  const lastDay = (Math.floor(today / perMonth) + 1) * perMonth - 1
+  return Array.from({ length: months }, (_, i) => {
+    const day = i === months - 1 ? today : lastDay - perMonth * (months - 1 - i)
+    return marketPrice(state.market, good, day, cfg)
   })
 }
 
@@ -120,7 +124,7 @@ function checkTrade(command: Sell | Buy, cfg: Balance) {
 
 // Adds the trade to today's volume and drops volumes that no price in the history needs.
 function record(market: MarketState, good: Good, units: number, day: number, cfg: Balance) {
-  const keep = cfg.market.historyDays + cfg.market.volumeWindowDays
+  const keep = cfg.market.historyMonths * cfg.time.daysPerMonth + cfg.market.volumeWindowDays
   const volumes = market.volumes.filter((v) => v.day > day - keep)
   const same = (v: Volume) => v.kind === good.kind && v.variety === good.variety && v.day === day
   const i = volumes.findIndex(same)
