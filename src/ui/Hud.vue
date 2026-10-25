@@ -13,7 +13,6 @@ import { storageUsed } from '../sim/storage/storage'
 import { clock } from '../sim/time/time'
 import de from './i18n/de.json'
 import { formatMoney } from './money'
-import EventChips from './EventChips.vue'
 import FieldList from './FieldList.vue'
 import FloatingCoins from './FloatingCoins.vue'
 import FirstSteps from './FirstSteps.vue'
@@ -157,7 +156,6 @@ const phaseText = computed(() => {
           }}</span></span
         >
       </div>
-      <EventChips />
       <button
         type="button"
         class="save-button"
@@ -508,7 +506,7 @@ const phaseText = computed(() => {
   max-height: 480px;
   overflow-y: auto;
 }
-/* The panels start 4 px below the event tab. The right panel keeps its bottom edge, so its height limit shrinks. */
+/* Below 761 px the panels start 4 px below the seed tab. The right panel keeps its bottom edge, so its height limit shrinks. */
 @media (max-width: 1279px) {
   .left-panel {
     --left-max: 204px;
@@ -519,16 +517,10 @@ const phaseText = computed(() => {
     max-height: 438px;
   }
 }
-/* Room for a second line of the event tab. */
 @media (max-width: 480px) {
   /* The toolbar is 161 px high here, so the panel ends 8 px above it. The steps scroll only if they do not fit. */
   .left-panel {
-    top: 148px;
-    max-height: calc(100vh - 333px);
-  }
-  .right-panel {
-    top: 148px;
-    max-height: 424px;
+    max-height: calc(100vh - 319px);
   }
 }
 .toolbar {

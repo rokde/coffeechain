@@ -30,7 +30,6 @@ const plant = z.object({
   pestProtected: z.boolean().optional(),
   pendingUnits: num.optional(),
   overripeFactor: num.optional(),
-  growthDelayHours: num.nonnegative().optional(),
 })
 
 // Shape check of a loaded state. The output type must stay assignable to GameState.
@@ -87,14 +86,5 @@ export const gameStateSchema = z.object({
     ),
     nextId: int.nonnegative(),
   }),
-  events: z.array(
-    z.object({
-      type: z.enum(['frost', 'monsoon', 'boom', 'crisis', 'pests']),
-      announcedDay: int,
-      startDay: int,
-      endDay: int,
-    }),
-  ),
-  research: z.array(int),
   milestones: z.object({ harvested: num, harvestProHour: num.optional() }),
 }) satisfies z.ZodType<GameState>

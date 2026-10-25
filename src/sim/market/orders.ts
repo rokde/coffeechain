@@ -29,7 +29,7 @@ export interface DeliverOrder {
   id: number
 }
 
-// Harvest seeds use indexes >= 0 and research uses -1.
+// Harvest seeds use indexes >= 0.
 export const ORDERS_STREAM = -2
 
 // Orders take raw coffee only. Washed coffee sells to the bank.

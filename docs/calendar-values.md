@@ -59,7 +59,7 @@ schneller).
 
 ## Events
 
-Entfällt: Events und Schädlingsschutz werden mit #8 vollständig entfernt (Robert 2026-10-25). Kommen Events später zurück, hängen Frost und Monsun an Kalendermonaten (Saisons) statt an Zufallsintervallen.
+Entfällt (#8): Events und Schädlingsschutz werden mit #8 vollständig entfernt (Robert 2026-10-25). Kommen Events später zurück, hängen Frost und Monsun an Kalendermonaten (Saisons) statt an Zufallsintervallen.
 
 ## Speichern, Anzeige, Balance-Bot
 

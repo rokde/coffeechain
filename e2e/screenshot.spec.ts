@@ -1211,84 +1211,52 @@ for (const [width, height] of [
   })
 }
 
-const activeAndWarned = [
-  { type: 'frost', announcedDay: 3, startDay: 5, endDay: 8 },
-  { type: 'boom', announcedDay: 2, startDay: 4, endDay: 7 },
-  { type: 'monsoon', announcedDay: 5, startDay: 7, endDay: 10 },
-  { type: 'pests', announcedDay: 5, startDay: 6, endDay: 9 },
-]
-const fourActive = ['frost', 'boom', 'crisis', 'pests'].map((type) => ({
-  type,
-  announcedDay: 3,
-  startDay: 5,
-  endDay: 8,
-}))
-
-for (const [width, height, events] of [
-  [1440, 900, activeAndWarned],
-  [1280, 800, fourActive],
-  [1024, 768, fourActive],
-  [800, 600, fourActive],
-  [481, 800, fourActive],
-  [390, 844, activeAndWarned],
-  [360, 640, activeAndWarned],
+for (const [width, height] of [
+  [1440, 900],
+  [800, 600],
+  [390, 844],
 ] as const) {
-  test(`S52: event chips and warnings at ${width} px (${events === fourActive ? 'four active' : 'active and warned'})`, async ({
+  test(`#8: an old save with events loads without event chips or warnings at ${width} px`, async ({
     page,
   }) => {
+    const errors: string[] = []
+    page.on('pageerror', (e) => errors.push(e.message))
     await page.setViewportSize({ width, height })
     await page.goto('/?seed=4294967295')
     await page.getByTestId('save-button').click()
     await page.getByTestId('save-slot-1').getByTestId('save-slot-save').click()
-    await page.evaluate((events) => {
+    await page.evaluate(() => {
       const key = 'coffeechain.save.slot-1'
       const save = JSON.parse(localStorage.getItem(key)!)
+      save.version = 8
       save.state.time = { ...save.state.time, hour: 4 * 24 + 8, speed: 0 }
-      save.state.events = events
+      save.state.events = [
+        { type: 'frost', announcedDay: 3, startDay: 5, endDay: 8 },
+        { type: 'pests', announcedDay: 5, startDay: 6, endDay: 9 },
+      ]
+      save.state.research = [3]
       localStorage.setItem(key, JSON.stringify(save))
-    }, events)
+    })
     await page.getByTestId('save-panel-close').click()
     await page.getByTestId('save-button').click()
     await page.getByTestId('save-slot-1').getByTestId('save-slot-load').click()
     await page.getByTestId('first-steps-close').click()
-    const chips = page.getByTestId('active-event')
-    if (events === fourActive) {
-      await expect(chips).toHaveText(['Frost', 'Marktboom', 'Marktkrise', 'Schädlinge'])
-    } else {
-      await expect(chips).toHaveText(['Frost', 'Marktboom'])
-      // Sorted by start day: pests (day 6) before monsoon (day 7).
-      const messages = page.getByTestId('message')
-      await expect(messages.nth(0)).toContainText('Schädlings-Warnung ab morgen')
-      await expect(messages.nth(1)).toContainText('Monsun-Warnung ab Tag 7')
-    }
+    await expect(page.getByTestId('clock')).toContainText('Tag 5')
+    await expect(page.getByTestId('active-event')).toHaveCount(0)
+    await expect(page.locator('.events')).toHaveCount(0)
+    await expect(page.getByTestId('hud-left-panel')).not.toContainText('Warnung')
+    await expect(page.getByTestId('hud-top-bar')).not.toContainText('Frost')
 
     const bar = page.getByTestId('hud-top-bar')
     expect(await bar.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
-    const parts = [
-      page.getByTestId('world-seed'),
-      page.getByTestId('clock'),
-      page.getByRole('group', { name: 'Spielgeschwindigkeit' }),
-      page.getByTestId('storage'),
-      page.getByTestId('phase'),
-      page.getByTestId('money'),
-      page.getByTestId('save-button'),
-      page.getByTestId('help-button'),
-      ...(await chips.all()),
-    ]
-    const boxes: { x: number; y: number; width: number; height: number }[] = []
-    for (const part of parts) {
-      await expect(part).toBeInViewport({ ratio: 1 })
-      boxes.push((await part.boundingBox())!)
-    }
-    const apart = (a: (typeof boxes)[0], b: (typeof boxes)[0]) =>
-      a.x + a.width <= b.x || b.x + b.width <= a.x || a.y + a.height <= b.y || b.y + b.height <= a.y
-    for (const [i, a] of boxes.entries())
-      for (const b of boxes.slice(i + 1)) expect(apart(a, b), JSON.stringify([a, b])).toBe(true)
+    const box = async (id: string) => (await page.getByTestId(id).boundingBox())!
+    const top = await box('hud-top-bar')
     for (const id of ['hud-left-panel', 'hud-right-panel']) {
-      const panel = (await page.getByTestId(id).boundingBox())!
-      for (const box of boxes) expect(apart(box, panel), JSON.stringify([box, panel])).toBe(true)
+      const panel = await box(id)
+      expect(panel.y, id).toBeGreaterThanOrEqual(top.y + top.height)
     }
-    await page.screenshot({ path: `docs/progress/S52-${width}.png` })
+    expect(errors).toEqual([])
+    await page.screenshot({ path: `docs/progress/081-${width}.png` })
   })
 }
 
@@ -1302,19 +1270,16 @@ for (const [width, height] of [
     await page.goto('/?seed=4294967295')
     await page.getByTestId('save-button').click()
     await page.getByTestId('save-slot-1').getByTestId('save-slot-save').click()
-    await page.evaluate((events) => {
+    await page.evaluate(() => {
       const key = 'coffeechain.save.slot-1'
       const save = JSON.parse(localStorage.getItem(key)!)
       save.state.time = { ...save.state.time, hour: 4 * 24 + 8, speed: 0 }
-      save.state.events = events
       localStorage.setItem(key, JSON.stringify(save))
-    }, fourActive)
+    })
     await page.getByTestId('save-panel-close').click()
     await page.getByTestId('save-button').click()
     await page.getByTestId('save-slot-1').getByTestId('save-slot-load').click()
     await page.getByTestId('first-steps-close').click()
-    const chips = page.getByTestId('active-event')
-    await expect(chips).toHaveText(['Frost', 'Marktboom', 'Marktkrise', 'Schädlinge'])
 
     const font = async (id: string) =>
       page.getByTestId(id).evaluate((el) => {
@@ -1339,7 +1304,6 @@ for (const [width, height] of [
       page.getByTestId('phase'),
       page.getByTestId('save-button'),
       page.getByTestId('help-button'),
-      ...(await chips.all()),
     ]
     const boxes: { x: number; y: number; width: number; height: number }[] = []
     for (const part of parts) {
@@ -1357,22 +1321,6 @@ for (const [width, height] of [
       for (const b of boxes.slice(i + 1))
         expect(gap(a, b), JSON.stringify([a, b])).toBeGreaterThanOrEqual(0)
 
-    const tab = (await page.locator('.events').boundingBox())!
-    const box = async (id: string) => (await page.getByTestId(id).boundingBox())!
-    const left = await box('hud-left-panel')
-    const right = await box('hud-right-panel')
-    for (const other of [await box('hud-top-bar'), left, right])
-      expect(gap(tab, other), JSON.stringify([tab, other])).toBeGreaterThanOrEqual(4)
-    // Nothing covers the event tab: the top element at its centre is part of the tab.
-    const onTop = await page.evaluate(
-      ({ x, y }) => !!document.elementFromPoint(x, y)?.closest('.events'),
-      { x: tab.x + tab.width / 2, y: tab.y + tab.height / 2 },
-    )
-    expect(onTop).toBe(true)
-    if (width >= 1280) {
-      expect(tab.x).toBeGreaterThanOrEqual(left.x + left.width)
-      expect(tab.x + tab.width).toBeLessThanOrEqual(right.x)
-    }
     await page.screenshot({ path: `docs/progress/S58c-${width}.png` })
   })
 }
@@ -1518,8 +1466,8 @@ for (const [width, height] of [
       const s = getComputedStyle(el)
       return { maxHeight: s.maxHeight, overflowY: s.overflowY }
     })
-    expect(style).toEqual({ maxHeight: '424px', overflowY: 'auto' })
-    expect((await panel.boundingBox())!.height).toBeLessThanOrEqual(424)
+    expect(style).toEqual({ maxHeight: '438px', overflowY: 'auto' })
+    expect((await panel.boundingBox())!.height).toBeLessThanOrEqual(438)
   })
 }
 
@@ -1687,7 +1635,6 @@ async function loadFields(page: import('@playwright/test').Page, plan: FieldPlan
         }
       })
       save.state.time = { hour, speed: 0 }
-      save.state.events = []
       save.state.farm = {
         parcels,
         fields: plan.map((f, id) => ({ id, name: f.name })),
@@ -1829,10 +1776,10 @@ test('S58: a brush stroke shows one money toast', async ({ page }) => {
   await expect(page.getByTestId('money-toast')).toHaveCount(0)
 })
 
-for (const [width, height, events] of [
-  [1440, 900, activeAndWarned],
-  [800, 800, fourActive],
-  [390, 844, activeAndWarned],
+for (const [width, height] of [
+  [1440, 900],
+  [800, 800],
+  [390, 844],
 ] as const) {
   test(`S58: money toast fits beside the panels at ${width} px`, async ({ page }) => {
     await page.clock.install()
@@ -1840,13 +1787,12 @@ for (const [width, height, events] of [
     await page.goto('/?seed=4294967295')
     await page.getByTestId('save-button').click()
     await page.getByTestId('save-slot-1').getByTestId('save-slot-save').click()
-    await page.evaluate((events) => {
+    await page.evaluate(() => {
       const key = 'coffeechain.save.slot-1'
       const save = JSON.parse(localStorage.getItem(key)!)
       save.state.time = { ...save.state.time, hour: 4 * 24 + 8, speed: 0 }
-      save.state.events = events
       localStorage.setItem(key, JSON.stringify(save))
-    }, events)
+    })
     await page.getByTestId('save-panel-close').click()
     await page.getByTestId('save-button').click()
     await page.getByTestId('save-slot-1').getByTestId('save-slot-load').click()
@@ -1869,9 +1815,6 @@ for (const [width, height, events] of [
       await box('hud-left-panel'),
       await box('hud-top-bar'),
     ]
-    for (const chip of await page.getByTestId('active-event').all())
-      others.push((await chip.boundingBox())!)
-    expect(others.length).toBeGreaterThan(4)
     for (const b of others) {
       const apart =
         t.x + t.width <= b.x ||

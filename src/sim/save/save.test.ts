@@ -114,10 +114,7 @@ describe('save format', () => {
       expect(() => deserialize(save((s) => delete s.farm))).toThrow(/farm/)
     })
 
-    it('AC-1: checks the events and milestones', () => {
-      expect(() => deserialize(save((s) => (s.events = [{ type: 'flood' }])))).toThrow(
-        /events\.0\.type/,
-      )
+    it('AC-1: checks the milestones', () => {
       expect(() => deserialize(save((s) => (s.milestones = { harvested: '1' })))).toThrow(
         /milestones\.harvested/,
       )
@@ -151,32 +148,18 @@ describe('save format', () => {
 })
 
 describe('events migration', () => {
-  it('loads a version 1 save with an empty event list', () => {
+  it('loads a version 1 save without an event list', () => {
     const old: Record<string, unknown> = { ...createState(5) }
-    delete old.events
     delete old.milestones
     const loaded = deserialize(JSON.stringify({ version: 1, state: old }))
-    expect(loaded.events).toEqual([])
     expect(loaded).toEqual(createState(5))
   })
 })
 
 describe('research migration', () => {
-  it('S51b AC-5: has version 4 and loads a version 3 save with an empty research list', () => {
-    expect(SAVE_VERSION).toBeGreaterThanOrEqual(4)
-    const old: Record<string, unknown> = { ...createState(5) }
-    delete old.research
-    const loaded = deserialize(JSON.stringify({ version: 3, state: old }))
-    expect(loaded.research).toEqual([])
+  it('loads a version 3 save without a research list', () => {
+    const loaded = deserialize(JSON.stringify({ version: 3, state: createState(5) }))
     expect(loaded).toEqual(createState(5))
-  })
-
-  it('S51b AC-5: round-trips research days and rejects bad ones', () => {
-    const text = serialize({ ...createState(5), research: [12, 40] })
-    expect(deserialize(text).research).toEqual([12, 40])
-    expect(serialize(deserialize(text))).toBe(text)
-    const bad = JSON.stringify({ version: 4, state: { ...createState(5), research: ['x'] } })
-    expect(() => deserialize(bad)).toThrow(/research/)
   })
 })
 
@@ -263,8 +246,7 @@ describe('whole CC migration (S57)', () => {
   const load = (version: number, money: number, invested: number) =>
     deserialize(JSON.stringify({ version, state: { ...createState(5), money, invested } }))
 
-  it('AC-4: has version 8 and floors money and invested of a version 7 save to whole CC', () => {
-    expect(SAVE_VERSION).toBe(8)
+  it('AC-4: floors money and invested of a version 7 save to whole CC', () => {
     expect(load(7, 12345, 4599)).toMatchObject({ money: 12300, invested: 4500 })
     expect(load(7, -50, 0).money).toBe(-100)
   })
@@ -284,31 +266,35 @@ describe('whole CC migration (S57)', () => {
   })
 })
 
-describe('growth delay (S51c)', () => {
-  it('AC-5: loads plants without growthDelayHours and round-trips the delay', () => {
+describe('remove events migration (#8)', () => {
+  // A version 8 save of populated() with an active and a warned event, research and a growth delay.
+  function oldSave(): string {
     const state = populated()
-    const plant = state.farm.plants[0]!
-    expect(plant.growthDelayHours).toBeUndefined()
-    const loaded = deserialize(serialize(state))
-    expect(loaded.farm.plants[0]!.growthDelayHours).toBeUndefined()
-    const ripe = state.time.hour + balance().varieties.robusta.cycleDays * perDay()
-    expect(growth(loaded.farm.plants[0]!, ripe - 1).progress).toBeLessThan(1)
-    expect(growth(loaded.farm.plants[0]!, ripe).stage).toBe('reif')
-
-    const delayed = {
+    const plants = { ...state.farm.plants, 0: { ...state.farm.plants[0]!, growthDelayHours: 5.5 } }
+    const old = {
       ...state,
-      farm: {
-        ...state.farm,
-        plants: { ...state.farm.plants, 0: { ...plant, growthDelayHours: 5.5384615 } },
-      },
+      farm: { ...state.farm, plants },
+      events: [
+        { type: 'monsoon', announcedDay: 0, startDay: 1, endDay: 7 },
+        { type: 'frost', announcedDay: 1, startDay: 3, endDay: 5 },
+      ],
+      research: [12],
     }
-    const text = serialize(delayed)
-    expect(deserialize(text).farm.plants[0]!.growthDelayHours).toBe(5.5384615)
-    expect(deserialize(text)).toEqual(delayed)
-    const bad = serialize({
-      ...delayed,
-      farm: { ...delayed.farm, plants: { 0: { ...plant, growthDelayHours: -1 } } },
-    })
-    expect(() => deserialize(bad)).toThrow(/growthDelayHours/)
+    return JSON.stringify({ version: 8, state: old })
+  }
+
+  it('AC-4: has version 9 and drops events, research and growthDelayHours of a version 8 save', () => {
+    expect(SAVE_VERSION).toBe(9)
+    const loaded = deserialize(oldSave())
+    expect(loaded).not.toHaveProperty('events')
+    expect(loaded).not.toHaveProperty('research')
+    for (const plant of Object.values(loaded.farm.plants))
+      expect(plant).not.toHaveProperty('growthDelayHours')
+    expect(loaded).toEqual(populated())
+  })
+
+  it('AC-4: save, load and 50 more days of a version 8 save equal 50 days without a break', () => {
+    const loaded = deserialize(oldSave())
+    expect(runDays(deserialize(serialize(loaded)), 50)).toEqual(runDays(populated(), 50))
   })
 })

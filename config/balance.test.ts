@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import raw from './balance.json'
 import { loadBalance } from './balance.schema'
@@ -86,5 +86,12 @@ describe('balance.json', () => {
     const keys = Object.keys(raw.market)
     expect(unread(keys, code)).toEqual([])
     expect(unread([...keys, 'bankSellFactor'], code)).toEqual(['bankSellFactor'])
+  })
+
+  it('AC-1 (#8): has no events key, and no source imports src/sim/events/', () => {
+    expect(raw).not.toHaveProperty('events')
+    expect(loadBalance(raw)).not.toHaveProperty('events')
+    expect(existsSync(new URL('../src/sim/events/', import.meta.url))).toBe(false)
+    expect(sources()).not.toMatch(/from '[./]*(sim\/)?events\//)
   })
 })

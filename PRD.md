@@ -10,7 +10,7 @@
 
 CoffeeChain 3D ist eine Aufbausimulation in 3D für den Mac. Man startet auf einer zufällig erzeugten Insel und baut eine Kaffeefarm auf. Der Boden ist unterschiedlich gut und die Insel hat verschiedene Lagen (Tiefland, Hochland, Vulkanboden). Beides bestimmt, welche Sorte wo gut wächst und wie viel man erntet. Die Ernte verkauft man auf dem Markt und kauft dort Saatgut, Dünger und Ausbauten.
 
-Das Spiel basiert auf dem Browser-Konzept **CoffeeChain** (GDD in `docs/gdd.md`). CoffeeChain 3D übernimmt daraus den **Farmer-Pfad** (GDD Kap. 5), die **Bank** als Handelspartner (GDD 3.4, 11.3), das **Balancing** (GDD 11) und die **Events** (GDD 11.8). Neu gegenüber dem GDD sind die 3D-Welt, die Bodenqualität pro Parzelle und die Weltgenerierung.
+Das Spiel basiert auf dem Browser-Konzept **CoffeeChain** (GDD in `docs/gdd.md`). CoffeeChain 3D übernimmt daraus den **Farmer-Pfad** (GDD Kap. 5), die **Bank** als Handelspartner (GDD 3.4, 11.3), und das **Balancing** (GDD 11). Die **Events** (GDD 11.8) entfallen vorerst (Robert 2026-10-25, #8). Neu gegenüber dem GDD sind die 3D-Welt, die Bodenqualität pro Parzelle und die Weltgenerierung.
 
 ### Ziele für v1
 - Ein spielbarer Kreislauf: Lage und Boden wählen → Parzellen anlegen → Sorte pflanzen → pflegen → ernten → aufbereiten oder roh verkaufen → reinvestieren.
@@ -26,7 +26,7 @@ Aus dem GDD bewusst **nicht** übernommen:
 - Graue Mechaniken (GDD Kap. 7)
 - Monetarisierung und Werbeflächen (GDD Kap. 8)
 - Personal (GDD 5.5, 11.7)
-- Realwelt-Daten per API (GDD 2.2): Events werden im Spiel zufällig erzeugt
+- Realwelt-Daten per API (GDD 2.2)
 - Rösterei (GDD 5.4 Phase 4): kommt nach v1
 
 ---
@@ -58,7 +58,7 @@ Aus dem GDD bewusst **nicht** übernommen:
 | Build | Vite | Standard, schnell |
 | Desktop | Tauri 2 | Native Mac-App, klein, Dateizugriff für Spielstände |
 | Noise | `simplex-noise` | Terrain, Lagen, Bodenqualität |
-| Zufall | Eigener seedbarer PRNG (z. B. mulberry32) | Reproduzierbare Welten, Events und Tests |
+| Zufall | Eigener seedbarer PRNG (z. B. mulberry32) | Reproduzierbare Welten, Ernten und Tests |
 | Config-Validierung | zod | Typen und Laufzeitprüfung aus einem Schema |
 | Tests | Vitest (Logik), Playwright (Screenshot-Smoke-Tests) | Simulation testgetrieben, Visuals per Screenshot prüfbar |
 | Assets | Low-Poly per Code; Gebäude und Deko aus Kenney-Paketen (CC0) | Kein Lizenzaufwand, einheitlicher Stil |
@@ -73,7 +73,6 @@ src/
     processing/   # Aufbereitung (Washing/Natural)
     storage/      # Lager, Kapazität, Lagerkosten, Qualitätsverlust
     market/       # Bank: Preise, Ankauf, Verkauf, Preisverlauf
-    events/       # Zufallsevents nach GDD 11.8
     economy/      # Kontostand, Transaktionen
     time/         # Spielzeit, Tick, Geschwindigkeit
     save/         # Serialisierung, Versionierung, Migration
@@ -109,7 +108,7 @@ tools/
 - Geschwindigkeiten: Pause, 1×, 2×, 4×.
 - Alle Zyklen werden in Spieltagen aus dem GDD übernommen. Beispiel: Robusta braucht 3 Spieltage, also 12 Minuten bei 1×.
 - **Abweichung vom GDD:** Die Zeit läuft nur, solange das Spiel offen ist. Der Offline-Fortschritt aus GDD 2.1 entfällt.
-- Eine Spielwoche hat 7 Spieltage (GDD 11.1). Sie dient nur der Anzeige und dem Event-Takt.
+- Eine Spielwoche hat 7 Spieltage (GDD 11.1). Sie dient nur der Anzeige.
 
 ---
 
@@ -187,7 +186,6 @@ menge = basisErtrag(sorte)
       × soil.yieldFactor[bodenklasse]
       × (lagePasst ? 1 : world.offZoneYieldFactor)
       × (gedüngt ? 1 + farm.fertilizerYieldBonus : 1)
-      × eventFaktor        // Produkt aller aktiven Ernte-Events, min. 0,7 (GDD 11.8: max. -30 %)
       × zufall             // seedbar, Startwert 0,9–1,1 (GDD 5.4: „Zufall“)
 ```
 - Ergebnis auf ganze Einheiten abgerundet.
@@ -226,7 +224,7 @@ menge = basisErtrag(sorte)
 - **Referenzpreise und Spread (GDD 11.3):** Die Bank kauft für 80 % des Marktpreises und verkauft Saatgut zum Marktpreis.
 - **Preisbildung pro Ware (GDD 3.4, 11.3):**
   ```
-  preis = referenz × eventFaktor × angebotsFaktor × nachfrageFaktor
+  preis = referenz × angebotsFaktor × nachfrageFaktor
   angebotsFaktor  0,7–1,1   sinkt mit der Menge, die der Spieler in den letzten 3 Spieltagen verkauft hat
   nachfrageFaktor 0,9–1,3   steigt mit der Menge, die der Spieler in den letzten 3 Spieltagen gekauft hat
   Ergebnis immer zwischen 50 % und 150 % des Referenzpreises
@@ -240,10 +238,9 @@ menge = basisErtrag(sorte)
 
 ## 9. Events (GDD 11.8)
 
-Übernommen werden die Events, die den Farmer-Pfad betreffen:
+Events entfallen vorerst (Robert 2026-10-25, #8). Das Spiel hat keine Zufallsevents (Frost, Monsun, Marktboom, Marktkrise, Schädlinge, Forschungsdurchbruch). Der Kernkreislauf soll zuerst stabil sein. Kommen Events zurück, brauchen sie ein klares Signal mit Erklärung, Restdauer und Wirkung.
 
-| Event | Wirkung | Dauer | Häufigkeit |
-|---|---|---|---|
+---|---|---|---|
 | Frost-Warnung | Hochland-Ernte −30 %, Arabica-Preise +20 % | 3–5 Spieltage | ~alle 2 Spielwochen |
 | Monsun-Saison | Tiefland-Zyklen +50 % Zeit, Robusta-Preis +15 % | 5–7 Spieltage | ~alle 3 Spielwochen |
 | Marktboom | Alle Verkaufspreise +15 % | 3 Spieltage | ~alle 2 Spielwochen |
@@ -293,8 +290,8 @@ menge = basisErtrag(sorte)
 
 ### HUD (Vue)
 Aufbau wie in den Mockups:
-- **Topbar:** Spielname, Welt-Seed, Tag und Uhrzeit, aktives Event, Geschwindigkeit, CC, Lagerstand.
-- **Links:** Tutorial-Checkliste bzw. Feldübersicht, darunter Meldungen (z. B. „Feld A ist erntereif“, „Frost-Warnung ab morgen“).
+- **Topbar:** Spielname, Welt-Seed, Tag und Uhrzeit, Geschwindigkeit, CC, Lagerstand.
+- **Links:** Tutorial-Checkliste bzw. Feldübersicht, darunter Meldungen (z. B. „Feld A ist erntereif“, „Lager voll“).
 - **Rechts:** Kontextpanel, entweder Parzellen-Inspektor (Lage, Boden, passende Sorte, Ertragsprognose, Aktion) oder Markt.
 - **Unten:** Werkzeugleiste: Auswählen, Parzelle, Pflanzen, Düngen, Wässern, Schutz, Ernten, Bauen, Markt.
 - Die Ertragsprognose im Inspektor nutzt dieselbe Funktion wie die Simulation (`yield.ts`, ohne Zufall).
@@ -315,7 +312,7 @@ Aufbau wie in den Mockups:
 | 4 | Soll die Qualität einer Charge den Verkaufspreis beeinflussen? | Ja, ab v1.1: Preis × (0,8 + 0,4 × Qualität/100) | entschieden 2026-10-21: über Aufträge virtueller Käufer mit Mindestqualität und Aufpreis; die Bank bleibt ohne Qualitätsfaktor |
 | 5 | Alle mit `NEU` markierten Startwerte (Bodenfaktoren, Lagerkosten, Zonen-Multiplikatoren, Düngerbonus …) | Nach M4-Bot-Simulation gemeinsam prüfen | offen |
 | 6 | Name der Mac-App | „CoffeeChain“ | offen |
-| 7 | Event-Effekte über ±30 % im GDD (Monsun-Zykluszeit +50 %) | PRD-Grenze ±30 % gilt | entschieden 2026-10-21 |
+| 7 | Event-Effekte über ±30 % im GDD (Monsun-Zykluszeit +50 %) | PRD-Grenze ±30 % gilt | entschieden 2026-10-21; entfällt mit den Events (Robert 2026-10-25, #8) |
 | 8 | Kontostand mit Nachkommastellen? | Nein: CC sind immer ganze Zahlen; jede Buchung wird auf ganze CC gerundet | entschieden 2026-10-21 |
 
 ---
@@ -371,10 +368,10 @@ Jeder Meilenstein endet mit: grünen Tests, `npm run build` ohne Fehler, Screens
 - Phasen und Freischaltungen nach Abschnitt 10, Arabica Premium und Spezialität.
 - ✅ Test: 10 Einheiten Arabica Standard roh (Referenz 1,0 CC) werden aufbereitet zu Referenzwert 1,5 CC je Einheit, Kosten 3 CC.
 
-### M7: Events und Feinschliff
-- Events nach Abschnitt 9 mit Vorwarnung im HUD.
+### M7: Feinschliff
+- ~~Events nach Abschnitt 9 mit Vorwarnung im HUD.~~ Entfällt vorerst (Robert 2026-10-25, #8).
 - Meldungen, Tooltips, Tastenkürzel.
-- ✅ Test: Über 1.000 simulierte Tage sind nie mehr als 2 Events gleichzeitig aktiv, und kein Effekt liegt außerhalb von ±30 %.
+- ~~Test: Über 1.000 simulierte Tage sind nie mehr als 2 Events gleichzeitig aktiv, und kein Effekt liegt außerhalb von ±30 %.~~ Entfällt mit den Events (#8).
 - ✅ Spielbarer Durchlauf von Tag 1 bis Tag 30 ohne Fehler, als Screenshot-Serie.
 - ✅ Performance-Ziel aus Abschnitt 11 erreicht.
 
