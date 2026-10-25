@@ -362,6 +362,9 @@
     "continue": "Weiterspielen",
     "newGame": "Neues Spiel",
     "back": "Zurück zum Spielstand",
+    "saves": "Spielstände",
+    "lastPlayed": "Zuletzt gespielt {ago}",
+    "justNow": "gerade eben",
     "zoneShares": "Landzonen",
     "zoneShare": "{zone} {pct} %",
     "hut": "Deine Hütte steht im {zone} bei {parcel}, Boden {soil}."

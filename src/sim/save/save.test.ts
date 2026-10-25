@@ -4,7 +4,7 @@ import { createState, type GameState } from '../state'
 import { calendar, step } from '../time/time'
 import { growth } from '../farm/plants'
 import type { Parcel } from '../world/types'
-import { deserialize, MIGRATIONS, SAVE_VERSION, serialize } from './save'
+import { deserialize, MIGRATIONS, readSave, SAVE_VERSION, serialize } from './save'
 
 // The old migrations stay, but the default format rejects saves below version 11 (#17).
 const legacy = { version: SAVE_VERSION, minVersion: 1, migrations: MIGRATIONS }
@@ -76,16 +76,16 @@ function runDays(start: GameState, days: number): GameState {
 describe('save format', () => {
   it('AC-1: round-trips a new and a populated state', () => {
     const fresh = createState(5)
-    expect(deserialize(serialize(fresh))).toEqual(fresh)
+    expect(deserialize(serialize(fresh, 0))).toEqual(fresh)
     const state = runDays(populated(), 120)
     expect(state.storage.batches.length + state.market.volumes.length).toBeGreaterThan(0)
-    expect(deserialize(serialize(state))).toEqual(state)
+    expect(deserialize(serialize(state, 0))).toEqual(state)
   })
 
   it('AC-2: save, load and 150 more days equal 150 days without a break', () => {
     const a = populated()
     const direct = runDays(a, 150)
-    const loaded = runDays(deserialize(serialize(a)), 150)
+    const loaded = runDays(deserialize(serialize(a, 0)), 150)
     expect(loaded).toEqual(direct)
   })
 
@@ -200,7 +200,7 @@ describe('washed batches (S46)', () => {
         volumes: [{ kind: 'washed', variety: 'robusta', day: 1, units: 2 }],
       },
     }
-    expect(deserialize(serialize(state))).toEqual(state)
+    expect(deserialize(serialize(state, 0))).toEqual(state)
     const old = JSON.stringify({
       version: 5,
       state: {
@@ -209,7 +209,7 @@ describe('washed batches (S46)', () => {
       },
     })
     const raw = { variety: 'robusta', units: 3, quality: 80, readyDay: 24 }
-    const bad = serialize({ ...base, storage: { batches: [raw as never] } })
+    const bad = serialize({ ...base, storage: { batches: [raw as never] } }, 0)
     expect(() => deserialize(bad)).toThrow(/readyDay needs washed/)
     expect(loadOld(old).storage.batches).toEqual([{ variety: 'robusta', units: 3, quality: 80 }])
   })
@@ -228,7 +228,7 @@ describe('orders migration (S56)', () => {
         nextId: 2,
       },
     }
-    expect(deserialize(serialize(state))).toEqual(state)
+    expect(deserialize(serialize(state, 0))).toEqual(state)
   })
 
   it('rejects bad order values', () => {
@@ -275,7 +275,7 @@ describe('whole CC migration (S57)', () => {
 
   it('AC-4: loads a version 8 save unchanged', () => {
     const state = { ...createState(5), money: 12300, invested: 4500 }
-    expect(deserialize(serialize(state))).toEqual(state)
+    expect(deserialize(serialize(state, 0))).toEqual(state)
   })
 
   it('Round 1: floors a version 8 save with fractions and does not reject it', () => {
@@ -317,7 +317,7 @@ describe('remove events migration (#8)', () => {
 
   it('AC-4: save, load and 150 more days of a version 8 save equal 150 days without a break', () => {
     const loaded = loadOld(oldSave())
-    expect(runDays(deserialize(serialize(loaded)), 150)).toEqual(runDays(populated(), 150))
+    expect(runDays(deserialize(serialize(loaded, 0)), 150)).toEqual(runDays(populated(), 150))
   })
 })
 
@@ -337,7 +337,7 @@ describe('remove pest protection migration (#8)', () => {
 
 describe('remove volcano zone (#17)', () => {
   it('AC-3: rejects a save below version 11 with "unknown or old version"', () => {
-    expect(SAVE_VERSION).toBe(12)
+    expect(SAVE_VERSION).toBeGreaterThanOrEqual(12)
     for (const version of [1, 9, 10]) {
       const text = JSON.stringify({ version, state: createState(5) })
       expect(() => deserialize(text)).toThrow('unknown or old version')
@@ -352,7 +352,7 @@ describe('remove volcano zone (#17)', () => {
   it('AC-3: rejects a version 11 save with a vulkan parcel', () => {
     const state = structuredClone(createState(5))
     ;(state.world.parcels[0] as { zone: string }).zone = 'vulkan'
-    expect(() => deserialize(serialize(state))).toThrow(/world\.parcels\.0\.zone/)
+    expect(() => deserialize(serialize(state, 0))).toThrow(/world\.parcels\.0\.zone/)
   })
 })
 
@@ -381,7 +381,7 @@ describe('calendar migration (#27)', () => {
       orders: { open: [{ ...order, deadlineDay: 6 }], nextId: 1 },
       milestones: { harvested: 1000, harvestProHour: 25 },
     }
-    expect(SAVE_VERSION).toBe(12)
+    expect(SAVE_VERSION).toBeGreaterThanOrEqual(12)
     const loaded = deserialize(JSON.stringify({ version: 11, state: old }))
     expect(loaded.time).toEqual({ day: 60, speed: 2, stage: 'months' })
     expect(calendar(loaded.time.day)).toEqual({ dayOfMonth: 1, month: 3, year: 1 })
@@ -393,7 +393,7 @@ describe('calendar migration (#27)', () => {
     expect(loaded.milestones.harvestProDay).toBe(31)
     expect(JSON.stringify(loaded)).not.toMatch(/Hour|"hour"/)
     // deserialize ran the schema check, so a round trip gives the same state.
-    expect(deserialize(serialize(loaded))).toEqual(loaded)
+    expect(deserialize(serialize(loaded, 0))).toEqual(loaded)
   })
 
   it('AC-4: rejects a version 12 save without a stage', () => {
@@ -405,14 +405,36 @@ describe('calendar migration (#27)', () => {
   it('AC-5 (085): round-trips the weeks stage, and a version 12 save without weeksFromDay loads', () => {
     const base = createState(5)
     const weeks: GameState = { ...base, time: { ...base.time, stage: 'weeks', weeksFromDay: 400 } }
-    expect(deserialize(serialize(weeks)).time).toEqual({
+    expect(deserialize(serialize(weeks, 0)).time).toEqual({
       day: 0,
       speed: 1,
       stage: 'weeks',
       weeksFromDay: 400,
     })
-    expect(SAVE_VERSION).toBe(12)
+    expect(SAVE_VERSION).toBeGreaterThanOrEqual(12)
     const old = JSON.stringify({ version: 12, state: base })
     expect(deserialize(old).time).toEqual({ day: 0, speed: 1, stage: 'months' })
+  })
+})
+
+describe('save timestamp (#3)', () => {
+  it('AC-1: writes version 13 with savedAt, and readSave gives the state and savedAt', () => {
+    const state = runDays(populated(), 60)
+    const text = serialize(state, 1_700_000_000_000)
+    expect(JSON.parse(text)).toMatchObject({ version: 13, savedAt: 1_700_000_000_000 })
+    expect(SAVE_VERSION).toBe(13)
+    expect(readSave(text)).toEqual({ state, savedAt: 1_700_000_000_000 })
+    expect(deserialize(text)).toEqual(state)
+  })
+
+  it('AC-1: a version 12 save without savedAt loads the same state with savedAt null', () => {
+    const state = runDays(populated(), 60)
+    expect(readSave(JSON.stringify({ version: 12, state }))).toEqual({ state, savedAt: null })
+  })
+
+  it.each(['1700000000000', -1, null, Infinity])('AC-1: savedAt %j gives null', (savedAt) => {
+    const state = createState(5)
+    const text = JSON.stringify({ version: SAVE_VERSION, savedAt, state })
+    expect(readSave(text)).toEqual({ state, savedAt: null })
   })
 })

@@ -83,11 +83,16 @@ describe('SavePanel (S42b)', () => {
   })
 
   it('AC-2: save writes the current state and shows the game date', async () => {
+    // #3 AC-2: the save writes savedAt from the fake clock.
+    vi.useFakeTimers({ toFake: ['Date'], now: 1_700_000_000_000 })
     const { pinia, game, panel } = setup()
     const state = game.state as GameState
     game.replace({ ...state, time: { ...state.time, day: 431 }, money: 777 })
     await panel.save('slot-2')
-    expect(local.get('coffeechain.save.slot-2')).toBe(serialize(game.state as GameState))
+    vi.useRealTimers()
+    expect(local.get('coffeechain.save.slot-2')).toBe(
+      serialize(game.state as GameState, 1_700_000_000_000),
+    )
     const r = row(await html(pinia), 2)
     expect(status(r)).toBe('12. März, Jahr 2')
     expect(loadButton(r)).not.toContain('disabled')
@@ -165,7 +170,7 @@ describe('SavePanel (S42b)', () => {
 
   it.each([
     ['no', null],
-    ['a valid', serialize(createState(7))],
+    ['a valid', serialize(createState(7), 0)],
   ])('AC-5: with %s pending save the dialog is closed at start', async (_, text) => {
     if (text !== null) session.set(PENDING, text)
     const { pinia, panel } = await start()
@@ -189,7 +194,7 @@ describe('SavePanel (S42b)', () => {
     const state = game.state as GameState
     local.set(
       'coffeechain.save.autosave',
-      serialize({ ...state, time: { ...state.time, day: 60 } }),
+      serialize({ ...state, time: { ...state.time, day: 60 } }, 0),
     )
     await panel.refresh()
     r = autosaveRow(await html(pinia))

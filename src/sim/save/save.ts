@@ -5,7 +5,7 @@ import { gameStateSchema } from './schema'
 // When a slice adds a state field: increase SAVE_VERSION by one and append one migration
 // to MIGRATIONS that fills the default value. Migration i turns version i + 1 into i + 2.
 // Never edit an old migration.
-export const SAVE_VERSION = 12
+export const SAVE_VERSION = 13
 // #17 removes the volcano zone without a migration (Robert 2026-10-25), so older saves do not load.
 export const MIN_SAVE_VERSION = 11
 
@@ -96,6 +96,8 @@ export const MIGRATIONS: Migration[] = [
           : { ...milestones, harvestProDay: day(harvestProHour) },
     }
   },
+  // 12 -> 13: #3 adds savedAt to the envelope, not to the state. An older save has no savedAt.
+  (state) => state,
 ]
 
 export interface SaveFormat {
@@ -104,21 +106,28 @@ export interface SaveFormat {
   migrations: Migration[]
 }
 
-export function serialize(state: GameState): string {
-  return JSON.stringify({ version: SAVE_VERSION, state })
+// savedAt: epoch milliseconds. The caller gives the time, so the sim reads no clock.
+export function serialize(state: GameState, savedAt: number): string {
+  return JSON.stringify({ version: SAVE_VERSION, savedAt, state })
 }
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 
-export function deserialize(
+const CURRENT: SaveFormat = {
+  version: SAVE_VERSION,
+  minVersion: MIN_SAVE_VERSION,
+  migrations: MIGRATIONS,
+}
+
+export const deserialize = (text: string, format: SaveFormat = CURRENT): GameState =>
+  readSave(text, format).state
+
+// savedAt is null when the save has no valid time.
+export function readSave(
   text: string,
-  format: SaveFormat = {
-    version: SAVE_VERSION,
-    minVersion: MIN_SAVE_VERSION,
-    migrations: MIGRATIONS,
-  },
-): GameState {
+  format: SaveFormat = CURRENT,
+): { state: GameState; savedAt: number | null } {
   let data: unknown
   try {
     data = JSON.parse(text)
@@ -145,5 +154,10 @@ export function deserialize(
   }
   // Floor, so a save with fractions loads as whole CC and the rounding never gives money.
   const { money, invested } = result.data
-  return { ...result.data, money: roundIncome(money), invested: roundIncome(invested) }
+  const { savedAt } = data
+  return {
+    state: { ...result.data, money: roundIncome(money), invested: roundIncome(invested) },
+    savedAt:
+      typeof savedAt === 'number' && Number.isFinite(savedAt) && savedAt >= 0 ? savedAt : null,
+  }
 }

@@ -47,7 +47,7 @@ export const useSavePanelStore = defineStore('savePanel', () => {
     message.value = null
     try {
       // serialize only reads the state, so the cast of the readonly snapshot is safe.
-      await writeSlot(slot, serialize(game.state as GameState))
+      await writeSlot(slot, serialize(game.state as GameState, Date.now()))
     } catch (error) {
       message.value = { key: 'saveFailed', reason: errorMessage(error) }
       return

@@ -28,13 +28,14 @@ export const useStartScreenStore = defineStore('startScreen', () => {
   let starting = false
   // A new game over the confirmed save becomes the autosave, so the next launch does not offer the lost game.
   // Without a readable save the monthly autosave writes it, so an unreadable or newer save stays.
-  async function play(): Promise<GameState | null> {
-    const state = preview.value
+  // chosen: a save from the save list. It starts as it is, like the offered save.
+  async function play(chosen?: GameState): Promise<GameState | null> {
+    const state = chosen ?? preview.value
     if (state === null || starting) return null
     starting = true
-    if (welcome.value || save.value === null) return state
+    if (chosen || welcome.value || save.value === null) return state
     try {
-      await writeSlot('autosave', serialize(state))
+      await writeSlot('autosave', serialize(state, Date.now()))
     } catch (error) {
       console.error('Autosave of the new game failed', error)
     }

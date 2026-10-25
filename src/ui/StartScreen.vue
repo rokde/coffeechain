@@ -1,15 +1,25 @@
 <script setup lang="ts">
 import { computed, nextTick, useTemplateRef } from 'vue'
+import { useSaveListStore } from '../app/saveList'
 import { useStartScreenStore } from '../app/startScreen'
 import type { GameState } from '../sim/state'
 import { islandFacts } from '../sim/world/facts'
+import { ago } from './ago'
 import { formatDate } from './date'
 import de from './i18n/de.json'
 import { formatMoney } from './money'
+import SaveList from './SaveList.vue'
 
 const emit = defineEmits<{ play: [state: GameState] }>()
 const t = de.startScreen
 const screen = useStartScreenStore()
+const list = useSaveListStore()
+const lastPlayed = computed(() => {
+  const entry = list.entries.autosave
+  return typeof entry === 'object' && entry.savedAt !== null
+    ? t.lastPlayed.replace('{ago}', ago(entry.savedAt, Date.now()))
+    : null
+})
 const zoneIds = ['tiefland', 'hochland', 'hochlandKuehl'] as const
 const facts = computed(() => (screen.preview ? islandFacts(screen.preview.world) : null))
 const hut = computed(() => {
@@ -81,6 +91,7 @@ async function back() {
             ·
             <span data-testid="start-save-money">{{ formatMoney(screen.save.money) }}</span>
           </p>
+          <p v-if="lastPlayed" class="facts" data-testid="start-last-played">{{ lastPlayed }}</p>
         </section>
         <div
           class="actions"
@@ -192,6 +203,7 @@ async function back() {
         </div>
       </form>
     </main>
+    <SaveList @play="(state) => emit('play', state)" />
   </div>
 </template>
 

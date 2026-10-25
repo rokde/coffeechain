@@ -85,7 +85,7 @@ describe('save slots (S42)', () => {
   })
 
   it('AC-4: puts a valid save into sessionStorage and reloads', async () => {
-    const text = serialize(createState(7))
+    const text = serialize(createState(7), 0)
     await writeSlot('slot-1', text)
     await loadSlot('slot-1')
     expect(session.getItem(PENDING)).toBe(text)
@@ -94,7 +94,7 @@ describe('save slots (S42)', () => {
 
   it('AC-5: the store starts with the pending save and removes the key', async () => {
     const state = { ...createState(7), money: 12300 }
-    session.setItem(PENDING, serialize(state))
+    session.setItem(PENDING, serialize(state, 0))
     setStartState((await startState(location.search)).state)
     const store = useGameStore()
     expect(store.state.world.seed).toBe(7)
