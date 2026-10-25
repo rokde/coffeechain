@@ -56,7 +56,7 @@ const items = (html: string) =>
   [...html.matchAll(/data-testid="message"[^>]*>([^<]*)</g)].map((m) => m[1])
 
 describe('MessagePanel (S18b)', () => {
-  it('AC-4 (S59): with no message the panel is not in the DOM, with one warning it is', async () => {
+  it('AC-4 (S59): with no message the panel is not in the DOM, with one message it is', async () => {
     const pinia = createPinia()
     useFirstStepsStore(pinia).open = false
     const html = await renderToString(createSSRApp(Hud).use(pinia))
@@ -64,15 +64,9 @@ describe('MessagePanel (S18b)', () => {
     expect(left).toContain('data-testid="field-list"')
     expect(left).not.toContain('message-panel')
     expect(left).not.toContain('Keine Meldungen')
-    const game = useGameStore(pinia)
-    const state = game.state as GameState
-    game.replace({
-      ...state,
-      events: [{ type: 'frost', announcedDay: 1, startDay: 3, endDay: 5 }],
-    })
-    const warned = await renderToString(createSSRApp(MessagePanel).use(pinia))
-    expect(warned).toContain('data-testid="message-panel"')
-    expect(items(warned)).toHaveLength(1)
+    const full = await render(0, undefined, balance().storage.startCapacity)
+    expect(full).toContain('data-testid="message-panel"')
+    expect(items(full)).toHaveLength(1)
   })
 
   it('round 1 (S59): ripe, overripe and uncared fields give no message', async () => {

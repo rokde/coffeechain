@@ -8,7 +8,6 @@ const num = z.number()
 const int = z.number().int()
 const range = z.tuple([num, num])
 const zone = z.enum(['tiefland', 'hochland', 'hochlandKuehl', 'vulkan'])
-const numMap = z.record(z.string(), num)
 
 const variety = z.object({
   zone: val(zone),
@@ -19,8 +18,6 @@ const variety = z.object({
   careCost: val(z.object({ fertilizer: num, irrigation: num, pestControl: num })),
   unlockCapital: val(num),
 })
-
-const timedEvent = z.object({ durationDays: range, everyDays: int })
 
 export const balanceSchema = z.object({
   time: z.object({
@@ -110,24 +107,6 @@ export const balanceSchema = z.object({
     minQuality: val(z.tuple([int, int])),
     priceFactor: val(range),
     deadlineDays: val(z.tuple([int, int])),
-  }),
-  events: z.object({
-    maxConcurrent: val(int),
-    maxEffect: val(num),
-    maxDurationDays: val(int),
-    warningDays: val(int),
-    graceDaysAtStart: val(int),
-    researchMaxCount: val(int),
-    types: val(
-      z.object({
-        frost: timedEvent.extend({ yield: numMap, price: numMap }),
-        monsoon: timedEvent.extend({ cycleTime: numMap, price: numMap }),
-        boom: timedEvent.extend({ priceAll: num }),
-        crisis: timedEvent.extend({ priceAll: num }),
-        pests: timedEvent.extend({ yieldAffected: range }),
-        research: z.object({ yieldBonus: num, permanent: z.boolean(), everyDays: int }),
-      }),
-    ),
   }),
   progression: z.object({
     phases: val(z.array(z.object({ id: int, fromCapital: num }))),

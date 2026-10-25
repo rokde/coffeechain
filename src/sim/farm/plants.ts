@@ -22,8 +22,6 @@ export interface PlantState {
   pendingUnits?: number
   // Overripe factor at the time pendingUnits was set. Missing means 1.
   overripeFactor?: number
-  // Game hours that events added to the growth time. Missing means 0.
-  growthDelayHours?: number
 }
 
 export type Stage = keyof Balance['farm']['visualStages'] | 'reif'
@@ -77,11 +75,9 @@ export function quotePlant(state: GameState, variety: Variety, count: number): n
 }
 
 export const ripeHour = (plant: PlantState, cfg: Balance = balance()): number =>
-  plant.plantedHour +
-  (plant.growthDelayHours ?? 0) +
-  cfg.varieties[plant.variety].cycleDays * cfg.time.ticksPerGameDay
+  plant.plantedHour + cfg.varieties[plant.variety].cycleDays * cfg.time.ticksPerGameDay
 
-// Growth comes from the game hours since planting and the event delay, so it needs no per-tick state.
+// Growth comes from the game hours since planting, so it needs no per-tick state.
 export function growth(
   plant: PlantState,
   hour: number,

@@ -149,25 +149,6 @@
     "deadlineDays": { "v": [5, 10], "src": "NEU" }
   },
 
-  "events": {
-    "maxConcurrent": { "v": 2, "src": "GDD 11.8" },
-    "maxEffect": { "v": 0.3, "src": "GDD 11.8" },
-    "maxDurationDays": { "v": 7, "src": "GDD 11.8" },
-    "warningDays": { "v": 1, "src": "GDD 11.8" },
-    "graceDaysAtStart": { "v": 5, "src": "NEU" },
-    "researchMaxCount": { "v": 1, "src": "NEU" },
-    "types": {
-      "v": {
-        "frost": { "yield": { "hochland": -0.3, "hochlandKuehl": -0.3 }, "price": { "arabicaStandard": 0.2, "arabicaPremium": 0.2 }, "durationDays": [3, 5], "everyDays": 14 },
-        "monsoon": { "cycleTime": { "tiefland": 0.5 }, "price": { "robusta": 0.15 }, "durationDays": [5, 7], "everyDays": 21 },
-        "boom": { "priceAll": 0.15, "durationDays": [3, 3], "everyDays": 14 },
-        "crisis": { "priceAll": -0.15, "durationDays": [3, 3], "everyDays": 21 },
-        "pests": { "yieldAffected": [-0.3, -0.2], "durationDays": [2, 4], "everyDays": 28 },
-        "research": { "yieldBonus": 0.1, "permanent": true, "everyDays": 42 }
-      },
-      "src": "GDD 11.8 (Schädlinge auf -30 % begrenzt: PRD)"
-    }
-  },
 
   "progression": {
     "phases": {

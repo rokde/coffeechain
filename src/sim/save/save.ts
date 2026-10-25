@@ -5,7 +5,7 @@ import { gameStateSchema } from './schema'
 // When a slice adds a state field: increase SAVE_VERSION by one and append one migration
 // to MIGRATIONS that fills the default value. Migration i turns version i + 1 into i + 2.
 // Never edit an old migration.
-export const SAVE_VERSION = 8
+export const SAVE_VERSION = 9
 
 export type Migration = (state: Record<string, unknown>) => Record<string, unknown>
 
@@ -25,6 +25,22 @@ export const MIGRATIONS: Migration[] = [
   (state) => ({ ...state, orders: { open: [], nextId: 0 } }),
   // 7 -> 8: S57 books whole CC only. deserialize floors money and invested on every load.
   (state) => state,
+  // 8 -> 9: #8 removes the events, the research breakthroughs and the growth delay.
+  (state) => {
+    const next = { ...state }
+    delete next.events
+    delete next.research
+    const farm = next.farm as { plants?: Record<string, Record<string, unknown>> } | undefined
+    if (!farm?.plants) return next
+    const plants = Object.fromEntries(
+      Object.entries(farm.plants).map(([k, plant]) => {
+        const copy = { ...plant }
+        delete copy.growthDelayHours
+        return [k, copy]
+      }),
+    )
+    return { ...next, farm: { ...farm, plants } }
+  },
 ]
 
 export interface SaveFormat {
