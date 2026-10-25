@@ -1,6 +1,6 @@
 import { createPinia } from 'pinia'
 import { Group, Vector2, Vector3, type Camera, type Material, type Mesh, type Scene } from 'three'
-import { createApp, watch } from 'vue'
+import { createApp, nextTick, watch } from 'vue'
 import raw from '../config/balance.json'
 import { loadBalance } from '../config/balance.schema'
 import { installAutosave } from './app/autosave'
@@ -16,6 +16,7 @@ import { installToolKeys } from './app/toolKeys'
 import { skipResume, startState } from './app/resume'
 import { setStartState, useGameStore } from './app/store'
 import { useStartScreenStore } from './app/startScreen'
+import { useSaveListStore } from './app/saveList'
 import { useViewStore } from './app/view'
 import {
   CAMERA,
@@ -137,21 +138,32 @@ function showStartScreen(stage: Stage, save: GameState | null) {
       .catch((error: unknown) => console.error('Props did not load:', error))
     aim()
   }
-  // Fits the whole island into the screen part that the panel leaves free: right of it, or above it.
+  // Fits the whole island into the screen part that the panel and the save list leave free.
   const aim = () => {
     if (!preview) return
     const w = window.innerWidth
     const h = window.innerHeight
-    const panel = document
-      .querySelector('[data-testid="start-screen"] main')
-      ?.getBoundingClientRect()
-    const free = { left: 0, top: 0, width: w, height: h }
-    if (panel && panel.width > w * 0.6) free.height = panel.top
-    else if (panel) free.left = panel.right
-    free.width = w - free.left
+    let free = { left: 0, top: 0, right: w, bottom: h }
+    const boxes = document.querySelectorAll('[data-testid="start-screen"] :is(main, aside)')
+    for (const box of boxes) {
+      const r = box.getBoundingClientRect()
+      if (r.right <= free.left || r.left >= free.right || r.bottom <= free.top) continue
+      if (r.top >= free.bottom) continue
+      // Cut the free part on the side of the box that keeps the largest area.
+      const cuts = [
+        { ...free, left: Math.max(free.left, r.right) },
+        { ...free, right: Math.min(free.right, r.left) },
+        { ...free, top: Math.max(free.top, r.bottom) },
+        { ...free, bottom: Math.min(free.bottom, r.top) },
+      ]
+      const area = (f: typeof free) => Math.max(0, f.right - f.left) * Math.max(0, f.bottom - f.top)
+      free = cuts.reduce((a, b) => (area(b) > area(a) ? b : a))
+    }
+    const width = free.right - free.left
+    const height = free.bottom - free.top
     // A margin keeps the coast off the screen edge and the panel edge.
-    const fx = (0.9 * free.width) / w
-    const fy = (0.9 * free.height) / h
+    const fx = (0.9 * width) / w
+    const fy = (0.9 * height) / h
     const { target, zoom } = islandView(preview.world, w / h, {
       left: -fx,
       right: fx,
@@ -165,8 +177,8 @@ function showStartScreen(stage: Stage, save: GameState | null) {
     view.camera.setViewOffset(
       w,
       h,
-      w / 2 - (free.left + free.width / 2),
-      h / 2 - free.height / 2,
+      w / 2 - (free.left + width / 2),
+      h / 2 - (free.top + height / 2),
       w,
       h,
     )
@@ -176,6 +188,10 @@ function showStartScreen(stage: Stage, save: GameState | null) {
   const pinia = createPinia()
   const screen = useStartScreenStore(pinia)
   screen.save = save
+  // The save list changes the free screen part, so aim again after it shows.
+  void useSaveListStore(pinia)
+    .refresh()
+    .then(() => nextTick(aim))
   // After the DOM update, so that aim reads the new panel size.
   const stop = watch(
     () => screen.preview,

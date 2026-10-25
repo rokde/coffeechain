@@ -60,6 +60,6 @@ describe('storageCapacity (S45)', () => {
       /phase 2/,
     )
     expect(one).toEqual(before)
-    expect(storageCapacity(deserialize(serialize(one)))).toBe(250)
+    expect(storageCapacity(deserialize(serialize(one, 0)))).toBe(250)
   })
 })

@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { invoke, isTauri } from '@tauri-apps/api/core'
-import { deserialize, serialize } from '../sim/save/save'
+import { deserialize, readSave, serialize } from '../sim/save/save'
 import { createState } from '../sim/state'
 import { useStartScreenStore } from './startScreen'
 
@@ -104,7 +104,7 @@ describe('start screen store (#3)', () => {
 
   it('AC-3: with a save it offers the save, and the play gives the save unchanged', async () => {
     const screen = useStartScreenStore()
-    const save = deserialize(serialize(saved()))
+    const save = deserialize(serialize(saved(), 0))
     screen.save = save
     expect(screen.welcome).toBe(true)
     expect(screen.preview).toBe(save)
@@ -113,7 +113,7 @@ describe('start screen store (#3)', () => {
   })
 
   it('AC-4: a confirmed new game shows the seed world and then replaces the autosave', async () => {
-    local.set(AUTOSAVE, serialize(saved()))
+    local.set(AUTOSAVE, serialize(saved(), 0))
     const screen = useStartScreenStore()
     screen.save = saved()
     screen.confirmNewGame = true
@@ -128,5 +128,25 @@ describe('start screen store (#3)', () => {
     const state = await screen.play()
     expect(state?.world.seed).toBe(48213)
     expect(deserialize(local.get(AUTOSAVE)!).world.seed).toBe(48213)
+  })
+
+  it('#3 AC-2: a new game over the autosave writes savedAt from the clock', async () => {
+    vi.useFakeTimers({ toFake: ['Date'], now: 1_700_000_000_000 })
+    const screen = useStartScreenStore()
+    screen.save = saved()
+    screen.newGame = true
+    screen.seedText = '48213'
+    await screen.play()
+    vi.useRealTimers()
+    expect(readSave(local.get(AUTOSAVE)!).savedAt).toBe(1_700_000_000_000)
+  })
+
+  it('#3 AC-5: play with a chosen save gives that save once and writes nothing', async () => {
+    const screen = useStartScreenStore()
+    const chosen = createState(9)
+    const [first, second] = await Promise.all([screen.play(chosen), screen.play(chosen)])
+    expect(first).toBe(chosen)
+    expect(second).toBeNull()
+    expect(local.size).toBe(0)
   })
 })

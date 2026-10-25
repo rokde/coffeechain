@@ -34,7 +34,7 @@ describe('Build (S44)', () => {
     const next = build(state, 'processing', a)
     expect(next.buildings[index(state, a)]).toEqual({ kind: 'processing' })
     expect(next.money).toBe(state.money - balance().processing.washed.buildCost * 100)
-    expect(deserialize(serialize(next))).toEqual(next)
+    expect(deserialize(serialize(next, 0))).toEqual(next)
   })
 
   it('AC-2: throws on a bad parcel and leaves the state unchanged', () => {

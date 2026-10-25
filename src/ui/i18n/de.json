@@ -361,7 +361,10 @@
     "welcome": "Willkommen zurück",
     "continue": "Weiterspielen",
     "newGame": "Neues Spiel",
-    "back": "Zurück zum Spielstand"
+    "back": "Zurück zum Spielstand",
+    "saves": "Spielstände",
+    "lastPlayed": "Zuletzt gespielt {ago}",
+    "justNow": "gerade eben"
   },
   "savePanel": {
     "open": "Spielstand",

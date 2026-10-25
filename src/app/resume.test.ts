@@ -35,7 +35,7 @@ const saved = () => {
 
 describe('startState (S43b)', () => {
   it('AC-1: returns the autosave state without ?seed=', async () => {
-    local.set(AUTOSAVE, serialize(saved()))
+    local.set(AUTOSAVE, serialize(saved(), 0))
     const { state, menu } = await startState('')
     expect(state).toEqual(saved())
     expect(state?.world.seed).toBe(7)
@@ -43,12 +43,12 @@ describe('startState (S43b)', () => {
   })
 
   it('AC-1: ignores other query parameters', async () => {
-    local.set(AUTOSAVE, serialize(saved()))
+    local.set(AUTOSAVE, serialize(saved(), 0))
     expect(await startState('?seed=x')).toEqual({ state: saved(), menu: true })
   })
 
   it('#3 AC-5: ?debug=models skips the start screen', async () => {
-    local.set(AUTOSAVE, serialize(saved()))
+    local.set(AUTOSAVE, serialize(saved(), 0))
     expect(await startState('?debug=models&seed=x')).toEqual({ state: saved(), menu: false })
   })
 
@@ -71,7 +71,7 @@ describe('startState (S43b)', () => {
     local.set(AUTOSAVE, JSON.stringify({ version: 10, state: saved() }))
     expect((await startState('')).state).toBeNull()
     expect(pendingLoadError()).toMatch(/unknown or old version/)
-    local.set(AUTOSAVE, serialize(saved()))
+    local.set(AUTOSAVE, serialize(saved(), 0))
     expect((await startState('')).state).toEqual(saved())
     expect(pendingLoadError()).toBeNull()
   })
@@ -80,7 +80,7 @@ describe('startState (S43b)', () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const state = saved()
     const world = { ...state.world, parcels: state.world.parcels.slice(0, 10) }
-    local.set(AUTOSAVE, serialize({ ...state, world }))
+    local.set(AUTOSAVE, serialize({ ...state, world }, 0))
     expect((await startState('')).state).toBeNull()
     expect(String(error.mock.calls[0]?.[1])).toMatch(/Parcel count does not match size/)
   })
@@ -90,14 +90,14 @@ describe('startState (S43b)', () => {
     async (path) => {
       const error = vi.spyOn(console, 'error').mockImplementation(() => {})
       const state = saved()
-      local.set(AUTOSAVE, serialize({ ...state, props: { ...state.props, path } }))
+      local.set(AUTOSAVE, serialize({ ...state, props: { ...state.props, path } }, 0))
       expect((await startState('')).state).toBeNull()
       expect(String(error.mock.calls[0]?.[1])).toMatch(/path/)
     },
   )
 
   it('a failed start skips the autosave for the next start only', async () => {
-    local.set(AUTOSAVE, serialize(saved()))
+    local.set(AUTOSAVE, serialize(saved(), 0))
     skipResume()
     expect(location.replace).toHaveBeenCalledExactlyOnceWith('/')
     expect(await startState('')).toEqual({ state: null, menu: true })
@@ -115,22 +115,22 @@ describe('startState (S43b)', () => {
   })
 
   it('AC-2: a pending load wins over the autosave', async () => {
-    local.set(AUTOSAVE, serialize(saved()))
+    local.set(AUTOSAVE, serialize(saved(), 0))
     const pending = { ...createState(9), money: 100 }
-    session.set(PENDING, serialize(pending))
+    session.set(PENDING, serialize(pending, 0))
     expect(await startState('')).toEqual({ state: pending, menu: false })
     expect(session.has(PENDING)).toBe(false)
   })
 
   it('AC-2: with ?seed=7 it returns null and does not read the slot', async () => {
-    local.set(AUTOSAVE, serialize(saved()))
+    local.set(AUTOSAVE, serialize(saved(), 0))
     expect(await startState('?seed=7')).toEqual({ state: null, menu: false })
     expect(getItem).not.toHaveBeenCalled()
   })
 
   it('AC-2: an invalid pending load falls back to the autosave', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
-    local.set(AUTOSAVE, serialize(saved()))
+    local.set(AUTOSAVE, serialize(saved(), 0))
     session.set(PENDING, '{broken')
     expect((await startState('')).state).toEqual(saved())
   })

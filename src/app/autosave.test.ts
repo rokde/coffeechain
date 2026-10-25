@@ -2,7 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { balance } from '../sim/balance'
-import { deserialize } from '../sim/save/save'
+import { deserialize, readSave } from '../sim/save/save'
 import type { GameState } from '../sim/state'
 import { calendar } from '../sim/time/time'
 import { installAutosave } from './autosave'
@@ -54,6 +54,15 @@ describe('installAutosave (S43, #27)', () => {
     await setDay(store, month() * 3)
     expect(writeSlot).toHaveBeenCalledOnce()
     expect(calendar(deserialize(vi.mocked(writeSlot).mock.calls[0]![1]).time.day).month).toBe(4)
+  })
+
+  it('#3 AC-2: the autosave writes savedAt from the clock', async () => {
+    vi.useFakeTimers({ toFake: ['Date'], now: 1_700_000_000_000 })
+    const store = useGameStore()
+    installAutosave(store)
+    await setDay(store, month())
+    vi.useRealTimers()
+    expect(readSave(vi.mocked(writeSlot).mock.calls[0]![1]).savedAt).toBe(1_700_000_000_000)
   })
 
   it('logs a failed write and continues', async () => {

@@ -16,8 +16,8 @@ export function installAutosave(store: ReturnType<typeof useGameStore>) {
       lastMonth = month
       if (!newMonth) return
       // serialize only reads the state, so the cast of the readonly snapshot is safe.
-      writeSlot('autosave', serialize(store.state as GameState)).catch((error: unknown) =>
-        console.error('Autosave failed', error),
+      writeSlot('autosave', serialize(store.state as GameState, Date.now())).catch(
+        (error: unknown) => console.error('Autosave failed', error),
       )
     },
   )
