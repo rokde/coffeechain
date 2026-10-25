@@ -5,7 +5,7 @@ import { marketPrice } from '../market/market'
 import { createState, type GameState } from '../state'
 import type { Batch } from '../storage/storage'
 
-const day = balance().time.ticksPerGameDay
+const day = balance().processing.washed.durationDays
 
 // A farm with a processing building, 10 raw Arabica Standard units and 1,000 CC.
 function processingState(batches: Batch[] = []): GameState {
@@ -33,7 +33,7 @@ describe('Process (S46)', () => {
     expect(raw(next)).toBe(0)
     expect(washed(next)).toBe(10)
     expect(next.storage.batches).toEqual([
-      { variety: 'arabicaStandard', units: 10, quality: 90, washed: true, readyHour: day },
+      { variety: 'arabicaStandard', units: 10, quality: 90, washed: true, readyDay: day },
     ])
     const market = { volumes: [], seeds: {} }
     expect(marketPrice(market, { kind: 'washed', variety: 'arabicaStandard' }, 1)).toBeCloseTo(1.5)
@@ -45,8 +45,8 @@ describe('Process (S46)', () => {
     const next = dispatch(state, { type: 'Process', variety: 'arabicaStandard', units: 15 })
     expect(next.storage.batches).toEqual([
       { variety: 'arabicaStandard', units: 5, quality: 100 },
-      { variety: 'arabicaStandard', units: 10, quality: 90, washed: true, readyHour: day },
-      { variety: 'arabicaStandard', units: 5, quality: 100, washed: true, readyHour: day },
+      { variety: 'arabicaStandard', units: 10, quality: 90, washed: true, readyDay: day },
+      { variety: 'arabicaStandard', units: 5, quality: 100, washed: true, readyDay: day },
     ])
   })
 
@@ -81,7 +81,7 @@ describe('Process (S46)', () => {
       variety: 'arabicaStandard',
       units: 5,
     })
-    const later = { ...first, time: { ...first.time, hour: day } }
+    const later = { ...first, time: { ...first.time, day } }
     const next = dispatch(later, { type: 'Process', variety: 'arabicaStandard', units: 5 })
     expect(washed(next)).toBe(10)
   })

@@ -14,7 +14,6 @@ export const tools: Tool[] = [
   { id: 'plant', label: de.tools.plant, key: 'L' },
   { id: 'fertilize', label: de.tools.fertilize, key: 'G' },
   { id: 'irrigate', label: de.tools.irrigate, key: 'R' },
-  { id: 'protect', label: de.tools.protect, key: 'T' },
   { id: 'harvest', label: de.tools.harvest, key: 'N' },
   { id: 'build', label: de.tools.build, key: 'B' },
   { id: 'market', label: de.tools.market, key: 'M' },

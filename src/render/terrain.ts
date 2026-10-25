@@ -8,7 +8,6 @@ export const ZONE_COLORS: Record<Zone, number> = {
   tiefland: 0x8fb05a,
   hochland: 0x6a8f45,
   hochlandKuehl: 0x8c9a80,
-  vulkan: 0x4e3f3a,
 }
 
 // One quad per parcel with its own 4 corners. A corner gets the mean height of the parcels that touch it.

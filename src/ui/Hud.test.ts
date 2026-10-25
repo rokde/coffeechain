@@ -124,7 +124,7 @@ describe('Hud left panel (S59)', () => {
         ...state.farm,
         parcels: { 0: 0 },
         fields: [{ id: 0, name: 'A' }],
-        plants: { 0: { variety: 'robusta', plantedHour: 0, fertilized: true } },
+        plants: { 0: { variety: 'robusta', plantedDay: 0, fertilized: true } },
       },
       market: {
         ...state.market,
@@ -153,15 +153,15 @@ describe('Hud overlay toggles (S60)', () => {
   const tag = (html: string, id: string) =>
     toolbar(html).match(new RegExp(`<button[^>]*data-testid="${id}"[^>]*>`))![0]
 
-  it('AC-1: the toolbar holds a labelled group with both toggles after the nine tools', async () => {
+  it('AC-1: the toolbar holds a labelled group with both toggles after the eight tools', async () => {
     const html = await render()
     expect(html).not.toContain('role="switch"')
     const nav = toolbar(html)
     const group = nav.split('role="group"')[1]!
     expect(nav).toMatch(/<div[^>]*role="group"[^>]*aria-label="Karten-Overlays"/)
     const ids = [...nav.matchAll(/data-testid="((?:tool|overlay)-[^"]+)"/g)].map((m) => m[1])
-    expect(ids.slice(0, 9).every((id) => id!.startsWith('tool-'))).toBe(true)
-    expect(ids.slice(9)).toEqual(['overlay-soil', 'overlay-zone'])
+    expect(ids.slice(0, 8).every((id) => id!.startsWith('tool-'))).toBe(true)
+    expect(ids.slice(8)).toEqual(['overlay-soil', 'overlay-zone'])
     expect(group).toContain('data-testid="overlay-soil"')
     expect(group).toContain('data-testid="overlay-zone"')
     for (const [id, label, title, key] of [
@@ -199,4 +199,45 @@ describe('Hud overlay toggles (S60)', () => {
     expect(html).toContain('data-testid="overlay-legend"')
     expect(html).not.toContain('Dunkler Boden')
   })
+})
+
+describe('Hud clock (#27)', () => {
+  it.each([
+    [0, '1. Januar, Jahr 1'],
+    [431, '12. März, Jahr 2'],
+  ])('AC-1: day %i shows "%s" and no hour', async (day, text) => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const game = useGameStore(pinia)
+    const state = game.state as GameState
+    game.replace({ ...state, time: { ...state.time, day } })
+    const html = await renderToString(createSSRApp(Hud).use(pinia))
+    const clock = html.split('data-testid="clock"')[1]!.split('<div')[0]!
+    const shown = clock
+      .replace(/^[^>]*>/, '')
+      .replace(/<[^>]*>/g, '')
+      .trim()
+    expect(shown).toBe(text)
+    expect(shown).not.toMatch(/Uhr|\d+:\d+/)
+  })
+})
+
+describe('Hud time unit (085)', () => {
+  it.each([
+    ['months', 'Monate'],
+    ['weeks', 'Wochen'],
+  ] as const)(
+    'AC-4: shows the unit for the %s stage beside the speed buttons',
+    async (stage, text) => {
+      const pinia = createPinia()
+      setActivePinia(pinia)
+      const game = useGameStore(pinia)
+      const state = game.state as GameState
+      game.replace({ ...state, time: { ...state.time, stage } })
+      const html = await renderToString(createSSRApp(Hud).use(pinia))
+      const time = html.split('class="time"')[1]!.split('class="stats"')[0]!
+      expect(time.indexOf('class="speeds"')).toBeLessThan(time.indexOf('data-testid="time-unit"'))
+      expect(time.match(/data-testid="time-unit"[^>]*>([^<]*)</)![1]).toBe(text)
+    },
+  )
 })

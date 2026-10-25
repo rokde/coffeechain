@@ -1,20 +1,21 @@
 import { expect, test, type Page } from '@playwright/test'
+import de from '../src/ui/i18n/de.json' with { type: 'json' }
 
-const shotDays = [10, 20, 30]
+const shotMonths = [10, 20, 30]
 const parcels = [
   { x: 607, y: 357 },
   { x: 758, y: 417 },
 ]
 
-test('S55: a fixed-seed farm plays from day 1 to day 30', async ({ page }) => {
-  test.setTimeout(180_000)
+test('S55: a fixed-seed farm plays from month 1 to month 30', async ({ page }) => {
+  test.setTimeout(600_000)
   const errors: string[] = []
   page.on('console', (msg) => {
     if (msg.type() === 'error') errors.push(msg.text())
   })
   page.on('pageerror', (error) => errors.push(error.message))
 
-  // The fake clock lets the test jump over the game days.
+  // The fake clock lets the test jump over the game months.
   await page.clock.install()
   await page.goto('/?seed=48213')
   const money = page.getByTestId('money')
@@ -28,10 +29,10 @@ test('S55: a fixed-seed farm plays from day 1 to day 30', async ({ page }) => {
     Number.parseFloat(((await money.textContent()) ?? '').replace(/\./g, '').replace(',', '.'))
   const storedUnits = async () =>
     Number(/^Lager (\d+) /.exec((await storage.textContent()) ?? '')?.[1])
-  const shot = async (day: number, name = day) => {
+  const shot = async (month: number, name = month) => {
     await page.getByTestId('speed-0').click()
     await tool('select')
-    await expect(page.getByTestId('clock')).toContainText(`Tag ${day} ·`)
+    await expect.poll(() => readMonth(page)).toBe(month)
     await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
     await page.screenshot({ path: `docs/progress/run30-day${String(name).padStart(2, '0')}.png` })
   }
@@ -60,12 +61,12 @@ test('S55: a fixed-seed farm plays from day 1 to day 30', async ({ page }) => {
   await shot(1)
 
   let sales = 0
-  let day = 1
-  while (day < 30) {
+  let month = 1
+  while (month < 30) {
     await page.getByTestId('speed-4').click()
     await page.clock.fastForward(60_000)
     await page.getByTestId('speed-0').click()
-    day = await readDay(page)
+    month = await readMonth(page)
 
     await tool('harvest')
     await clickParcels()
@@ -77,16 +78,18 @@ test('S55: a fixed-seed farm plays from day 1 to day 30', async ({ page }) => {
       sales++
     }
     await care()
-    // A jump never skips a shot day silently: the shot waits for the first day at or after it.
-    if (day >= (shotDays[0] ?? Infinity)) await shot(day, shotDays.shift()!)
+    // A jump never skips a shot month silently: the shot waits for the first month at or after it.
+    if (month >= (shotMonths[0] ?? Infinity)) await shot(month, shotMonths.shift()!)
   }
 
-  expect(shotDays, 'all shot days were taken').toEqual([])
-  expect(sales, 'no harvest reached storage in 30 days').toBeGreaterThan(0)
+  expect(shotMonths, 'all shot months were taken').toEqual([])
+  expect(sales, 'no harvest reached storage in 30 months').toBeGreaterThan(0)
   expect(errors).toEqual([])
 })
 
-async function readDay(page: Page) {
+// The month count from the start: "1. Februar, Jahr 2" is month 14.
+async function readMonth(page: Page) {
   const text = (await page.getByTestId('clock').textContent()) ?? ''
-  return Number(/Tag (\d+)/.exec(text)?.[1])
+  const [, name, year] = /^\d+\. (\S+), Jahr (\d+)$/.exec(text) ?? []
+  return (Number(year) - 1) * 12 + de.time.months.indexOf(name ?? '') + 1
 }

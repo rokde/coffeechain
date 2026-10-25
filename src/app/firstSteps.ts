@@ -48,7 +48,7 @@ export function firstSteps(
   // Coffee in storage: sell it. Else harvest once a plant is ripe. Else wait for the plants.
   if (storageUsed(state.storage) > 0)
     return { steps, next, target: 'tool-market', hint: 'sellMarket' }
-  if (plants.some((p) => growth(p, state.time.hour).progress >= 1))
+  if (plants.some((p) => growth(p, state.time.day).progress >= 1))
     return { steps, next, target: 'tool-harvest', hint: 'sellHarvest' }
   return { steps, next, target: null, hint: 'sellWait' }
 }

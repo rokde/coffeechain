@@ -98,17 +98,17 @@ describe('selection store, farm tools (S18a)', () => {
   )
   const planted = dispatch(owned, { type: 'Plant', variety: 'robusta', parcels: [young!, done!] })
   const { cycleDays } = balance().varieties.robusta
-  const ripeHour = planted.time.hour + cycleDays * balance().time.ticksPerGameDay
+  const ripeDay = planted.time.day + cycleDays
   // In mixed, the plant on done is ripe. The plant on young is planted later and is not ripe.
-  const later = { ...planted, time: { ...planted.time, hour: ripeHour - 1 } }
+  const later = { ...planted, time: { ...planted.time, day: ripeDay - 1 } }
   const mixed = {
     ...later,
-    time: { ...later.time, hour: ripeHour },
+    time: { ...later.time, day: ripeDay },
     farm: {
       ...later.farm,
       plants: {
         ...later.farm.plants,
-        [young!.y * world.size + young!.x]: { variety: 'robusta' as const, plantedHour: 1 },
+        [young!.y * world.size + young!.x]: { variety: 'robusta' as const, plantedDay: 1 },
       },
     },
   }
@@ -116,7 +116,6 @@ describe('selection store, farm tools (S18a)', () => {
   it.each([
     ['fertilize', 'Fertilize'],
     ['irrigate', 'Irrigate'],
-    ['protect', 'ProtectPests'],
   ] as const)(
     'AC-2: %s adds only owned parcels with an unripe plant without this care',
     (tool, type) => {

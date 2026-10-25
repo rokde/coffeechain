@@ -84,7 +84,7 @@ function tryGenerate(seed: number, balance: Balance): World | undefined {
     return group
   }
 
-  const { startReach, startGuaranteeParcels, volcanoSize } = balance.world
+  const { startReach, startGuaranteeParcels } = balance.world
   const goodLowland = (p: Parcel) =>
     p.zone === 'tiefland' && (p.soilClass === 'gut' || p.soilClass === 'sehrGut')
   const starts = parcels.filter(
@@ -95,20 +95,6 @@ function tryGenerate(seed: number, balance: Balance): World | undefined {
   )
   if (starts.length === 0) return undefined
   const start = starts[Math.floor(random() * starts.length)]!
-
-  // The volcano grows from the land parcel farthest from the start and stays out of the start reach.
-  const volcanoOk = (p: Parcel) => p.zone !== 'wasser' && chebyshev(p, start) > startReach
-  const dist2 = (p: Parcel) => (p.x - start.x) ** 2 + (p.y - start.y) ** 2
-  const core = parcels
-    .filter(volcanoOk)
-    .reduce<Parcel | undefined>(
-      (best, p) => (!best || dist2(p) > dist2(best) ? p : best),
-      undefined,
-    )
-  if (!core) return undefined
-  const volcano = flood(core, volcanoOk, volcanoSize)
-  if (volcano.length < volcanoSize) return undefined
-  for (const p of volcano) p.zone = 'vulkan'
 
   return { seed, size, parcels, start: { x: start.x, y: start.y } }
 }

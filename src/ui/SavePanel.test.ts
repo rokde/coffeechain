@@ -7,9 +7,8 @@ import { useSavePanelStore } from '../app/savePanel'
 import { startState } from '../app/resume'
 import { pendingLoadError } from '../app/saves'
 import { setStartState, useGameStore } from '../app/store'
-import { deserialize, serialize } from '../sim/save/save'
+import { SAVE_VERSION, serialize } from '../sim/save/save'
 import { createState, type GameState } from '../sim/state'
-import { clock } from '../sim/time/time'
 import Hud from './Hud.vue'
 import SavePanel from './SavePanel.vue'
 
@@ -42,7 +41,7 @@ beforeEach(() => {
 
 // main.ts reads the start state before it builds the stores.
 async function start() {
-  setStartState(await startState(location.search))
+  setStartState((await startState(location.search)).state)
   return setup()
 }
 
@@ -83,14 +82,19 @@ describe('SavePanel (S42b)', () => {
     }
   })
 
-  it('AC-2: save writes the current state and shows the game day', async () => {
+  it('AC-2: save writes the current state and shows the game date', async () => {
+    // #3 AC-2: the save writes savedAt from the fake clock.
+    vi.useFakeTimers({ toFake: ['Date'], now: 1_700_000_000_000 })
     const { pinia, game, panel } = setup()
     const state = game.state as GameState
-    game.replace({ ...state, time: { ...state.time, hour: 24 * 4 + 5 }, money: 777 })
+    game.replace({ ...state, time: { ...state.time, day: 431 }, money: 777 })
     await panel.save('slot-2')
-    expect(local.get('coffeechain.save.slot-2')).toBe(serialize(game.state as GameState))
+    vi.useRealTimers()
+    expect(local.get('coffeechain.save.slot-2')).toBe(
+      serialize(game.state as GameState, 1_700_000_000_000),
+    )
     const r = row(await html(pinia), 2)
-    expect(status(r)).toBe('Tag 5')
+    expect(status(r)).toBe('12. März, Jahr 2')
     expect(loadButton(r)).not.toContain('disabled')
     expect(status(row(await html(pinia), 1))).toBe('leer')
 
@@ -100,7 +104,10 @@ describe('SavePanel (S42b)', () => {
   })
 
   it('AC-3: a slot that deserialize rejects shows "ungültig" and cannot load', async () => {
-    local.set('coffeechain.save.slot-3', JSON.stringify({ version: 1, state: { money: 'a lot' } }))
+    local.set(
+      'coffeechain.save.slot-3',
+      JSON.stringify({ version: SAVE_VERSION, state: { money: 'a lot' } }),
+    )
     local.set('coffeechain.save.slot-1', 'not json')
     const { pinia, panel } = setup()
     await panel.refresh()
@@ -140,7 +147,7 @@ describe('SavePanel (S42b)', () => {
 
   it('AC-5: an invalid pending save starts a new game with the dialog open', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
-    session.set(PENDING, JSON.stringify({ version: 1, state: { money: 1 } }))
+    session.set(PENDING, JSON.stringify({ version: SAVE_VERSION, state: { money: 1 } }))
     const { pinia, game, panel } = await start()
     expect(game.state).toEqual(createState(42))
     expect(pendingLoadError()).toMatch(/invalid/)
@@ -148,9 +155,22 @@ describe('SavePanel (S42b)', () => {
     expect(await html(pinia, Hud)).toContain('Der geladene Spielstand ist ungültig.')
   })
 
+  it('AC-3 (#17): an old autosave at start shows the invalid-save message and a new game', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.stubGlobal('location', { search: '', pathname: '/', reload, replace })
+    const old = { ...createState(7), money: 4300 }
+    local.set('coffeechain.save.autosave', JSON.stringify({ version: 10, state: old }))
+    const { pinia, game, panel } = await start()
+    expect(game.state).toEqual(createState(game.state.world.seed))
+    expect(game.state.money).not.toBe(4300)
+    expect(pendingLoadError()).toMatch(/unknown or old version/)
+    expect(panel.open).toBe(true)
+    expect(await html(pinia, Hud)).toContain('Der geladene Spielstand ist ungültig.')
+  })
+
   it.each([
     ['no', null],
-    ['a valid', serialize(createState(7))],
+    ['a valid', serialize(createState(7), 0)],
   ])('AC-5: with %s pending save the dialog is closed at start', async (_, text) => {
     if (text !== null) session.set(PENDING, text)
     const { pinia, panel } = await start()
@@ -159,7 +179,7 @@ describe('SavePanel (S42b)', () => {
     expect(await html(pinia, Hud)).not.toContain('data-testid="save-panel"')
   })
 
-  it('S43 AC-3: the autosave row shows its day and loads, but has no save button', async () => {
+  it('S43 AC-3: the autosave row shows its date and loads, but has no save button', async () => {
     const autosaveRow = (text: string) =>
       text.split('data-testid="save-autosave"')[1]!.split('</li>')[0]!
     const { pinia, game, panel } = setup()
@@ -174,11 +194,11 @@ describe('SavePanel (S42b)', () => {
     const state = game.state as GameState
     local.set(
       'coffeechain.save.autosave',
-      serialize({ ...state, time: { ...state.time, hour: 24 * 2 } }),
+      serialize({ ...state, time: { ...state.time, day: 60 } }, 0),
     )
     await panel.refresh()
     r = autosaveRow(await html(pinia))
-    expect(status(r)).toBe('Tag 3')
+    expect(status(r)).toBe('1. März, Jahr 1')
     expect(loadButton(r)).not.toContain('disabled')
 
     await panel.load('autosave')
@@ -187,7 +207,6 @@ describe('SavePanel (S42b)', () => {
   })
 
   describe('S43b: new game', () => {
-    const AUTOSAVE = 'coffeechain.save.autosave'
     const has = (text: string, id: string) => text.includes(`data-testid="${id}"`)
 
     it('AC-3: the button shows the confirm step, cancel hides it, and both write nothing', async () => {
@@ -220,47 +239,18 @@ describe('SavePanel (S42b)', () => {
       expect(replace).not.toHaveBeenCalled()
     })
 
-    it('AC-3: confirm pauses, writes a day-1 world to the autosave one time, then reloads', async () => {
-      const { game, panel } = setup()
-      const state = game.state as GameState
-      game.replace({ ...state, time: { ...state.time, hour: 24 * 6, speed: 16 } })
+    it('#3: confirm writes nothing and opens the start screen for a new seed', async () => {
+      const { panel } = setup()
       panel.confirmNewGame = true
       const setItem = vi.spyOn(localStorage, 'setItem')
-      await panel.newGame()
-      expect(setItem).toHaveBeenCalledOnce()
-      expect(setItem.mock.calls[0]![0]).toBe(AUTOSAVE)
-      const fresh = deserialize(local.get(AUTOSAVE)!)
-      expect(clock(fresh.time.hour).day).toBe(1)
-      expect(fresh.money).toBe(createState(1).money)
-      expect([...local.keys()]).toEqual([AUTOSAVE])
-      expect(game.state.time.speed).toBe(0)
-      expect(reload).not.toHaveBeenCalled()
-      // The path without ?seed=42, so the start reads the new autosave.
+      panel.newGame()
+      expect(setItem).not.toHaveBeenCalled()
+      expect(local.size).toBe(0)
+      expect(panel.confirmNewGame).toBe(false)
+      expect(session.get('coffeechain.skipResume')).toBe('1')
+      // The path without ?seed=42, so the start screen shows.
       expect(replace).toHaveBeenCalledExactlyOnceWith('/')
-      expect(replace.mock.invocationCallOrder[0]).toBeGreaterThan(
-        setItem.mock.invocationCallOrder[0]!,
-      )
-    })
-
-    it('AC-3: a failed write shows the error and does not reload', async () => {
-      vi.mocked(isTauri).mockReturnValue(true)
-      vi.mocked(invoke).mockRejectedValue('disk full')
-      const { pinia, game, panel } = setup()
-      game.dispatch({ type: 'SetSpeed', speed: 4 })
-      panel.confirmNewGame = true
-      await expect(panel.newGame()).resolves.toBeUndefined()
-      expect(game.state.time.speed).toBe(4)
-      expect(replace).not.toHaveBeenCalled()
-      expect(invoke).toHaveBeenCalledOnce()
-      expect(invoke).toHaveBeenCalledWith('save_write', {
-        slot: 'autosave',
-        text: expect.any(String),
-      })
       expect(reload).not.toHaveBeenCalled()
-      const text = await html(pinia)
-      expect(text).toMatch(
-        /data-testid="save-panel-message"[^>]*>\s*Speichern fehlgeschlagen: disk full/,
-      )
     })
   })
 })

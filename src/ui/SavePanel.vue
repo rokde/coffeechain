@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, useTemplateRef, watch } from 'vue'
 import { slots, useSavePanelStore, type SlotStatus } from '../app/savePanel'
+import { formatDate } from './date'
 import de from './i18n/de.json'
 
 const t = de.savePanel
@@ -11,7 +12,7 @@ onUnmounted(() => (panel.confirmNewGame = false))
 
 function statusText(status: SlotStatus | undefined) {
   if (status === undefined) return ''
-  if (typeof status === 'object') return t.day.replace('{day}', String(status.day))
+  if (typeof status === 'object') return formatDate(status.day)
   return t[status]
 }
 const messageText = computed(() => {
@@ -36,12 +37,6 @@ async function askNewGame(ask: boolean) {
   await nextTick()
   // The cancel button gets the focus, so Enter does not overwrite the game.
   ;(ask ? cancelButton : newGameButton).value?.focus()
-}
-// newGame returns only after a failed write. Then the trigger is back and gets the focus.
-async function startNewGame() {
-  await panel.newGame()
-  await nextTick()
-  newGameButton.value?.focus()
 }
 </script>
 
@@ -119,7 +114,7 @@ async function startNewGame() {
             type="button"
             class="danger"
             data-testid="save-new-game-confirm"
-            @click="startNewGame"
+            @click="panel.newGame()"
           >
             {{ t.newGameYes }}
           </button>

@@ -6,7 +6,7 @@ describe('runBot', () => {
   let first: BotResult | undefined
   const run = () => (first ??= runBot(1, 200))
 
-  // 200 game days with events and research; parallel suite load
+  // 200 game days; parallel suite load
   it('gives one capital per day and grows the farm without debt', () => {
     const a = run()
     expect(a.curve).toHaveLength(200)
@@ -15,7 +15,7 @@ describe('runBot', () => {
     expect(a.curve.at(-1)).toBeGreaterThan(balance().economy.startCapital)
   }, 20000)
 
-  // 200 game days with events and research; parallel suite load
+  // 200 game days; parallel suite load
   it('repeats per seed', () => {
     expect(runBot(1, 200)).toEqual(run())
   }, 20000)

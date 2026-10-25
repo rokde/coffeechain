@@ -8,7 +8,6 @@ import { bankBuyPrice, bankSellPrice, marketPrice, priceHistory, type Good } fro
 
 const cfg = balance()
 const m = cfg.market
-const hoursPerDay = cfg.time.ticksPerGameDay
 const varieties = Object.keys(cfg.varieties) as Variety[]
 
 // Stores two old Robusta batches and one Arabica batch, oldest first.
@@ -28,7 +27,7 @@ function testState(): GameState {
 
 const atDay = (state: GameState, day: number): GameState => ({
   ...state,
-  time: { ...state.time, hour: (day - 1) * hoursPerDay },
+  time: { ...state.time, day },
 })
 
 describe('market', () => {
@@ -73,8 +72,8 @@ describe('market', () => {
       market: {
         seeds: {},
         volumes: [
-          { kind: 'coffee', variety: 'robusta', day: 1, units: 30 },
-          { kind: 'seed', variety: 'robusta', day: 1, units: 20 },
+          { kind: 'coffee', variety: 'robusta', day: 0, units: 30 },
+          { kind: 'seed', variety: 'robusta', day: 0, units: 20 },
         ],
       },
     }
@@ -134,8 +133,8 @@ describe('market', () => {
     }
     state = dispatch(state, { type: 'Sell', variety: 'robusta', units: m.supplyUnitsForMinFactor })
     expect(bankBuyPrice(state, 'robusta')).toBeCloseTo(0.7 * neutral)
-    expect(bankBuyPrice(atDay(state, m.volumeWindowDays), 'robusta')).toBeCloseTo(0.7 * neutral)
-    expect(bankBuyPrice(atDay(state, 1 + m.volumeWindowDays), 'robusta')).toBeCloseTo(neutral)
+    expect(bankBuyPrice(atDay(state, m.volumeWindowDays - 1), 'robusta')).toBeCloseTo(0.7 * neutral)
+    expect(bankBuyPrice(atDay(state, m.volumeWindowDays), 'robusta')).toBeCloseTo(neutral)
   })
 
   it('AC-3: demand raises the seed price to 1.3 × seedCost', () => {
@@ -146,26 +145,45 @@ describe('market', () => {
     expect(bankSellPrice(state, 'robusta')).toBeCloseTo(1.3 * cfg.varieties.robusta.seedCost)
   })
 
-  it('AC-4: priceHistory gives one price per day, and a sale shows for the window days', () => {
-    const day = 20
-    const sold = dispatch(atDay(testState(), day), { type: 'Sell', variety: 'robusta', units: 300 })
+  it('AC-1 (#27): priceHistory gives one price per month, the last day of each past month', () => {
+    const day = 431
+    const good: Good = { kind: 'coffee', variety: 'robusta' }
+    // Volumes on many days make each day's price different.
+    const volumes = Array.from({ length: 450 }, (_, d) => ({ ...good, day: d, units: d % 7 }))
+    const state = atDay({ ...testState(), market: { volumes, seeds: {} } }, day)
+    const history = priceHistory(state, good)
+    expect(history).toHaveLength(12)
+    expect(history[11]).toBe(marketPrice(state.market, good, 431))
+    expect(history[10]).toBe(marketPrice(state.market, good, 419))
+    expect(history[0]).toBe(marketPrice(state.market, good, 119))
+    for (let i = 0; i < 11; i++) {
+      expect(history[i]).toBe(marketPrice(state.market, good, 449 - 30 * (11 - i)))
+    }
+  })
+
+  it('AC-2 (#27): a sale on day 400 lowers only the last two months on day 431', () => {
+    const sold = dispatch(atDay(testState(), 400), { type: 'Sell', variety: 'robusta', units: 300 })
     const good: Good = { kind: 'coffee', variety: 'robusta' }
     const neutral = cfg.varieties.robusta.referencePrice
-    const low = marketPrice(sold.market, good, day)
-    expect(low).toBeLessThan(neutral)
-
-    const later = atDay(sold, day + 5)
-    const history = priceHistory(later, good)
-    expect(history).toHaveLength(m.historyDays)
-    // The last entry is day + 5, so day N has index historyDays − 6.
-    const first = m.historyDays - 6
+    const history = priceHistory(atDay(sold, 431), good)
     history.forEach((price, i) => {
-      const inWindow = i >= first && i < first + m.volumeWindowDays
-      expect(price).toBeCloseTo(inWindow ? low : neutral)
+      if (i >= 10) expect(price).toBeLessThan(neutral)
+      else expect(price).toBeCloseTo(neutral)
     })
   })
 
-  it('AC-5: 1,000 random days keep prices in range and the volumes small', () => {
+  it('AC-3 (#27): a volume stays for 449 days and goes on day 450', () => {
+    const keep = m.historyMonths * cfg.time.daysPerMonth + m.volumeWindowDays
+    expect(keep).toBe(450)
+    const first = dispatch(atDay(testState(), 0), { type: 'Sell', variety: 'robusta', units: 1 })
+    const trade = (day: number) =>
+      dispatch(atDay(first, day), { type: 'Sell', variety: 'arabicaStandard', units: 1 }).market
+        .volumes
+    expect(trade(449).some((v) => v.day === 0)).toBe(true)
+    expect(trade(450).some((v) => v.day === 0)).toBe(false)
+  })
+
+  it('AC-5, AC-3 (#27): 1,000 random days keep prices in range and the volumes small', () => {
     const rand = mulberry32(12345)
     const pick = () => varieties[Math.floor(rand() * varieties.length)]!
     const goods: Good[] = varieties.flatMap((variety) => [
@@ -199,14 +217,14 @@ describe('market', () => {
         expect(price).toBeLessThanOrEqual(m.priceCeiling * ref + 1e-9)
       }
       expect(state.market.volumes.length).toBeLessThanOrEqual(
-        (m.historyDays + m.volumeWindowDays) * goods.length,
+        (m.historyMonths * cfg.time.daysPerMonth + m.volumeWindowDays) * goods.length,
       )
     }
   })
 })
 
 describe('washed coffee (S46)', () => {
-  // 10 washed Arabica Standard units from a Process at hour 0, and 5 raw units.
+  // 10 washed Arabica Standard units from a Process on day 0, and 5 raw units.
   function washedState(): GameState {
     const state = createState(1)
     const raw = { variety: 'arabicaStandard' as const, units: 15, quality: 90 }
@@ -218,17 +236,17 @@ describe('washed coffee (S46)', () => {
   const sell = (units: number, washed?: true) =>
     ({ type: 'Sell', variety: 'arabicaStandard', units, ...(washed && { washed }) }) as const
 
-  it('AC-3: sells washed units only after 24 game hours, at the washed price', () => {
+  it('AC-3: sells washed units only after 30 days, at the washed price', () => {
     const fresh = washedState()
     expect(() => dispatch(fresh, sell(1, true))).toThrow(/Not enough/)
-    const state = { ...fresh, time: { ...fresh.time, hour: 24 } }
+    const state = { ...fresh, time: { ...fresh.time, day: 30 } }
     const price = bankBuyPrice(state, 'arabicaStandard', 10, true)
     expect(price).toBeCloseTo(1.5 * m.bankBuyFactor * (1 - 0.3 * (5 / 300)))
     const next = dispatch(state, sell(10, true))
     expect(next.money).toBe(state.money + Math.floor(10 * price) * 100)
     expect(next.storage.batches).toEqual([{ variety: 'arabicaStandard', units: 5, quality: 90 }])
     expect(next.market.volumes).toEqual([
-      { kind: 'washed', variety: 'arabicaStandard', day: 2, units: 10 },
+      { kind: 'washed', variety: 'arabicaStandard', day: 30, units: 10 },
     ])
     // Washed sales do not lower the raw price.
     expect(bankBuyPrice(next, 'arabicaStandard')).toBeCloseTo(
@@ -237,7 +255,7 @@ describe('washed coffee (S46)', () => {
   })
 
   it('AC-3: a raw sale never takes washed units, a washed sale never takes raw units', () => {
-    const state = { ...washedState(), time: { hour: 24, speed: 1 } }
+    const state = { ...washedState(), time: { day: 30, speed: 1, stage: 'months' as const } }
     expect(() => dispatch(state, sell(6))).toThrow(/Not enough/)
     const rawSold = dispatch(state, sell(5))
     expect(rawSold.storage.batches.every((b) => b.washed)).toBe(true)

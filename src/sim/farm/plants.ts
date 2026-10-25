@@ -14,16 +14,13 @@ export interface Plant {
 
 export interface PlantState {
   variety: Variety
-  plantedHour: number
+  plantedDay: number
   fertilized?: boolean
   irrigated?: boolean
-  pestProtected?: boolean
   // Harvested units that did not fit into the storage.
   pendingUnits?: number
   // Overripe factor at the time pendingUnits was set. Missing means 1.
   overripeFactor?: number
-  // Game hours that events added to the growth time. Missing means 0.
-  growthDelayHours?: number
 }
 
 export type Stage = keyof Balance['farm']['visualStages'] | 'reif'
@@ -45,9 +42,7 @@ export function plant(state: GameState, command: Plant): GameState {
     if (!(index in state.farm.parcels)) throw new Error(`Parcel ${x},${y} is not owned`)
     if (index in plants) throw new Error(`Parcel ${x},${y} already has a plant or is listed twice`)
     if (index in state.buildings) throw new Error(`Parcel ${x},${y} has a building`)
-    if (!canPlant(state, command.variety, x, y))
-      throw new Error(`Variety ${command.variety} does not grow on parcel ${x},${y}`)
-    plants[index] = { variety: command.variety, plantedHour: state.time.hour }
+    plants[index] = { variety: command.variety, plantedDay: state.time.day }
   }
 
   const count = command.parcels.length
@@ -61,12 +56,6 @@ export function plant(state: GameState, command: Plant): GameState {
   return { ...bought, market: { ...bought.market, seeds }, farm: { ...state.farm, plants } }
 }
 
-// PRD §5: Specialty grows only on volcano soil. The other varieties grow off-zone with offZoneYieldFactor.
-export function canPlant(state: GameState, variety: Variety, x: number, y: number): boolean {
-  const zone = state.world.parcels[y * state.world.size + x]?.zone
-  return isVarietyUnlocked(state, variety) && (variety !== 'specialty' || zone === 'vulkan')
-}
-
 const missingSeeds = (state: GameState, variety: Variety, count: number) =>
   Math.max(0, count - (state.market.seeds[variety] ?? 0))
 
@@ -76,19 +65,17 @@ export function quotePlant(state: GameState, variety: Variety, count: number): n
   return roundCost(Math.round(missing * bankSellPrice(state, variety, missing) * 100))
 }
 
-export const ripeHour = (plant: PlantState, cfg: Balance = balance()): number =>
-  plant.plantedHour +
-  (plant.growthDelayHours ?? 0) +
-  cfg.varieties[plant.variety].cycleDays * cfg.time.ticksPerGameDay
+export const ripeDay = (plant: PlantState, cfg: Balance = balance()): number =>
+  plant.plantedDay + cfg.varieties[plant.variety].cycleDays
 
-// Growth comes from the game hours since planting and the event delay, so it needs no per-tick state.
+// Growth comes from the calendar days since planting, so it needs no per-step state.
 export function growth(
   plant: PlantState,
-  hour: number,
+  day: number,
   cfg: Balance = balance(),
 ): { progress: number; stage: Stage } {
-  const cycle = cfg.varieties[plant.variety].cycleDays * cfg.time.ticksPerGameDay
-  const progress = Math.min(1, (hour - ripeHour(plant, cfg) + cycle) / cycle)
+  const cycle = cfg.varieties[plant.variety].cycleDays
+  const progress = Math.min(1, (day - ripeDay(plant, cfg) + cycle) / cycle)
   return { progress, stage: stageAt(progress, cfg) }
 }
 

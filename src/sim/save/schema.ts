@@ -15,7 +15,7 @@ const parcel = z.object({
   x: int,
   y: int,
   height: num,
-  zone: z.enum(['wasser', 'tiefland', 'hochland', 'hochlandKuehl', 'vulkan']),
+  zone: z.enum(['wasser', 'tiefland', 'hochland', 'hochlandKuehl']),
   fertility: num,
   waterRetention: num,
   soilQuality: num,
@@ -24,18 +24,21 @@ const parcel = z.object({
 
 const plant = z.object({
   variety,
-  plantedHour: num,
+  plantedDay: num,
   fertilized: z.boolean().optional(),
   irrigated: z.boolean().optional(),
-  pestProtected: z.boolean().optional(),
   pendingUnits: num.optional(),
   overripeFactor: num.optional(),
-  growthDelayHours: num.nonnegative().optional(),
 })
 
 // Shape check of a loaded state. The output type must stay assignable to GameState.
 export const gameStateSchema = z.object({
-  time: z.object({ hour: int, speed: num }),
+  time: z.object({
+    day: int,
+    speed: num,
+    stage: z.enum(['months', 'weeks']),
+    weeksFromDay: int.optional(),
+  }),
   world: z
     .object({ seed: int, size: int, parcels: z.array(parcel), start: place })
     .refine((w) => w.parcels.length === w.size * w.size, 'Parcel count does not match size'),
@@ -63,9 +66,9 @@ export const gameStateSchema = z.object({
           units: num,
           quality: num,
           washed: z.literal(true).optional(),
-          readyHour: num.optional(),
+          readyDay: num.optional(),
         })
-        .refine((b) => b.readyHour === undefined || b.washed === true, 'readyHour needs washed'),
+        .refine((b) => b.readyDay === undefined || b.washed === true, 'readyDay needs washed'),
     ),
   }),
   market: z.object({
@@ -87,14 +90,5 @@ export const gameStateSchema = z.object({
     ),
     nextId: int.nonnegative(),
   }),
-  events: z.array(
-    z.object({
-      type: z.enum(['frost', 'monsoon', 'boom', 'crisis', 'pests']),
-      announcedDay: int,
-      startDay: int,
-      endDay: int,
-    }),
-  ),
-  research: z.array(int),
-  milestones: z.object({ harvested: num, harvestProHour: num.optional() }),
+  milestones: z.object({ harvested: num, harvestProDay: num.optional() }),
 }) satisfies z.ZodType<GameState>

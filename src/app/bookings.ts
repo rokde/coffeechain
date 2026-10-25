@@ -12,7 +12,6 @@ export type BookingReason =
   | 'plant'
   | 'fertilize'
   | 'irrigate'
-  | 'protect'
   | 'harvest'
   | 'sell'
   | 'buy'
@@ -28,7 +27,6 @@ export const reasons: Record<Command['type'], BookingReason | null> = {
   Plant: 'plant',
   Fertilize: 'fertilize',
   Irrigate: 'irrigate',
-  ProtectPests: 'protect',
   Harvest: 'harvest',
   Sell: 'sell',
   Buy: 'buy',

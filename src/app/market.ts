@@ -25,7 +25,7 @@ export function selectParcel(
 const unitsOf = (state: GameState, variety: Variety, washed: boolean) =>
   state.storage.batches
     .filter((b) => b.variety === variety && (b.washed === true) === washed)
-    .filter((b) => !isRunning(b, state.time.hour))
+    .filter((b) => !isRunning(b, state.time.day))
     .reduce((sum, b) => sum + b.units, 0)
 
 // Raw units of one variety in storage.

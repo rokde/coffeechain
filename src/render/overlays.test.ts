@@ -41,7 +41,7 @@ describe('overlayColors', () => {
       (i) => ZONE_OVERLAY_COLORS[world.parcels[i]!.zone],
     )
     const values = Object.values(ZONE_OVERLAY_COLORS)
-    expect(new Set(values).size).toBe(5)
+    expect(new Set(values).size).toBe(4)
     for (const v of values) expect(Object.values(ZONE_COLORS)).not.toContain(v)
   })
 })

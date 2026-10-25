@@ -18,7 +18,7 @@ const planted = dispatch(owned, { type: 'Plant', variety: 'robusta', parcels: [a
 const { cycleDays } = balance().varieties.robusta
 const ripe = {
   ...planted,
-  time: { ...planted.time, hour: planted.time.hour + cycleDays * balance().time.ticksPerGameDay },
+  time: { ...planted.time, day: planted.time.day + cycleDays },
 }
 const care = balance().varieties.robusta.careCost
 const careCost = (key: keyof typeof care) => Math.round(care[key] * 100)
@@ -34,7 +34,6 @@ const cases: [BrushTool, GameState, object, number][] = [
   ],
   ['fertilize', planted, { type: 'Fertilize' }, careCost('fertilizer')],
   ['irrigate', planted, { type: 'Irrigate' }, careCost('irrigation')],
-  ['protect', planted, { type: 'ProtectPests' }, careCost('pestControl')],
   ['harvest', ripe, { type: 'Harvest' }, 0],
 ]
 
@@ -101,17 +100,26 @@ describe('isClick (S40)', () => {
   })
 })
 
-describe('brushParcel with Specialty (S48)', () => {
-  it('AC-4: gives "invalid" for a lowland parcel and Plant for a volcano parcel', () => {
-    const v = fresh.world.parcels.find((p) => p.zone === 'vulkan' && isFree(fresh, p.x, p.y))!
-    const volcano = { x: v.x, y: v.y }
-    const state = dispatch(
-      { ...fresh, money: 2000000 },
-      { type: 'CreateParcels', parcels: [a!, volcano] },
-    )
-    expect(brushParcel(state, 'plant', 'specialty', a!)).toBe('invalid')
-    const command = brushParcel(state, 'plant', 'specialty', volcano)
-    expect(command).toEqual({ type: 'Plant', variety: 'specialty', parcels: [volcano] })
-    expect(() => dispatch(state, command as Exclude<typeof command, string>)).not.toThrow()
+describe('brushParcel with Specialty (S48, #17)', () => {
+  const k = fresh.world.parcels.find((p) => p.zone === 'hochlandKuehl' && isFree(fresh, p.x, p.y))!
+  const cool = { x: k.x, y: k.y }
+  const bought = dispatch(
+    { ...fresh, money: 2000000 },
+    { type: 'CreateParcels', parcels: [a!, cool] },
+  )
+
+  it('AC-2: gives Plant for a lowland and a cool highland parcel from 10.000 CC', () => {
+    // Capital is money plus the paid parcels.
+    const state = { ...bought, money: 1000000 - bought.invested }
+    for (const p of [a!, cool]) {
+      const command = brushParcel(state, 'plant', 'specialty', p)
+      expect(command).toEqual({ type: 'Plant', variety: 'specialty', parcels: [p] })
+      expect(() => dispatch(state, command as Exclude<typeof command, string>)).not.toThrow()
+    }
+  })
+
+  it('AC-2: gives "invalid" below 10.000 CC', () => {
+    const state = { ...bought, money: 999999 - bought.invested }
+    for (const p of [a!, cool]) expect(brushParcel(state, 'plant', 'specialty', p)).toBe('invalid')
   })
 })

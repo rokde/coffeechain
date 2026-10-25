@@ -83,7 +83,7 @@ describe('MarketPanel (S20)', () => {
     const html = await renderToString(createSSRApp(MarketPanel).use(pinia))
     const n = Math.round(1 / balance().storage.costPerUnitPerDay)
     const hint = field(html, 'hint')!
-    expect(hint).toContain(`Das Lager kostet jeden Tag 1 CC je angefangene ${n} Einheiten.`)
+    expect(hint).toContain(`Das Lager kostet jeden Monat 1 CC je angefangene ${n} Einheiten.`)
     expect(hint).toContain('Ein leeres Lager kostet nichts.')
     expect(hint).not.toContain('mindestens')
     expect(hint).not.toContain('{units}')
@@ -140,7 +140,7 @@ describe('MarketPanel (S20)', () => {
     expect(sellButton(block(html, 'arabicaStandard'))).toContain('disabled')
   })
 
-  it('AC-4: each block has two flat lines with historyDays points', async () => {
+  it('AC-5 (#27): each block has two flat lines with 12 points and month captions', async () => {
     const { pinia } = setup()
     const html = await renderToString(createSSRApp(MarketPanel).use(pinia))
     for (const variety of ['robusta', 'arabicaStandard']) {
@@ -148,12 +148,37 @@ describe('MarketPanel (S20)', () => {
       expect(lines).toHaveLength(2)
       for (const [, points] of lines) {
         const ys = points!.split(' ').map((p) => p.split(',')[1])
-        expect(ys).toHaveLength(balance().market.historyDays)
-        expect(ys).toHaveLength(14)
+        expect(ys).toHaveLength(balance().market.historyMonths)
+        expect(ys).toHaveLength(12)
         expect(new Set(ys).size).toBe(1)
       }
+      expect(block(html, variety)).toContain('Kaffee, 12 Monate')
+      expect(block(html, variety)).toContain('Saatgut, 12 Monate')
     }
   })
+
+  it.each([
+    [431, 'Apr', 'Mär'],
+    [0, 'Feb', 'Jan'],
+  ])(
+    'AC-5 (#27): on day %i the axis shows %s on the left and %s on the right',
+    async (day, left, right) => {
+      const { pinia, game } = setup()
+      const state = game.state as GameState
+      game.replace({ ...state, time: { ...state.time, day } })
+      const html = await renderToString(createSSRApp(MarketPanel).use(pinia))
+      const axes = [
+        ...block(html, 'robusta').matchAll(/data-testid="market-axis"[^>]*>(.*?)<\/div>/g),
+      ]
+      expect(axes).toHaveLength(2)
+      for (const [, axis] of axes) {
+        expect([...axis!.matchAll(/<span[^>]*>([^<]*)<\/span>/g)].map((m) => m[1])).toEqual([
+          left,
+          right,
+        ])
+      }
+    },
+  )
 
   it('AC-5: disables "Verkaufen" when the variety has no stock', async () => {
     const { pinia } = setup()
@@ -211,16 +236,36 @@ describe('MarketPanel processing (S46)', () => {
     html = await render(pinia)
     expect(field(html, 'stock')).toBe('10')
     expect(field(html, 'washed-stock')).toBe('0')
-    expect(field(html, 'processing')!.trim()).toBe('Aufbereitung läuft bis Tag 2')
+    expect(field(html, 'processing')!.trim()).toBe('Aufbereitung läuft bis 1. Februar, Jahr 1')
     expect(button(html, 'process')).toContain('disabled')
     expect(button(html, 'process')).toContain('title="Es läuft schon eine Aufbereitung."')
     expect(button(html, 'sell-washed')).toContain('disabled')
   })
 
-  it('AC-5: after one day the washed units show and sell at the washed price', async () => {
+  it('AC-4 (087): shows the end of a running batch as a calendar date', async () => {
+    const { pinia, game } = processing(true)
+    const state = game.state as GameState
+    game.replace({
+      ...state,
+      time: { ...state.time, day: 400 },
+      storage: {
+        batches: [
+          ...state.storage.batches,
+          { variety: 'arabicaStandard', units: 50, quality: 100, washed: true, readyDay: 431 },
+        ],
+      },
+    })
+    const html = await render(pinia)
+    expect(field(html, 'processing')!.trim()).toBe('Aufbereitung läuft bis 12. März, Jahr 2')
+  })
+
+  it('AC-5: after 30 days the washed units show and sell at the washed price', async () => {
     const { pinia, game } = processing(true)
     processAll(game, 'arabicaStandard')
-    game.replace({ ...(game.state as GameState), time: { hour: 24, speed: 1 } })
+    game.replace({
+      ...(game.state as GameState),
+      time: { day: 30, speed: 1, stage: 'months' as const },
+    })
     const html = await render(pinia)
     expect(field(html, 'washed-stock')).toBe('50')
     expect(field(html, 'washed-sell-price')).toBe('1,2 CC')
@@ -265,7 +310,7 @@ describe('MarketPanel processing (S46)', () => {
     const batches = [{ variety: 'arabicaStandard' as const, units: 7, quality: 100 }]
     // 15 sold units lower the bank price to 0.8 × (1 − 0.3 × 15 / 300) = 0.788 CC.
     const volumes = [
-      { kind: 'coffee' as const, variety: 'arabicaStandard' as const, day: 1, units: 15 },
+      { kind: 'coffee' as const, variety: 'arabicaStandard' as const, day: 0, units: 15 },
     ]
     game.replace({ ...state, money: 300, storage: { batches }, market: { volumes, seeds: {} } })
     let html = await render(pinia)

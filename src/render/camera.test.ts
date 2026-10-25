@@ -9,6 +9,7 @@ import {
   clampZoom,
   createCamera,
   gestureZoomDelta,
+  islandView,
   nextZoom,
   rotateYaw,
   START_FRAME,
@@ -268,5 +269,38 @@ describe('startView (S40b)', () => {
     view.frame({ x: 100, z: -3 }, 50)
     expect([view.target.x, view.target.z]).toEqual([SIZE / 2, -3])
     expect(view.camera.zoom).toBe(CAMERA.maxZoom)
+  })
+})
+
+describe('islandView (#3)', () => {
+  it.each([
+    [1440 / 800, { left: -0.6, right: 0.6, bottom: -0.9, top: 0.9 }],
+    [390 / 844, { left: -0.9, right: 0.9, bottom: -0.4, top: 0.4 }],
+  ])('frames every land corner inside the free frame at aspect %f', (aspect, frame) => {
+    for (const seed of [48213, 1, 2, 3]) {
+      const world = generateWorld(seed, balance())
+      const { target, zoom } = islandView(world, aspect, frame)
+      const camera = createCamera(aspect, world.size)
+      camera.frame(target, zoom)
+      camera.camera.zoom = zoom
+      camera.camera.updateProjectionMatrix()
+      const n = world.size
+      for (const q of world.parcels.filter((p) => p.zone !== 'wasser')) {
+        for (const [dx, dz] of [
+          [0, 0],
+          [1, 0],
+          [0, 1],
+          [1, 1],
+        ] as const) {
+          const x = q.x + dx - n / 2
+          const z = q.y + dz - n / 2
+          const p = new Vector3(x, terrainHeightAt(world, x, z), z).project(camera.camera)
+          expect(p.x).toBeGreaterThanOrEqual(frame.left - 1e-6)
+          expect(p.x).toBeLessThanOrEqual(frame.right + 1e-6)
+          expect(p.y).toBeGreaterThanOrEqual(frame.bottom - 1e-6)
+          expect(p.y).toBeLessThanOrEqual(frame.top + 1e-6)
+        }
+      }
+    }
   })
 })

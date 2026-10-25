@@ -5,8 +5,9 @@ import { createState, type GameState } from '../state'
 import { step } from '../time/time'
 import type { Parcel, World } from '../world/types'
 import { bankSellPrice } from '../market/market'
-import { canPlant, growth, quotePlant } from './plants'
-import type { Variety } from './yield'
+import { forecastYield } from './forecast'
+import { growth, quotePlant } from './plants'
+import { computeYield, type Variety } from './yield'
 
 function testWorld(size = 4): World {
   const parcels: Parcel[] = []
@@ -27,7 +28,7 @@ function testState(money = 50000): GameState {
     world: testWorld(),
     props: { hut: { x: 1, y: 1 }, market: { x: 1, y: 1 }, path: [{ x: 1, y: 1 }], trees: [] },
     money,
-    time: { ...state.time, hour: 5 },
+    time: { ...state.time, day: 5 },
     farm: { ...state.farm, parcels: { 0: 0, 1: 0, 2: 0 }, fields: [{ id: 0, name: 'A' }] },
   }
 }
@@ -43,8 +44,8 @@ describe('Plant', () => {
     // 2 seeds at the mid volume of 1 unit: 2 × 2 × (1 + 0.3 × 1 / 200) = 4.006 CC → 5 CC (S57).
     expect(next.money).toBe(50000 - 500)
     expect(next.farm.plants).toEqual({
-      0: { variety: 'robusta', plantedHour: 5 },
-      1: { variety: 'robusta', plantedHour: 5 },
+      0: { variety: 'robusta', plantedDay: 5 },
+      1: { variety: 'robusta', plantedDay: 5 },
     })
     expect(next.farm.parcels).toEqual(state.farm.parcels)
     expect(state).toEqual(before)
@@ -128,43 +129,47 @@ describe('Plant', () => {
 
 describe('growth with step', () => {
   it.each<[Variety, number]>([
-    ['robusta', 72],
-    ['arabicaStandard', 120],
+    ['robusta', 90],
+    ['arabicaStandard', 150],
   ])('AC-3: %s is ripe after exactly %i steps', (variety, steps) => {
-    let state = plant({ ...testState(), time: { hour: 0, speed: 1 } }, variety, [0, 0])
+    let state = plant(
+      { ...testState(), time: { day: 0, speed: 1, stage: 'months' as const } },
+      variety,
+      [0, 0],
+    )
     for (let i = 0; i < steps - 1; i++) state = step(state)
-    expect(growth(state.farm.plants[0]!, state.time.hour).stage).not.toBe('reif')
+    expect(growth(state.farm.plants[0]!, state.time.day).stage).not.toBe('reif')
     state = step(state)
-    expect(growth(state.farm.plants[0]!, state.time.hour).stage).toBe('reif')
+    expect(growth(state.farm.plants[0]!, state.time.day).stage).toBe('reif')
   })
 })
 
 describe('growth stages', () => {
-  const robusta = { variety: 'robusta', plantedHour: 0 } as const
+  const robusta = { variety: 'robusta', plantedDay: 0 } as const
 
   it.each([
     [0, 'setzling'],
-    [17, 'setzling'],
-    [18, 'wachstum'],
-    [43, 'wachstum'],
-    [44, 'bluete'],
-    [64, 'bluete'],
-    [65, 'fruchtansatz'],
-    [71, 'fruchtansatz'],
-    [72, 'reif'],
+    [22, 'setzling'],
+    [23, 'wachstum'],
+    [53, 'wachstum'],
+    [54, 'bluete'],
+    [80, 'bluete'],
+    [81, 'fruchtansatz'],
+    [89, 'fruchtansatz'],
+    [90, 'reif'],
     [1000, 'reif'],
-  ])('AC-4: Robusta at hour %i is %s', (hour, stage) => {
-    expect(growth(robusta, hour).stage).toBe(stage)
+  ])('AC-4: Robusta on day %i is %s', (day, stage) => {
+    expect(growth(robusta, day).stage).toBe(stage)
   })
 
   it('AC-4: progress stops at 1', () => {
-    expect(growth(robusta, 36).progress).toBe(0.5)
-    expect(growth(robusta, 72).progress).toBe(1)
+    expect(growth(robusta, 45).progress).toBe(0.5)
+    expect(growth(robusta, 90).progress).toBe(1)
     expect(growth(robusta, 1000).progress).toBe(1)
   })
 
-  it('AC-4: counts from plantedHour', () => {
-    expect(growth({ variety: 'robusta', plantedHour: 100 }, 118).stage).toBe('wachstum')
+  it('AC-4: counts from plantedDay', () => {
+    expect(growth({ variety: 'robusta', plantedDay: 100 }, 123).stage).toBe('wachstum')
   })
 
   it('AC-4: moves the stage boundaries with the config', () => {
@@ -176,10 +181,10 @@ describe('growth stages', () => {
         visualStages: { setzling: 0, wachstum: 0.5, bluete: 0.75, fruchtansatz: 0.95 },
       },
     }
-    expect(growth(robusta, 18, test).stage).toBe('setzling')
-    expect(growth(robusta, 36, test).stage).toBe('wachstum')
-    expect(growth(robusta, 54, test).stage).toBe('bluete')
-    expect(growth(robusta, 69, test).stage).toBe('fruchtansatz')
+    expect(growth(robusta, 22, test).stage).toBe('setzling')
+    expect(growth(robusta, 45, test).stage).toBe('wachstum')
+    expect(growth(robusta, 68, test).stage).toBe('bluete')
+    expect(growth(robusta, 86, test).stage).toBe('fruchtansatz')
   })
 })
 
@@ -305,30 +310,38 @@ describe('Plant with bought seed (S19b)', () => {
   )
 })
 
-describe('Premium and Specialty (S48)', () => {
-  // Parcel (1,0) is volcano soil. Capital is the balance here: no stock and nothing invested.
+describe('Premium and Specialty (S48, #17)', () => {
+  // Parcel (1,0) is cool highland, (0,0) is lowland. Capital is the balance here: no stock and nothing invested.
   function zoned(money: number): GameState {
     const state = testState(money)
     const parcels = state.world.parcels.map((p) =>
-      p.x === 1 && p.y === 0 ? { ...p, zone: 'vulkan' as const } : p,
+      p.x === 1 && p.y === 0 ? { ...p, zone: 'hochlandKuehl' as const } : p,
     )
     return { ...state, world: { ...state.world, parcels } }
   }
 
-  it('AC-1: Specialty needs 10.000 CC capital and a volcano parcel', () => {
-    expect(canPlant(zoned(999999), 'specialty', 1, 0)).toBe(false)
-    expect(canPlant(zoned(1000000), 'specialty', 1, 0)).toBe(true)
-    expect(canPlant(zoned(1000000), 'specialty', 0, 0)).toBe(false)
-    expect(canPlant(zoned(1000000), 'robusta', 1, 0)).toBe(true)
+  it('AC-2: Specialty plants on lowland and cool highland from 10.000 CC capital', () => {
+    const below = zoned(999999)
+    const before = structuredClone(below)
+    expect(() => plant(below, 'specialty', [0, 0])).toThrow(/locked/)
+    expect(() => plant(below, 'specialty', [1, 0])).toThrow(/locked/)
+    expect(below).toEqual(before)
+    const next = plant(zoned(1000000), 'specialty', [0, 0], [1, 0])
+    expect(next.farm.plants[0]?.variety).toBe('specialty')
+    expect(next.farm.plants[1]?.variety).toBe('specialty')
   })
 
-  it('AC-1: a Plant command for Specialty on a lowland parcel throws and keeps the state', () => {
-    const state = zoned(1000000)
-    const before = structuredClone(state)
-    expect(() => plant(state, 'specialty', [0, 0])).toThrow()
-    expect(() => plant(state, 'specialty', [1, 0], [0, 0])).toThrow()
-    expect(state).toEqual(before)
-    expect(plant(state, 'specialty', [1, 0]).farm.plants[1]?.variety).toBe('specialty')
+  it('AC-2: the Specialty forecast has the off-zone factor on lowland only', () => {
+    expect(balance().varieties.specialty.zone).toBe('hochlandKuehl')
+    const next = plant(zoned(1000000), 'specialty', [0, 0], [1, 0])
+    const full = (zoneMatches: boolean) =>
+      computeYield({ variety: 'specialty', soilClass: 'gut', zoneMatches, fertilized: false })
+    const { baseYield } = balance().varieties.specialty
+    expect(full(true)).toBe(Math.floor(baseYield + 1e-9))
+    expect(full(false)).toBe(Math.floor(baseYield * balance().world.offZoneYieldFactor + 1e-9))
+    expect(forecastYield(next, 1, 0)).toBe(full(true))
+    expect(forecastYield(next, 0, 0)).toBe(full(false))
+    expect(full(false)).toBeLessThan(full(true))
   })
 
   it('AC-2: Arabica Premium plants at 2.000 CC capital and takes the seed cost', () => {
@@ -336,7 +349,7 @@ describe('Premium and Specialty (S48)', () => {
     const cost = quotePlant(state, 'arabicaPremium', 1)
     expect(cost).toBeGreaterThan(0)
     const next = plant(state, 'arabicaPremium', [0, 0])
-    expect(next.farm.plants[0]).toEqual({ variety: 'arabicaPremium', plantedHour: 5 })
+    expect(next.farm.plants[0]).toEqual({ variety: 'arabicaPremium', plantedDay: 5 })
     expect(next.money).toBe(200000 - cost)
   })
 })

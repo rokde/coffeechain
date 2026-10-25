@@ -6,12 +6,11 @@ import { step } from '../time/time'
 import { dailyOrders, deliverableUnits, type Order } from './orders'
 
 const cfg = balance()
-const perDay = cfg.time.ticksPerGameDay
 
 function stepDays(start: GameState, days: number, each?: (s: GameState) => void): GameState {
   let state = start
   for (let d = 0; d < days; d++) {
-    for (let h = 0; h < perDay; h++) state = step(state)
+    state = step(state)
     each?.(state)
   }
   return state
@@ -31,14 +30,14 @@ function withOrder(): GameState {
   const base = createState(9)
   return {
     ...base,
-    time: { ...base.time, hour: 9 * perDay },
+    time: { ...base.time, day: 10 },
     storage: {
       batches: [
         { variety: 'robusta', units: 20, quality: 75 },
         { variety: 'robusta', units: 40, quality: 90 },
       ],
     },
-    market: { volumes: [{ kind: 'coffee', variety: 'robusta', day: 9, units: 5 }], seeds: {} },
+    market: { volumes: [{ kind: 'coffee', variety: 'robusta', day: 10, units: 5 }], seeds: {} },
     orders: { open: [order], nextId: 5 },
   }
 }
@@ -46,17 +45,16 @@ function withOrder(): GameState {
 describe('orders (S56)', () => {
   it('AC-1: starts empty and repeats for the same seed', () => {
     expect(createState(3).orders).toEqual({ open: [], nextId: 0 })
-    const a = stepDays(createState(3), 60).orders
-    expect(stepDays(createState(3), 60).orders).toEqual(a)
+    const a = stepDays(createState(3), 1800).orders
+    expect(stepDays(createState(3), 1800).orders).toEqual(a)
     expect(a.nextId).toBeGreaterThan(0)
   })
 
   it('AC-1: keeps every order within the limit and the config ranges', () => {
     const o = cfg.orders
     const seen = new Map<number, { order: Order; day: number }>()
-    let day = 1
-    stepDays(createState(11), 1000, (state) => {
-      day++
+    stepDays(createState(11), 30000, (state) => {
+      const { day } = state.time
       expect(state.orders.open.length).toBeLessThanOrEqual(o.maxOpen)
       for (const order of state.orders.open) {
         if (!seen.has(order.id)) seen.set(order.id, { order, day })
@@ -131,14 +129,13 @@ describe('orders (S56)', () => {
     }
     expect(deliverableUnits(few, order)).toBe(20)
     expect(() => dispatch(few, { type: 'DeliverOrder', id: 4 })).toThrow(/20/)
-    const late = { ...state, time: { ...state.time, hour: 15 * perDay } }
+    const late = { ...state, time: { ...state.time, day: 16 } }
     expect(() => dispatch(late, { type: 'DeliverOrder', id: 4 })).toThrow(/deadline/)
     expect(state).toEqual(copy)
   })
 
   it('AC-3: keeps the order on the deadline day and drops it on the next day', () => {
-    // The last hour of day 14: the next step starts day 15.
-    const state = { ...withOrder(), time: { hour: 14 * perDay - 1, speed: 1 } }
+    const state = { ...withOrder(), time: { day: 14, speed: 1, stage: 'months' as const } }
     const day15 = step(state)
     expect(day15.orders.open.map((o) => o.id)).toContain(4)
     expect(dispatch(day15, { type: 'DeliverOrder', id: 4 }).orders.open).not.toContainEqual(order)
@@ -151,7 +148,7 @@ describe('orders (S56)', () => {
     const base = withOrder()
     const state = {
       ...base,
-      time: { ...base.time, hour: 15 * perDay },
+      time: { ...base.time, day: 16 },
       orders: { open: full, nextId: 5 },
     }
     const next = dailyOrders(state)

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { balance } from '../balance'
 import { dispatch } from '../commands'
 import { isFree } from '../farm/parcels'
-import { deserialize, serialize } from '../save/save'
+import { deserialize, MIGRATIONS, SAVE_VERSION, serialize } from '../save/save'
 import { createState, type GameState } from '../state'
 import { buildMenu, type Build } from './build'
 
@@ -34,7 +34,7 @@ describe('Build (S44)', () => {
     const next = build(state, 'processing', a)
     expect(next.buildings[index(state, a)]).toEqual({ kind: 'processing' })
     expect(next.money).toBe(state.money - balance().processing.washed.buildCost * 100)
-    expect(deserialize(serialize(next))).toEqual(next)
+    expect(deserialize(serialize(next, 0))).toEqual(next)
   })
 
   it('AC-2: throws on a bad parcel and leaves the state unchanged', () => {
@@ -93,7 +93,12 @@ describe('Build (S44)', () => {
   it('loads a version 4 save with no buildings', () => {
     const old: Record<string, unknown> = { ...createState(5) }
     delete old.buildings
-    const loaded = deserialize(JSON.stringify({ version: 4, state: old }))
+    old.time = { hour: 0, speed: 1 } // The time shape before #27.
+    const loaded = deserialize(JSON.stringify({ version: 4, state: old }), {
+      version: SAVE_VERSION,
+      minVersion: 1,
+      migrations: MIGRATIONS,
+    })
     expect(loaded.buildings).toEqual({})
     expect(loaded).toEqual(createState(5))
   })

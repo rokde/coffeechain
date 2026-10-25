@@ -1,6 +1,6 @@
 import { createPinia } from 'pinia'
-import { Vector2, Vector3, type Camera, type Scene } from 'three'
-import { createApp, watch } from 'vue'
+import { Group, Vector2, Vector3, type Camera, type Material, type Mesh, type Scene } from 'three'
+import { createApp, nextTick, watch } from 'vue'
 import raw from '../config/balance.json'
 import { loadBalance } from '../config/balance.schema'
 import { installAutosave } from './app/autosave'
@@ -15,8 +15,17 @@ import { installSpeedKeys } from './app/speedKeys'
 import { installToolKeys } from './app/toolKeys'
 import { skipResume, startState } from './app/resume'
 import { setStartState, useGameStore } from './app/store'
+import { useStartScreenStore } from './app/startScreen'
+import { useSaveListStore } from './app/saveList'
 import { useViewStore } from './app/view'
-import { CAMERA, createCamera, gestureZoomDelta, startView, wheelZoomDelta } from './render/camera'
+import {
+  CAMERA,
+  createCamera,
+  gestureZoomDelta,
+  islandView,
+  startView,
+  wheelZoomDelta,
+} from './render/camera'
 import { createFieldMarks, FIELD_LABEL_STYLE, fieldAnchors, hoveredField } from './render/fields'
 import { loadModel, MODEL_IDS } from './render/models'
 import { createBuildings } from './render/buildings'
@@ -30,8 +39,10 @@ import { createTerrain } from './render/terrain'
 import { balance } from './sim/balance'
 import type { FarmState } from './sim/farm/parcels'
 import type { GameState } from './sim/state'
-import { step } from './sim/time/time'
+import { msPerStep, step } from './sim/time/time'
+import type { World } from './sim/world/types'
 import Hud from './ui/Hud.vue'
+import StartScreen from './ui/StartScreen.vue'
 import de from './ui/i18n/de.json'
 import { toolCursor } from './ui/toolCursor'
 
@@ -80,7 +91,8 @@ function showModelRow(scene: Scene, camera: Camera) {
   }
 }
 
-function start() {
+// The renderer, the scene and the camera. The start screen and the game share them.
+function createStage() {
   const canvas = document.querySelector<HTMLCanvasElement>('#scene')!
   const { renderer, scene } = createScene(canvas)
   const view = createCamera(window.innerWidth / window.innerHeight, balance().world.size)
@@ -91,7 +103,119 @@ function start() {
   }
   resize()
   window.addEventListener('resize', resize)
+  return { canvas, renderer, scene, view }
+}
+type Stage = ReturnType<typeof createStage>
 
+// The start screen shows the island of the save or of the seed. It has no input on the scene.
+function showStartScreen(stage: Stage, save: GameState | null) {
+  const { canvas, renderer, scene, view } = stage
+  let preview: { group: Group; owned: Mesh[]; world: World } | null = null
+  const clear = () => {
+    if (!preview) return
+    scene.remove(preview.group)
+    // The props share their geometry with the model cache, so only the terrain and the path free theirs.
+    for (const mesh of preview.owned) {
+      mesh.geometry.dispose()
+      ;(mesh.material as Material).dispose()
+    }
+    preview = null
+  }
+  const show = (state: GameState) => {
+    clear()
+    const owned = [createTerrain(state.world), createPath(state.world, state.props.path)]
+    const group = new Group().add(...owned)
+    preview = { group, owned, world: state.world }
+    scene.add(group)
+    canvas.dataset.preview = String(state.world.seed)
+    delete canvas.dataset.props
+    createProps(state.world, state.props, loadModel)
+      .then((props) => {
+        if (preview?.group !== group) return
+        group.add(props)
+        canvas.dataset.props = 'ready'
+      })
+      .catch((error: unknown) => console.error('Props did not load:', error))
+    aim()
+  }
+  // Fits the whole island into the screen part that the panel and the save list leave free.
+  const aim = () => {
+    if (!preview) return
+    const w = window.innerWidth
+    const h = window.innerHeight
+    let free = { left: 0, top: 0, right: w, bottom: h }
+    const boxes = document.querySelectorAll('[data-testid="start-screen"] :is(main, aside)')
+    for (const box of boxes) {
+      const r = box.getBoundingClientRect()
+      if (r.right <= free.left || r.left >= free.right || r.bottom <= free.top) continue
+      if (r.top >= free.bottom) continue
+      // Cut the free part on the side of the box that keeps the largest area.
+      const cuts = [
+        { ...free, left: Math.max(free.left, r.right) },
+        { ...free, right: Math.min(free.right, r.left) },
+        { ...free, top: Math.max(free.top, r.bottom) },
+        { ...free, bottom: Math.min(free.bottom, r.top) },
+      ]
+      const area = (f: typeof free) => Math.max(0, f.right - f.left) * Math.max(0, f.bottom - f.top)
+      free = cuts.reduce((a, b) => (area(b) > area(a) ? b : a))
+    }
+    const width = free.right - free.left
+    const height = free.bottom - free.top
+    // A margin keeps the coast off the screen edge and the panel edge.
+    const fx = (0.9 * width) / w
+    const fy = (0.9 * height) / h
+    const { target, zoom } = islandView(preview.world, w / h, {
+      left: -fx,
+      right: fx,
+      bottom: -fy,
+      top: fy,
+    })
+    view.frame(target, zoom)
+    // The preview can zoom out past the game limit, so a narrow screen shows the whole island.
+    view.camera.zoom = zoom
+    // The offset moves the screen centre to the centre of the free part.
+    view.camera.setViewOffset(
+      w,
+      h,
+      w / 2 - (free.left + width / 2),
+      h / 2 - (free.top + height / 2),
+      w,
+      h,
+    )
+  }
+  renderer.setAnimationLoop(() => renderer.render(scene, view.camera))
+
+  const pinia = createPinia()
+  const screen = useStartScreenStore(pinia)
+  screen.save = save
+  // The save list changes the free screen part, so aim again after it shows.
+  void useSaveListStore(pinia)
+    .refresh()
+    .then(() => nextTick(aim))
+  // After the DOM update, so that aim reads the new panel size.
+  const stop = watch(
+    () => screen.preview,
+    (state) => state && show(state),
+    { immediate: true, flush: 'post' },
+  )
+  window.addEventListener('resize', aim)
+  const app = createApp(StartScreen, {
+    onPlay: (state: GameState) => {
+      stop()
+      window.removeEventListener('resize', aim)
+      app.unmount()
+      clear()
+      view.camera.clearViewOffset()
+      delete canvas.dataset.preview
+      delete canvas.dataset.props
+      play(stage, state)
+    },
+  })
+  app.use(pinia).mount('#hud')
+  aim()
+}
+
+function start({ canvas, renderer, scene, view }: Stage) {
   const held = new Set<string>()
   window.addEventListener('keydown', (event) => {
     if (event.repeat || event.metaKey || event.ctrlKey || event.altKey) return
@@ -213,8 +337,8 @@ function start() {
       },
     )
     watch(
-      () => plantsKey(store.state.farm.plants, store.state.time.hour),
-      () => plants.show(store.state.farm.plants, store.state.time.hour),
+      () => plantsKey(store.state.farm.plants, store.state.time.day),
+      () => plants.show(store.state.farm.plants, store.state.time.day),
       { immediate: true },
     )
     // A load reloads the page, so the immediate run also shows the loaded buildings.
@@ -389,8 +513,6 @@ function start() {
       marking = null
     })
   }
-  const { realSecondsPerGameDay, ticksPerGameDay } = balance().time
-  const msPerTick = (realSecondsPerGameDay * 1000) / ticksPerGameDay
   let carryMs = 0
   let last: number | undefined
   let lastCameraKey = ''
@@ -400,7 +522,7 @@ function start() {
   // setAnimationLoop runs on requestAnimationFrame.
   renderer.setAnimationLoop((now) => {
     const frameMs = now - (last ?? now)
-    const due = advance(carryMs, frameMs, store.state.time.speed, msPerTick)
+    const due = advance(carryMs, frameMs, store.state.time.speed, msPerStep(store.state.time.stage))
     last = now
     frameTimes.push(frameMs)
     if (frameTimes.length > 60) frameTimes.shift()
@@ -426,18 +548,24 @@ function start() {
   createApp(Hud).use(pinia).mount('#hud')
 }
 
-// The store and the terrain need the first world, so read it before the rest.
-async function boot() {
-  const state = await startState(location.search)
+function play(stage: Stage, state: GameState | null) {
+  // The store and the terrain need the first world, so set it before the rest.
   setStartState(state)
   try {
-    start()
+    start(stage)
   } catch (error) {
     // shortcut: a reload, not a clean restart in the same page; upgrade if start gets a teardown.
     if (state === null) throw error
-    console.error('Start with the loaded game failed, a new game starts', error)
+    console.error('Start with the loaded game failed, the start screen opens', error)
     skipResume()
   }
+}
+
+async function boot() {
+  const { state, menu } = await startState(location.search)
+  const stage = createStage()
+  if (menu) showStartScreen(stage, state)
+  else play(stage, state)
 }
 
 if (configIsValid()) void boot()
