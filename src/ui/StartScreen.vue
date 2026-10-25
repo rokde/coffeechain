@@ -3,6 +3,7 @@ import { computed, nextTick, useTemplateRef } from 'vue'
 import { useSaveListStore } from '../app/saveList'
 import { useStartScreenStore } from '../app/startScreen'
 import type { GameState } from '../sim/state'
+import { islandFacts } from '../sim/world/facts'
 import { ago } from './ago'
 import { formatDate } from './date'
 import de from './i18n/de.json'
@@ -18,6 +19,17 @@ const lastPlayed = computed(() => {
   return typeof entry === 'object' && entry.savedAt !== null
     ? t.lastPlayed.replace('{ago}', ago(entry.savedAt, Date.now()))
     : null
+})
+const zoneIds = ['tiefland', 'hochland', 'hochlandKuehl'] as const
+const facts = computed(() => (screen.preview ? islandFacts(screen.preview.world) : null))
+const hut = computed(() => {
+  const h = facts.value?.hut
+  if (!h) return ''
+  const i = de.inspector
+  return t.hut
+    .replace('{zone}', i.zones[h.zone])
+    .replace('{parcel}', i.position.replace('{x}', String(h.x)).replace('{y}', String(h.y)))
+    .replace('{soil}', i.soilClasses[h.soilClass])
 })
 
 async function play() {
@@ -163,6 +175,18 @@ async function back() {
           <p id="start-seed-hint" class="hint" :class="{ invalid: screen.seed === null }">
             {{ t.seedHint }}
           </p>
+          <template v-if="facts">
+            <ul class="zones" :aria-label="t.zoneShares">
+              <li v-for="id in zoneIds" :key="id" :data-testid="`start-zone-${id}`">
+                {{
+                  t.zoneShare
+                    .replace('{zone}', de.inspector.zones[id])
+                    .replace('{pct}', String(facts.shares[id]))
+                }}
+              </li>
+            </ul>
+            <p class="hut" data-testid="start-hut">{{ hut }}</p>
+          </template>
         </section>
         <div class="actions">
           <button
@@ -280,6 +304,19 @@ input[aria-invalid='true'] {
 .hint.invalid {
   color: #f2c48d;
   opacity: 1;
+}
+.zones {
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+}
+.hut {
+  margin: 12px 0 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgb(0 0 0 / 25%);
+  font-size: 14px;
 }
 .actions {
   display: flex;

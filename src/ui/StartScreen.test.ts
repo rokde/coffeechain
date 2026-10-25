@@ -4,6 +4,8 @@ import { createSSRApp } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import { useStartScreenStore } from '../app/startScreen'
 import { createState } from '../sim/state'
+import { islandFacts } from '../sim/world/facts'
+import de from './i18n/de.json'
 import StartScreen from './StartScreen.vue'
 
 vi.mock('@tauri-apps/api/core', () => ({ isTauri: vi.fn(() => false), invoke: vi.fn() }))
@@ -71,5 +73,40 @@ describe('StartScreen (#3)', () => {
     expect(has(html, 'start-play')).toBe(true)
     expect(has(html, 'start-continue')).toBe(false)
     expect(text(html, 'start-back').trim()).toBe('Zurück zum Spielstand')
+  })
+})
+
+describe('StartScreen island facts (#3)', () => {
+  const zoneLine = (html: string, z: string) => text(html, `start-zone-${z}`).trim()
+
+  it('AC-3: shows the zone shares of the seed', async () => {
+    const { shares } = islandFacts(createState(48213).world)
+    const html = await render((s) => (s.seedText = '48213'))
+    expect(zoneLine(html, 'tiefland')).toBe(`Tiefland ${shares.tiefland} %`)
+    expect(zoneLine(html, 'hochland')).toBe(`Hochland ${shares.hochland} %`)
+    expect(zoneLine(html, 'hochlandKuehl')).toBe(`Kühles Hochland ${shares.hochlandKuehl} %`)
+  })
+
+  it('AC-4: the hut hint follows the seed', async () => {
+    const hint = async (seed: number) => {
+      const { hut } = islandFacts(createState(seed).world)
+      const zone = de.inspector.zones[hut.zone]
+      const soil = de.inspector.soilClasses[hut.soilClass]
+      const html = await render((s) => (s.seedText = String(seed)))
+      expect(text(html, 'start-hut')).toBe(
+        `Deine Hütte steht im ${zone} bei ${hut.x} / ${hut.y}, Boden ${soil}.`,
+      )
+      return text(html, 'start-hut')
+    }
+    expect(await hint(48213)).not.toBe(await hint(7))
+  })
+
+  it('AC-5: no facts for an invalid seed or on the welcome view', async () => {
+    let html = await render((s) => (s.seedText = '4294967296'))
+    expect(has(html, 'start-zone-tiefland')).toBe(false)
+    expect(has(html, 'start-hut')).toBe(false)
+    html = await render((s) => (s.save = createState(7)))
+    expect(has(html, 'start-zone-tiefland')).toBe(false)
+    expect(has(html, 'start-hut')).toBe(false)
   })
 })

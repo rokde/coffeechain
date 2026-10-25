@@ -230,14 +230,27 @@ for (const [width, height] of sizes) {
       await expect(card).toBeInViewport({ ratio: 1 })
     }
     const box = async (selector: string) => (await page.locator(selector).boundingBox())!
-    const panel = await box('[data-testid="start-screen"] main')
-    const saves = await box('[data-testid="save-list"]')
-    if (width === 1440) expect(saves.x).toBeGreaterThanOrEqual(panel.x + panel.width)
-    const apart =
-      saves.x >= panel.x + panel.width ||
-      saves.y + saves.height <= panel.y ||
-      saves.y >= panel.y + panel.height
-    expect(apart).toBe(true)
+    // The box of the selector and the save list do not overlap.
+    const apart = async (selector: string) => {
+      const a = await box(selector)
+      const saves = await box('[data-testid="save-list"]')
+      if (width === 1440) expect(saves.x).toBeGreaterThanOrEqual(a.x + a.width)
+      const free =
+        saves.x >= a.x + a.width ||
+        saves.x + saves.width <= a.x ||
+        saves.y + saves.height <= a.y ||
+        saves.y >= a.y + a.height
+      expect(free, selector).toBe(true)
+    }
+    await apart('[data-testid="start-screen"] main')
     await page.screenshot({ path: `docs/progress/091-save-list-${width}.png` })
+    // The new-game view shows the island facts in the panel (092).
+    await page.getByTestId('start-new-game').click()
+    await page.getByTestId('start-new-game-confirm').click()
+    await expect(page.getByTestId('start-hut')).toBeVisible()
+    await apart('[data-testid="start-screen"] main')
+    await apart('[data-testid="start-zone-tiefland"]')
+    await apart('[data-testid="start-hut"]')
+    await page.screenshot({ path: `docs/progress/091-save-list-new-game-${width}.png` })
   })
 }
