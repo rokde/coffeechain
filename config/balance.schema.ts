@@ -94,8 +94,6 @@ export const balanceSchema = z.object({
   }),
   market: z.object({
     bankBuyFactor: val(num),
-    bankSellFactor: val(num),
-    fertilizerPrice: val(num),
     supplyFactorRange: val(range),
     demandFactorRange: val(range),
     priceFloor: val(num),

@@ -130,8 +130,6 @@
 
   "market": {
     "bankBuyFactor": { "v": 0.8, "src": "GDD 11.3" },
-    "bankSellFactor": { "v": 1.2, "src": "GDD 11.3" },
-    "fertilizerPrice": { "v": 1.0, "src": "GDD 11.3" },
     "supplyFactorRange": { "v": [0.7, 1.1], "src": "GDD 11.3" },
     "demandFactorRange": { "v": [0.9, 1.3], "src": "GDD 11.3" },
     "priceFloor": { "v": 0.5, "src": "GDD 3.4, 11.3" },
