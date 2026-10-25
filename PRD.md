@@ -95,7 +95,7 @@ tools/
 **Grundregeln**
 1. `sim/` ist deterministisch: gleicher Seed + gleiche Commands = gleicher State.
 2. Spieleraktionen laufen nur über Commands (`CreateParcels`, `Plant`, `Fertilize`, `Irrigate`, `Harvest`, `Process`, `Sell`, `Buy`, `Build`). UI und Render ändern den State nie direkt.
-3. Die Simulation tickt in festen Schritten: **1 Tick = 1 Spielstunde**. Rendering läuft unabhängig mit `requestAnimationFrame`.
+3. Die Simulation läuft in festen Schritten: **1 Schritt = 1 Kalendertag**. Die Zeitstufe (§4) ändert nur, wie viele echte Sekunden ein Schritt dauert, nicht was er tut. Rendering läuft unabhängig mit `requestAnimationFrame`.
 4. `GameState` ist reines JSON, ohne Klasseninstanzen und ohne Zyklen.
 5. Geldbeträge werden intern als ganze Zahlen in **Hundertstel CC** gespeichert, damit keine Rundungsfehler entstehen (das GDD rechnet mit 0,4 oder 0,3 CC).
 
@@ -104,11 +104,14 @@ tools/
 ## 4. Spielzeit und Währung
 
 - **Währung:** CoffeeCoins, angezeigt als „CC“ mit bis zu einer Nachkommastelle (GDD 8.1).
-- **Abweichung vom GDD:** 1 Spieltag = **4 Minuten** bei 1× (GDD 11.1: 4 echte Stunden). Grund: Singleplayer ohne Idle-Betrieb. Wert in `time.realSecondsPerGameDay`.
-- Geschwindigkeiten: Pause, 1×, 2×, 4×.
-- Alle Zyklen werden in Spieltagen aus dem GDD übernommen. Beispiel: Robusta braucht 3 Spieltage, also 12 Minuten bei 1×.
+- **Kalender (Robert 2026-10-25, #27):** 12 Monate × 30 Tage, also 360 Tage pro Jahr (`time.monthsPerYear`, `time.daysPerMonth`). Das Spiel beginnt am 1. Januar, Jahr 1. Die Topbar zeigt Datum und Jahr, z. B. „12. März, Jahr 2“.
+- **Abweichung vom GDD:** Die Zeit läuft in zwei Stufen statt in Spieltagen von 4 echten Stunden (GDD 11.1). Grund: Singleplayer ohne Idle-Betrieb, schneller Einstieg.
+  - Stufe **„Monate“** ab Spielbeginn: 1 Monat dauert `time.realSecondsPerMonth` (20 s) bei 1×.
+  - Stufe **„Wochen“**: 1 Woche dauert `time.realSecondsPerWeek` (20 s) bei 1×. So bleibt Zeit, den Markt zu beobachten.
+  - Die Umschaltung auf Wochen kommt mit der Phase `time.weeksFromPhase` (Phase 2, 2.000 CC Kapital, §10). Sie geht nur vorwärts: Fällt das Kapital wieder unter die Grenze, bleibt die Stufe „Wochen“. Eine Meldung kündigt die Umschaltung an, und die aktuelle Einheit steht neben der Geschwindigkeit.
+- Geschwindigkeiten aus `time.speeds`: Pause, 1×, 2×, 4×, 8×, 16×. Sie wirken zusätzlich zur Stufe.
 - **Abweichung vom GDD:** Die Zeit läuft nur, solange das Spiel offen ist. Der Offline-Fortschritt aus GDD 2.1 entfällt.
-- Eine Spielwoche hat 7 Spieltage (GDD 11.1). Sie dient nur der Anzeige.
+- Eine Woche hat 7 Kalendertage (`time.daysPerWeek`, GDD 11.1). Die Stufe „Wochen“ rechnet damit die Dauer eines Tages aus.
 
 ---
 
