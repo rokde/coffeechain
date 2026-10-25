@@ -7,7 +7,7 @@ refreshes it after each merge.
 ## Repo
 - Base: `main`, or the local target branch when it already contains the base
   (local merges not pushed yet). Every job's worktree starts there.
-- Remote: `origin` = github.com/rokde/coffeechain (private). Push only when Robert asks.
+- Remote: `origin` = github.com/rokde/coffeechain (private). Push only when Robert asks (issue PRs: see Conventions).
 - Merge target: `main` (local; pushed on request)
 - Language / stack: planned (per `CLAUDE.md`, `PRD.md` §3): TypeScript (strict), Three.js, Vue 3 + Pinia (HUD), Vite, Tauri 2, Vitest, Playwright, `simplex-noise`. Versions in use: TypeScript 6, Vite 8, Vitest 5, ESLint 10, zod 4, Pinia 4, three 0.186. Rust stable is installed via rustup (`~/.cargo/bin`), so `npm run tauri dev` / `npm run tauri build` work locally.
 - Install: `npm install` (Playwright browsers: `npx playwright install chromium` once). Run it once in each new worktree.
@@ -15,7 +15,7 @@ refreshes it after each merge.
 - Lint / format: `npm run lint`, `npm run typecheck`, `npm run format` (ESLint + Prettier)
 
 ## Sources
-- GitHub issues: repo `rokde/coffeechain` (private; `gh` is logged in as `rokde`); no issues used yet
+- GitHub issues: repo `rokde/coffeechain` (private; `gh` is logged in as `rokde`). Issue items in the backlog start with `#<n>`.
 - Jira: none
 
 ## Conventions
@@ -27,6 +27,7 @@ refreshes it after each merge.
 - After scene/HUD changes: `npm run screenshot` and compare with `docs/mockups/`.
 - Code, identifiers and commits in English. Game texts in German in `src/ui/i18n/de.json`.
 - Commit messages: no history yet beyond "Initial commit"; use short imperative English subjects.
+- Issues and PRs (Robert 2026-10-25): issue jobs merge locally into `main` as usual. Dependent issues that build on each other ship together in **one PR** (branch from local `main`, pushed on Robert's request). The PR description has one section per issue: `Closes #<n>` when fully done, `Refs #<n>` when only partly done. For a partly done issue, edit its description: strike through the done points (`~~…~~`) or move them into a "Done" section, each with a link to the PR. Independent issues get their own PR.
 
 ## Factory rules
 - Product code never goes into `factory/` or `.claude/`.
