@@ -98,7 +98,7 @@ export const balanceSchema = z.object({
     volumeWindowDays: val(int),
     supplyUnitsForMinFactor: val(num),
     demandUnitsForMaxFactor: val(num),
-    historyDays: val(int),
+    historyMonths: val(int),
   }),
   orders: z.object({
     maxOpen: val(int),

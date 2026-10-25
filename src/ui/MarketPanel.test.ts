@@ -140,7 +140,7 @@ describe('MarketPanel (S20)', () => {
     expect(sellButton(block(html, 'arabicaStandard'))).toContain('disabled')
   })
 
-  it('AC-4: each block has two flat lines with historyDays points', async () => {
+  it('AC-5 (#27): each block has two flat lines with 12 points and month captions', async () => {
     const { pinia } = setup()
     const html = await renderToString(createSSRApp(MarketPanel).use(pinia))
     for (const variety of ['robusta', 'arabicaStandard']) {
@@ -148,12 +148,37 @@ describe('MarketPanel (S20)', () => {
       expect(lines).toHaveLength(2)
       for (const [, points] of lines) {
         const ys = points!.split(' ').map((p) => p.split(',')[1])
-        expect(ys).toHaveLength(balance().market.historyDays)
-        expect(ys).toHaveLength(14)
+        expect(ys).toHaveLength(balance().market.historyMonths)
+        expect(ys).toHaveLength(12)
         expect(new Set(ys).size).toBe(1)
       }
+      expect(block(html, variety)).toContain('Kaffee, 12 Monate')
+      expect(block(html, variety)).toContain('Saatgut, 12 Monate')
     }
   })
+
+  it.each([
+    [431, 'Apr', 'Mär'],
+    [0, 'Feb', 'Jan'],
+  ])(
+    'AC-5 (#27): on day %i the axis shows %s on the left and %s on the right',
+    async (day, left, right) => {
+      const { pinia, game } = setup()
+      const state = game.state as GameState
+      game.replace({ ...state, time: { ...state.time, day } })
+      const html = await renderToString(createSSRApp(MarketPanel).use(pinia))
+      const axes = [
+        ...block(html, 'robusta').matchAll(/data-testid="market-axis"[^>]*>(.*?)<\/div>/g),
+      ]
+      expect(axes).toHaveLength(2)
+      for (const [, axis] of axes) {
+        expect([...axis!.matchAll(/<span[^>]*>([^<]*)<\/span>/g)].map((m) => m[1])).toEqual([
+          left,
+          right,
+        ])
+      }
+    },
+  )
 
   it('AC-5: disables "Verkaufen" when the variety has no stock', async () => {
     const { pinia } = setup()
