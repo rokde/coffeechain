@@ -7,7 +7,7 @@ import { hashWorld } from './hash'
 import type { Parcel, World } from './types'
 
 const balance = loadBalance(raw)
-const { size, startReach, startGuaranteeParcels, volcanoSize } = balance.world
+const { size, startReach, startGuaranteeParcels } = balance.world
 
 const random = mulberry32(2024)
 const seeds = Array.from({ length: 200 }, () => Math.floor(random() * 2 ** 32))
@@ -74,12 +74,9 @@ describe('generateWorld', () => {
     expect(JSON.parse(JSON.stringify(w))).toEqual(w)
   })
 
-  it('AC-3: has exactly one connected volcano of the configured size in 200 worlds', () => {
-    for (const w of worlds) {
-      const volcano = w.parcels.filter((p) => p.zone === 'vulkan')
-      expect(volcano).toHaveLength(volcanoSize)
-      expect(group(w, volcano[0]!, (p) => p.zone === 'vulkan')).toHaveLength(volcanoSize)
-    }
+  it('AC-1 (#17): has no volcano zone in 200 worlds', () => {
+    const zones = new Set(worlds.flatMap((w) => w.parcels.map((p) => p.zone)))
+    expect([...zones].sort()).toEqual(['hochland', 'hochlandKuehl', 'tiefland', 'wasser'])
   })
 
   it('AC-4: keeps the start guarantee in 200 worlds', () => {

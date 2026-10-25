@@ -42,8 +42,6 @@ export function plant(state: GameState, command: Plant): GameState {
     if (!(index in state.farm.parcels)) throw new Error(`Parcel ${x},${y} is not owned`)
     if (index in plants) throw new Error(`Parcel ${x},${y} already has a plant or is listed twice`)
     if (index in state.buildings) throw new Error(`Parcel ${x},${y} has a building`)
-    if (!canPlant(state, command.variety, x, y))
-      throw new Error(`Variety ${command.variety} does not grow on parcel ${x},${y}`)
     plants[index] = { variety: command.variety, plantedHour: state.time.hour }
   }
 
@@ -56,12 +54,6 @@ export function plant(state: GameState, command: Plant): GameState {
     [command.variety]: (bought.market.seeds[command.variety] ?? 0) - count,
   }
   return { ...bought, market: { ...bought.market, seeds }, farm: { ...state.farm, plants } }
-}
-
-// PRD §5: Specialty grows only on volcano soil. The other varieties grow off-zone with offZoneYieldFactor.
-export function canPlant(state: GameState, variety: Variety, x: number, y: number): boolean {
-  const zone = state.world.parcels[y * state.world.size + x]?.zone
-  return isVarietyUnlocked(state, variety) && (variety !== 'specialty' || zone === 'vulkan')
 }
 
 const missingSeeds = (state: GameState, variety: Variety, count: number) =>

@@ -65,7 +65,6 @@ describe('balance.json', () => {
       'world.zoneMinHeight',
       'world.falloffPower',
       'world.noiseScale',
-      'world.volcanoSize',
       'soil.classMinQuality',
     ]
     const src = Object.fromEntries(leaves(raw).map((l) => [l.path, l.src]))

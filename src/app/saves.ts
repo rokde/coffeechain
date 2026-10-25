@@ -42,22 +42,26 @@ export async function loadSlot(slot: string): Promise<void> {
 
 let pendingError: string | null = null
 
-// The reason why the last pending load was invalid, or null.
+// The reason why the last pending load or autosave at start was invalid, or null.
 export const pendingLoadError = () => pendingError
+
+// The state of a save at start, or null. Keeps the reason for the save panel when it is invalid.
+export function loadAtStart(text: string, name: string): GameState | null {
+  try {
+    return deserialize(text)
+  } catch (error) {
+    console.error(`${name} is invalid, a new game starts`, error)
+    pendingError = errorMessage(error)
+    return null
+  }
+}
 
 // The state from loadSlot before the reload, or null. Removes the key.
 export function takePendingLoad(): GameState | null {
   pendingError = null
   const text = sessionStorage.getItem(PENDING)
   sessionStorage.removeItem(PENDING)
-  if (text === null) return null
-  try {
-    return deserialize(text)
-  } catch (error) {
-    console.error('Pending load is invalid', error)
-    pendingError = errorMessage(error)
-    return null
-  }
+  return text === null ? null : loadAtStart(text, 'Pending load')
 }
 
 // Tauri invoke rejects with a plain string, not an Error.

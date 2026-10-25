@@ -147,7 +147,6 @@ describe('balance config (S21d)', () => {
       tiefland: 1,
       hochland: 1.5,
       hochlandKuehl: 2,
-      vulkan: 4,
     })
     expect(raw.parcels.maxSlope.v).toBe(0.15)
   })

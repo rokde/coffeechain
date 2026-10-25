@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { invoke, isTauri } from '@tauri-apps/api/core'
-import { serialize } from '../sim/save/save'
+import { SAVE_VERSION, serialize } from '../sim/save/save'
 import { createState } from '../sim/state'
 import { loadSlot, readSlot, writeSlot } from './saves'
 import { startState } from './resume'
@@ -77,7 +77,7 @@ describe('save slots (S42)', () => {
   })
 
   it('AC-4: does not load an invalid save', async () => {
-    await writeSlot('slot-1', JSON.stringify({ version: 1, state: { money: 'a lot' } }))
+    await writeSlot('slot-1', JSON.stringify({ version: SAVE_VERSION, state: { money: 'a lot' } }))
     await expect(loadSlot('slot-1')).rejects.toThrow(/money/)
     await expect(loadSlot('slot-2')).rejects.toThrow(/empty/)
     expect(session.setItem).not.toHaveBeenCalled()
@@ -104,7 +104,7 @@ describe('save slots (S42)', () => {
 
   it('AC-5: the store ignores an invalid pending save', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
-    session.setItem(PENDING, JSON.stringify({ version: 1, state: { money: 1 } }))
+    session.setItem(PENDING, JSON.stringify({ version: SAVE_VERSION, state: { money: 1 } }))
     setStartState(await startState(location.search))
     const store = useGameStore()
     expect(store.state).toEqual(createState(42))

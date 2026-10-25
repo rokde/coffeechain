@@ -15,7 +15,7 @@ const parcel = z.object({
   x: int,
   y: int,
   height: num,
-  zone: z.enum(['wasser', 'tiefland', 'hochland', 'hochlandKuehl', 'vulkan']),
+  zone: z.enum(['wasser', 'tiefland', 'hochland', 'hochlandKuehl']),
   fertility: num,
   waterRetention: num,
   soilQuality: num,

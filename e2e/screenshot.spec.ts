@@ -137,7 +137,7 @@ test('S8: parcel inspector', async ({ page }) => {
   await expect(inspector).toBeVisible()
   await expect(page.getByTestId('hud-right-panel')).toContainText('Parzelle')
   await expect(page.getByTestId('inspector-zone')).toHaveText(
-    /^(Tiefland|Hochland|Kühles Hochland|Vulkan)$/,
+    /^(Tiefland|Hochland|Kühles Hochland)$/,
   )
   await expect(page.getByTestId('inspector-soil')).toHaveText(/^(Karg|Mittel|Gut|Sehr gut)$/)
   await expect(page.getByTestId('inspector-variety')).toHaveText(
@@ -1198,47 +1198,38 @@ for (const [width, height] of [
   [800, 600],
   [390, 844],
 ] as const) {
-  test(`#8: an old save with events loads without event chips or warnings at ${width} px`, async ({
+  test(`#17: an old autosave starts a new game with the invalid-save message at ${width} px`, async ({
     page,
   }) => {
     const errors: string[] = []
     page.on('pageerror', (e) => errors.push(e.message))
     await page.setViewportSize({ width, height })
-    await page.goto('/?seed=4294967295')
-    await page.getByTestId('save-button').click()
-    await page.getByTestId('save-slot-1').getByTestId('save-slot-save').click()
-    await page.evaluate(() => {
-      const key = 'coffeechain.save.slot-1'
-      const save = JSON.parse(localStorage.getItem(key)!)
-      save.version = 8
-      save.state.time = { ...save.state.time, hour: 4 * 24 + 8, speed: 0 }
-      save.state.events = [
-        { type: 'frost', announcedDay: 3, startDay: 5, endDay: 8 },
-        { type: 'pests', announcedDay: 5, startDay: 6, endDay: 9 },
-      ]
-      save.state.research = [3]
-      localStorage.setItem(key, JSON.stringify(save))
-    })
-    await page.getByTestId('save-panel-close').click()
-    await page.getByTestId('save-button').click()
-    await page.getByTestId('save-slot-1').getByTestId('save-slot-load').click()
-    await page.getByTestId('first-steps-close').click()
-    await expect(page.getByTestId('clock')).toContainText('Tag 5')
-    await expect(page.getByTestId('active-event')).toHaveCount(0)
-    await expect(page.locator('.events')).toHaveCount(0)
-    await expect(page.getByTestId('hud-left-panel')).not.toContainText('Warnung')
-    await expect(page.getByTestId('hud-top-bar')).not.toContainText('Frost')
+    // A version 10 autosave from the time before #17. The start must reject it.
+    await page.addInitScript(() =>
+      localStorage.setItem(
+        'coffeechain.save.autosave',
+        JSON.stringify({ version: 10, state: { money: 430000 } }),
+      ),
+    )
+    await page.goto('/')
+    await expect(page.getByTestId('clock')).toHaveText(/^Tag 1 /)
+    const panel = page.getByTestId('save-panel')
+    await expect(panel).toContainText('Der geladene Spielstand ist ungültig.')
+    expect(await panel.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+    await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
+    await page.screenshot({ path: `docs/progress/083-${width}.png` })
 
-    const bar = page.getByTestId('hud-top-bar')
-    expect(await bar.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
-    const box = async (id: string) => (await page.getByTestId(id).boundingBox())!
-    const top = await box('hud-top-bar')
-    for (const id of ['hud-left-panel', 'hud-right-panel']) {
-      const panel = await box(id)
-      expect(panel.y, id).toBeGreaterThanOrEqual(top.y + top.height)
-    }
+    await page.getByTestId('save-panel-close').click()
+    await page.getByTestId('first-steps-close').click()
+    await page.getByTestId('tool-plant').click()
+    await expect(page.getByTestId('plant-tool-zone-specialty')).toHaveText(
+      'passt zu kühlem Hochland',
+    )
+    await expect(page.locator('body')).not.toContainText('Vulkan')
+    const right = page.getByTestId('hud-right-panel')
+    expect(await right.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+    await page.screenshot({ path: `docs/progress/083-plant-${width}.png` })
     expect(errors).toEqual([])
-    await page.screenshot({ path: `docs/progress/081-${width}.png` })
   })
 }
 
