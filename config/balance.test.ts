@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import raw from './balance.json'
 import { loadBalance } from './balance.schema'
@@ -13,6 +13,21 @@ function leaves(node: unknown, path: string[] = []): { path: string; src: unknow
     key === '_format' ? [] : leaves(child, [...path, key]),
   )
 }
+
+// Joins the non-test .ts and .vue files under src/ and tools/.
+function sources(): string {
+  return ['../src/', '../tools/']
+    .flatMap((dir) => {
+      const root = new URL(dir, import.meta.url)
+      return readdirSync(root, { recursive: true, encoding: 'utf8' })
+        .filter((f) => /\.(ts|vue)$/.test(f) && !f.endsWith('.test.ts'))
+        .map((f) => readFileSync(new URL(f, root), 'utf8'))
+    })
+    .join('\n')
+}
+
+const unread = (keys: string[], code: string) =>
+  keys.filter((key) => !new RegExp(`\\b${key}\\b`).test(code))
 
 const copy = () => structuredClone(raw) as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -58,5 +73,18 @@ describe('balance.json', () => {
       expect(src[path], path).toBe('NEU')
       expect(doc).toContain(`\`${path}\``)
     }
+  })
+
+  it('loads a copy with an unknown market key and strips it', () => {
+    const cfg = copy()
+    cfg.market.bankSellFactor = { v: 1.2, src: 'GDD 11.3' }
+    expect(loadBalance(cfg).market).not.toHaveProperty('bankSellFactor')
+  })
+
+  it('has a reader in src/ or tools/ for every market value', () => {
+    const code = sources()
+    const keys = Object.keys(raw.market)
+    expect(unread(keys, code)).toEqual([])
+    expect(unread([...keys, 'bankSellFactor'], code)).toEqual(['bankSellFactor'])
   })
 })

@@ -176,7 +176,7 @@ Hütte am Startpunkt, ein Markt am Ufer, ein Weg dazwischen, Bäume auf ungünst
 | Bewässerung | 1 / 2 / 3 / 5 CC | Ertragsverlust bei Dürre-Event wird halbiert (`NEU`) |
 | Schädlingsschutz | 1 / 2 / 3 / 5 CC | Ertragsverlust bei Schädlings-Event wird halbiert (`NEU`) |
 
-Jede Maßnahme kann einmal pro Zyklus und Parzelle angewendet werden, solange die Pflanze noch nicht reif ist. Der Dünger wird dabei automatisch zum Bank-Preis gekauft, ein eigenes Dünger-Lager gibt es in v1 nicht.
+Jede Maßnahme kann einmal pro Zyklus und Parzelle angewendet werden, solange die Pflanze noch nicht reif ist. Den Dünger bezahlt der Spieler mit den Pflegekosten der Sorte, ein eigenes Dünger-Lager gibt es in v1 nicht.
 
 ### Wachstum und Darstellung
 Sichtbare Phasen innerhalb eines Zyklus: **Setzling (0–25 %) → Wachstum (25–60 %) → Blüte (60–90 %) → Fruchtansatz (90–100 %) → Reif**. Die Prozentgrenzen stehen in `farm.visualStages`. Sie sind nur Optik und ändern nichts an der Zykluslänge.
@@ -222,8 +222,8 @@ menge = basisErtrag(sorte)
 
 - Ein Markt in der Welt („Markt Santa Rosa“), erreichbar über das HUD oder per Klick auf die Stände.
 - **Die Bank kauft:** Rohkaffee aller Sorten, aufbereiteten Kaffee.
-- **Die Bank verkauft:** Saatgut, Dünger, Ausbauten. Saatgut und Pflege werden auch direkt beim Pflanzen gekauft, der Markt ist dann nur ein Weg mehr.
-- **Referenzpreise und Spread (GDD 11.3):** Die Bank kauft für 80 % und verkauft für 120 % des Referenzpreises (40 % Spread).
+- **Die Bank verkauft:** nur Saatgut. Saatgut wird auch direkt beim Pflanzen gekauft, der Markt ist dann nur ein Weg mehr. Dünger bezahlt der Spieler mit der Pflegemaßnahme, Ausbauten baut er.
+- **Referenzpreise und Spread (GDD 11.3):** Die Bank kauft für 80 % des Marktpreises und verkauft Saatgut zum Marktpreis.
 - **Preisbildung pro Ware (GDD 3.4, 11.3):**
   ```
   preis = referenz × eventFaktor × angebotsFaktor × nachfrageFaktor

@@ -24,7 +24,7 @@ export const cares = {
   ProtectPests: { flag: 'pestProtected', cost: 'pestControl' },
 } as const
 
-// The cost comes from varieties.*.careCost, not market.fertilizerPrice (see docs/open-questions.md).
+// The cost comes from varieties.*.careCost (see docs/open-questions.md).
 export function care(state: GameState, command: Fertilize | Irrigate | ProtectPests): GameState {
   const { flag } = cares[command.type]
   const { size } = state.world
