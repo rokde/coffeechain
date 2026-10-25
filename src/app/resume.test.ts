@@ -23,7 +23,7 @@ beforeEach(() => {
     setItem: (k: string, v: string) => session.set(k, v),
     removeItem: (k: string) => session.delete(k),
   })
-  vi.stubGlobal('location', { reload: vi.fn() })
+  vi.stubGlobal('location', { pathname: '/', reload: vi.fn(), replace: vi.fn() })
   vi.mocked(isTauri).mockReturnValue(false)
   vi.mocked(invoke).mockReset()
 })
@@ -36,18 +36,24 @@ const saved = () => {
 describe('startState (S43b)', () => {
   it('AC-1: returns the autosave state without ?seed=', async () => {
     local.set(AUTOSAVE, serialize(saved()))
-    const state = await startState('')
+    const { state, menu } = await startState('')
     expect(state).toEqual(saved())
     expect(state?.world.seed).toBe(7)
+    expect(menu).toBe(true)
   })
 
   it('AC-1: ignores other query parameters', async () => {
     local.set(AUTOSAVE, serialize(saved()))
-    expect(await startState('?debug=models&seed=x')).toEqual(saved())
+    expect(await startState('?seed=x')).toEqual({ state: saved(), menu: true })
+  })
+
+  it('#3 AC-5: ?debug=models skips the start screen', async () => {
+    local.set(AUTOSAVE, serialize(saved()))
+    expect(await startState('?debug=models&seed=x')).toEqual({ state: saved(), menu: false })
   })
 
   it('AC-1: returns null for an empty slot', async () => {
-    expect(await startState('')).toBeNull()
+    expect(await startState('')).toEqual({ state: null, menu: true })
   })
 
   it.each([['{broken'], [JSON.stringify({ version: 1, state: { money: 'a lot' } })]])(
@@ -55,7 +61,7 @@ describe('startState (S43b)', () => {
     async (text) => {
       const error = vi.spyOn(console, 'error').mockImplementation(() => {})
       local.set(AUTOSAVE, text)
-      await expect(startState('')).resolves.toBeNull()
+      expect((await startState('')).state).toBeNull()
       expect(error).toHaveBeenCalled()
     },
   )
@@ -63,10 +69,10 @@ describe('startState (S43b)', () => {
   it('AC-3 (#17): returns null for a version 10 autosave and keeps the reason', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     local.set(AUTOSAVE, JSON.stringify({ version: 10, state: saved() }))
-    await expect(startState('')).resolves.toBeNull()
+    expect((await startState('')).state).toBeNull()
     expect(pendingLoadError()).toMatch(/unknown or old version/)
     local.set(AUTOSAVE, serialize(saved()))
-    expect(await startState('')).toEqual(saved())
+    expect((await startState('')).state).toEqual(saved())
     expect(pendingLoadError()).toBeNull()
   })
 
@@ -75,7 +81,7 @@ describe('startState (S43b)', () => {
     const state = saved()
     const world = { ...state.world, parcels: state.world.parcels.slice(0, 10) }
     local.set(AUTOSAVE, serialize({ ...state, world }))
-    await expect(startState('')).resolves.toBeNull()
+    expect((await startState('')).state).toBeNull()
     expect(String(error.mock.calls[0]?.[1])).toMatch(/Parcel count does not match size/)
   })
 
@@ -85,7 +91,7 @@ describe('startState (S43b)', () => {
       const error = vi.spyOn(console, 'error').mockImplementation(() => {})
       const state = saved()
       local.set(AUTOSAVE, serialize({ ...state, props: { ...state.props, path } }))
-      await expect(startState('')).resolves.toBeNull()
+      expect((await startState('')).state).toBeNull()
       expect(String(error.mock.calls[0]?.[1])).toMatch(/path/)
     },
   )
@@ -93,17 +99,17 @@ describe('startState (S43b)', () => {
   it('a failed start skips the autosave for the next start only', async () => {
     local.set(AUTOSAVE, serialize(saved()))
     skipResume()
-    expect(location.reload).toHaveBeenCalledOnce()
-    expect(await startState('')).toBeNull()
+    expect(location.replace).toHaveBeenCalledExactlyOnceWith('/')
+    expect(await startState('')).toEqual({ state: null, menu: true })
     expect(getItem).not.toHaveBeenCalled()
-    expect(await startState('')).toEqual(saved())
+    expect((await startState('')).state).toEqual(saved())
   })
 
   it('AC-1: returns null and logs when readSlot rejects', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.mocked(isTauri).mockReturnValue(true)
     vi.mocked(invoke).mockRejectedValue('disk error')
-    await expect(startState('')).resolves.toBeNull()
+    expect((await startState('')).state).toBeNull()
     expect(invoke).toHaveBeenCalledWith('save_read', { slot: 'autosave' })
     expect(error).toHaveBeenCalled()
   })
@@ -112,13 +118,13 @@ describe('startState (S43b)', () => {
     local.set(AUTOSAVE, serialize(saved()))
     const pending = { ...createState(9), money: 100 }
     session.set(PENDING, serialize(pending))
-    expect(await startState('')).toEqual(pending)
+    expect(await startState('')).toEqual({ state: pending, menu: false })
     expect(session.has(PENDING)).toBe(false)
   })
 
   it('AC-2: with ?seed=7 it returns null and does not read the slot', async () => {
     local.set(AUTOSAVE, serialize(saved()))
-    expect(await startState('?seed=7')).toBeNull()
+    expect(await startState('?seed=7')).toEqual({ state: null, menu: false })
     expect(getItem).not.toHaveBeenCalled()
   })
 
@@ -126,6 +132,6 @@ describe('startState (S43b)', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     local.set(AUTOSAVE, serialize(saved()))
     session.set(PENDING, '{broken')
-    expect(await startState('')).toEqual(saved())
+    expect((await startState('')).state).toEqual(saved())
   })
 })

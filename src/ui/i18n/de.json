@@ -351,6 +351,18 @@
       { "keys": "Rechtsklick", "text": "Werkzeug ablegen" }
     ]
   },
+  "startScreen": {
+    "subtitle": "Von der Bohne bis zur Tasse",
+    "island": "Deine Insel",
+    "seed": "Seed",
+    "seedHint": "Ganze Zahl von 0 bis 4294967295",
+    "reroll": "Neuer Seed",
+    "play": "Spiel starten",
+    "welcome": "Willkommen zurück",
+    "continue": "Weiterspielen",
+    "newGame": "Neues Spiel",
+    "back": "Zurück zum Spielstand"
+  },
   "savePanel": {
     "open": "Spielstand",
     "heading": "Spielstand",

@@ -11,6 +11,7 @@ test('M0: scene and empty HUD frame', async ({ page }) => {
   page.on('pageerror', (error) => errors.push(error.message))
 
   await page.goto('/')
+  await page.getByTestId('start-play').click()
   const hasWebGl = await page
     .locator('canvas#scene')
     .evaluate((canvas: HTMLCanvasElement) => canvas.getContext('webgl2') !== null)
@@ -25,7 +26,7 @@ test('M0: scene and empty HUD frame', async ({ page }) => {
 })
 
 test('S9: clock and speed buttons', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/?seed=48213')
   await expect(page.getByTestId('clock')).toHaveText('1. Januar, Jahr 1')
   const expectActive = async (active: number) => {
     for (const s of speeds) {
@@ -76,7 +77,7 @@ for (const width of [1100, 800, 390, 360]) {
 }
 
 test('S21c: keys change the speed', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/?seed=48213')
   const expectActive = async (active: number) => {
     for (const s of speeds) {
       await expect(page.getByTestId(`speed-${s}`)).toHaveAttribute(
@@ -211,7 +212,7 @@ test('S7: soil and zone overlay toggles', async ({ page }) => {
 
 test('S7: overlay legend fits a narrow window', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto('/')
+  await page.goto('/?seed=48213')
   const panel = page.getByTestId('hud-overlay-panel')
   for (const mode of ['soil', 'zone']) {
     await page.getByTestId(`overlay-${mode}`).click()
@@ -548,7 +549,7 @@ test('S40b: start view frames the hut, the market stand and the path', async ({ 
 
 test('S20: market panel fits a narrow window', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto('/')
+  await page.goto('/?seed=48213')
   for (const tool of tools)
     await expect(page.getByTestId(`tool-${tool}`)).toBeInViewport({ ratio: 1 })
   await page.getByTestId('tool-market').click()
@@ -646,7 +647,7 @@ test('S18a: care and harvest tools, storage chip', async ({ page }) => {
 for (const width of [1280, 390, 360]) {
   test(`S18a: all tools fit the toolbar at ${width} px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 })
-    await page.goto('/')
+    await page.goto('/?seed=48213')
     const toolbar = page.getByTestId('hud-toolbar')
     expect(await toolbar.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
     for (const tool of tools) {
@@ -846,7 +847,7 @@ test('S25: first steps tick, highlight and close', async ({ page }) => {
 })
 
 test('S35a: help overlay opens and closes', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/?seed=48213')
   const overlay = page.getByTestId('help-overlay')
   await expect(overlay).toHaveCount(0)
   await page.getByTestId('help-button').click()
@@ -861,7 +862,7 @@ test('S35a: help overlay opens and closes', async ({ page }) => {
 })
 
 test('S35a: help keys leave the speed alone and ignore inputs', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/?seed=48213')
   const pressed = (s: number) => page.getByTestId(`speed-${s}`)
   await page.keyboard.press('3')
   await expect(pressed(4)).toHaveAttribute('aria-pressed', 'true')
@@ -887,7 +888,7 @@ test('S35a: help keys leave the speed alone and ignore inputs', async ({ page })
 test('S53: letter keys pick tools, buttons have tooltips, the help lists the keys', async ({
   page,
 }) => {
-  await page.goto('/')
+  await page.goto('/?seed=48213')
   const plant = page.getByTestId('tool-plant')
   await expect(plant).toHaveAttribute('title', 'Pflanzen (L)')
   await expect(plant).toHaveAttribute('aria-keyshortcuts', 'L')
@@ -910,7 +911,7 @@ test('S53: letter keys pick tools, buttons have tooltips, the help lists the key
 
 test('S35a: help button and overlay fit a narrow window', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 640 })
-  await page.goto('/')
+  await page.goto('/?seed=48213')
   const bar = (await page.getByTestId('hud-top-bar').boundingBox())!
   const button = (await page.getByTestId('help-button').boundingBox())!
   expect(button.x + button.width).toBeLessThanOrEqual(bar.x + bar.width)
@@ -923,7 +924,7 @@ test('S35a: help button and overlay fit a narrow window', async ({ page }) => {
 for (const [width, height] of [[1440, 900] as const, [800, 600] as const, [390, 700] as const]) {
   test(`S62: help with washing and storage fits and scrolls at ${width} px`, async ({ page }) => {
     await page.setViewportSize({ width, height })
-    await page.goto('/')
+    await page.goto('/?seed=48213')
     await page.getByTestId('help-button').click()
     const panel = page.getByTestId('help-overlay')
     const box = (await panel.boundingBox())!
@@ -1062,11 +1063,13 @@ test('S43b: the game resumes from the autosave, and "Neues Spiel" starts on 1 Ja
   page.on('pageerror', (error) => errors.push(error.message))
   const clock = page.getByTestId('clock')
   await page.goto('/')
+  await page.getByTestId('start-play').click()
   // At speed 4 one month takes 5 real seconds. The loaded autosave keeps this speed.
   await page.getByTestId('speed-4').click()
   await expect(clock).toHaveText(/Februar, Jahr 1$/, { timeout: 30_000 })
   await page.getByTestId('speed-0').click()
   await page.reload()
+  await page.getByTestId('start-continue').click()
   await page.getByTestId('speed-0').click()
   await expect(clock).toHaveText(/Februar, Jahr 1$/)
   const resumed = await clock.textContent()
@@ -1086,7 +1089,12 @@ test('S43b: the game resumes from the autosave, and "Neues Spiel" starts on 1 Ja
   await expect(clock).toHaveText(resumed!)
   await page.screenshot({ path: 'docs/progress/save-panel-new-game.png' })
   await page.getByTestId('save-new-game-confirm').click()
+  // #3: the start screen opens with the seed field and without the save offer.
+  await expect(page.getByTestId('start-continue')).toHaveCount(0)
+  await page.getByTestId('start-seed').fill('48213')
+  await page.getByTestId('start-play').click()
   await expect(clock).toHaveText('1. Januar, Jahr 1')
+  await expect(page.getByTestId('world-seed')).toHaveText('Welt #48213')
   await expect(page.getByTestId('save-panel')).toHaveCount(0)
   expect(errors).toEqual([])
 })
@@ -1096,6 +1104,7 @@ test('S43b: a broken autosave gives a new game', async ({ page }) => {
   page.on('pageerror', (error) => errors.push(error.message))
   await page.addInitScript(() => localStorage.setItem('coffeechain.save.autosave', '{broken'))
   await page.goto('/')
+  await page.getByTestId('start-play').click()
   await expect(page.getByTestId('clock')).toHaveText('1. Januar, Jahr 1')
   const canvas = page.locator('canvas#scene')
   await expect(canvas).toHaveAttribute('data-props', 'ready')
@@ -1218,6 +1227,7 @@ for (const [width, height] of [
       ),
     )
     await page.goto('/')
+    await page.getByTestId('start-play').click()
     await expect(page.getByTestId('clock')).toHaveText('1. Januar, Jahr 1')
     const panel = page.getByTestId('save-panel')
     await expect(panel).toContainText('Der geladene Spielstand ist ungültig.')

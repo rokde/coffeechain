@@ -95,7 +95,7 @@ describe('save slots (S42)', () => {
   it('AC-5: the store starts with the pending save and removes the key', async () => {
     const state = { ...createState(7), money: 12300 }
     session.setItem(PENDING, serialize(state))
-    setStartState(await startState(location.search))
+    setStartState((await startState(location.search)).state)
     const store = useGameStore()
     expect(store.state.world.seed).toBe(7)
     expect(store.state.money).toBe(12300)
@@ -105,7 +105,7 @@ describe('save slots (S42)', () => {
   it('AC-5: the store ignores an invalid pending save', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     session.setItem(PENDING, JSON.stringify({ version: SAVE_VERSION, state: { money: 1 } }))
-    setStartState(await startState(location.search))
+    setStartState((await startState(location.search)).state)
     const store = useGameStore()
     expect(store.state).toEqual(createState(42))
     expect(session.getItem(PENDING)).toBeNull()

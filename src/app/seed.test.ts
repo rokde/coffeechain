@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { pickSeed } from './seed'
+import { parseSeed, pickSeed } from './seed'
 
 describe('pickSeed', () => {
   it.each([
@@ -19,5 +19,18 @@ describe('pickSeed', () => {
       expect(seed).toBeGreaterThanOrEqual(0)
       expect(seed).toBeLessThanOrEqual(0xffffffff)
     },
+  )
+})
+
+describe('parseSeed (#3)', () => {
+  it.each([
+    ['48213', 48213],
+    ['0', 0],
+    ['4294967295', 4294967295],
+  ])('reads %s', (text, seed) => expect(parseSeed(text)).toBe(seed))
+
+  it.each([null, '', '-1', '1.5', '4294967296', 'abc', '1e3', ' 7', '../slot', '12345678901'])(
+    'rejects %j',
+    (text) => expect(parseSeed(text)).toBeNull(),
   )
 })
