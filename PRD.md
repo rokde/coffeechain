@@ -8,7 +8,7 @@
 
 ## 1. Worum es geht
 
-CoffeeChain 3D ist eine Aufbausimulation in 3D für den Mac. Man startet auf einer zufällig erzeugten Insel und baut eine Kaffeefarm auf. Der Boden ist unterschiedlich gut und die Insel hat verschiedene Lagen (Tiefland, Hochland, Vulkanboden). Beides bestimmt, welche Sorte wo gut wächst und wie viel man erntet. Die Ernte verkauft man auf dem Markt und kauft dort Saatgut, Dünger und Ausbauten.
+CoffeeChain 3D ist eine Aufbausimulation in 3D für den Mac. Man startet auf einer zufällig erzeugten Insel und baut eine Kaffeefarm auf. Der Boden ist unterschiedlich gut und die Insel hat verschiedene Lagen (Tiefland, Hochland, kühles Hochland). Beides bestimmt, welche Sorte wo gut wächst und wie viel man erntet. Die Ernte verkauft man auf dem Markt und kauft dort Saatgut, Dünger und Ausbauten.
 
 Das Spiel basiert auf dem Browser-Konzept **CoffeeChain** (GDD in `docs/gdd.md`). CoffeeChain 3D übernimmt daraus den **Farmer-Pfad** (GDD Kap. 5), die **Bank** als Handelspartner (GDD 3.4, 11.3), und das **Balancing** (GDD 11). Die **Events** (GDD 11.8) entfallen vorerst (Robert 2026-10-25, #8). Neu gegenüber dem GDD sind die 3D-Welt, die Bodenqualität pro Parzelle und die Weltgenerierung.
 
@@ -120,17 +120,16 @@ tools/
 - Höhe über Noise. Sehr steile Parzellen sind nicht bebaubar.
 
 ### Lagen (aus GDD 5.3 abgeleitet)
-Das GDD hat vier Regionen. In CoffeeChain 3D liegen sie als Zonen auf derselben Insel:
+Das GDD hat vier Regionen. In CoffeeChain 3D liegen drei Lagen als Zonen auf derselben Insel (Robert 2026-10-25, #17).
 
-| Lage | Entstehung in der Welt | Passende Sorte | Risiko (Event) | Landpreis |
-|---|---|---|---|---|
-| Tiefland | niedrige Höhe, Küstennähe | Robusta | Schädlinge, Monsun | niedrig |
-| Hochland (gemäßigt) | mittlere Höhe | Arabica Standard | Frost | mittel |
-| Hochland (kühl-trocken) | große Höhe | Arabica Premium | Frost, Dürre | hoch |
-| Vulkanboden | 1 kleine, zusammenhängende Zone pro Welt, meist abseits vom Start | Spezialität | Vulkan-Event (nach v1) | sehr hoch |
+| Lage | Entstehung in der Welt | Passende Sorte | Landpreis |
+|---|---|---|---|
+| Tiefland | niedrige Höhe, Küstennähe | Robusta | niedrig |
+| Hochland (gemäßigt) | mittlere Höhe | Arabica Standard | mittel |
+| Hochland (kühl-trocken) | große Höhe | Arabica Premium, Spezialität | hoch |
 
-- Der Spieler startet im Tiefland. Hochland ist von dort aus erreichbar, der Vulkanboden liegt weiter weg.
-- **NEU:** Pflanzt man eine Sorte außerhalb ihrer passenden Lage, sinkt der Ertrag (Startwert: ×0,6, `world.offZoneYieldFactor`). Spezialität wächst nur auf Vulkanboden.
+- Der Spieler startet im Tiefland. Hochland ist von dort aus erreichbar.
+- **NEU:** Pflanzt man eine Sorte außerhalb ihrer passenden Lage, sinkt der Ertrag (Startwert: ×0,6, `world.offZoneYieldFactor`). Das gilt für alle Sorten. Spezialität passt zu kühlem Hochland (Robert 2026-10-25, #17).
 
 ### Bodenqualität (NEU, nicht im GDD)
 - Pro Parzelle: `fertility` (0–100), `waterRetention` (0–100), daraus `soilQuality` (0–1) und eine Klasse **Karg / Mittel / Gut / Sehr gut**.
@@ -151,7 +150,7 @@ Hütte am Startpunkt, ein Markt am Ufer, ein Weg dazwischen, Bäume auf ungünst
 - Mehrere benachbarte Parzellen bilden ein benanntes Feld (Feld A, B, …). Das dient nur der Übersicht und gemeinsamen Aktionen.
 - Parzelle anlegen kostet CC, abhängig vom Landpreis der Lage, und entfernt Bäume.
   - GDD-Anker (11.6): erstes Feld inkl. Robusta ca. 50 CC, zweites Feld 100 CC.
-  - Startwerte (`parcels.firstCost`, `parcels.baseCost`, `parcels.zoneMultiplier`): Tiefland 15 CC für die erste Parzelle, danach Grundpreis 25 CC je Parzelle (Robert 2026-10-20, vorher 48 und 100 CC); Hochland ×1,5, kühles Hochland ×2, Vulkanboden ×4. Die Multiplikatoren sind `NEU`.
+  - Startwerte (`parcels.firstCost`, `parcels.baseCost`, `parcels.zoneMultiplier`): Tiefland 15 CC für die erste Parzelle, danach Grundpreis 25 CC je Parzelle (Robert 2026-10-20, vorher 48 und 100 CC); Hochland ×1,5, kühles Hochland ×2. Die Multiplikatoren sind `NEU`.
   - Ab der zweiten Parzelle hängt der Preis von der Bodengüte ab (Faktor 0,5–1,5, `parcels.qualityFactor`). Die Güte mischt die eigene Bodenqualität zur Hälfte mit dem Mittel der vier Nachbarn (`parcels.neighborWeight`), höchstens `parcels.worseGap` über der eigenen. So kosten Nachbarn ähnlich viel, eine deutlich schlechtere Parzelle bleibt billig.
 - Der Anbau läuft in **Zyklen** wie im GDD (5.4): pflanzen → wachsen → ernten. Nach der Ernte ist die Parzelle leer und wird neu bepflanzt (Saatgut kostet erneut).
 
@@ -172,7 +171,7 @@ Hütte am Startpunkt, ein Markt am Ufer, ein Weg dazwischen, Bäume auf ungünst
 | Maßnahme | Kosten pro Parzelle und Zyklus (R / AS / AP / S) | Wirkung |
 |---|---|---|
 | Dünger | 1 / 2 / 4 / 6 CC | Ertrag steigt (Startwert: +25 %, `NEU`) und `fertility` wird teilweise aufgefüllt |
-| Bewässerung | 1 / 2 / 3 / 5 CC | Ertragsverlust bei Dürre-Event wird halbiert (`NEU`) |
+| Bewässerung | 1 / 2 / 3 / 5 CC | Kein Einfluss auf den Ertrag in v1 (die Events entfallen, #8) |
 
 Jede Maßnahme kann einmal pro Zyklus und Parzelle angewendet werden, solange die Pflanze noch nicht reif ist. Den Dünger bezahlt der Spieler mit den Pflegekosten der Sorte, ein eigenes Dünger-Lager gibt es in v1 nicht.
 
@@ -252,7 +251,7 @@ Die alten Werte stehen in `docs/gdd.md` 11.8.
 |---|---|---|
 | 1: Einstieg | 500 → 2.000 CC | Robusta, Arabica Standard, Aufbereitung |
 | 2: Wachstum | 2.000 → 10.000 CC | Arabica Premium, Lager-Ausbau Stufe 2 |
-| 3: Spezialisierung | ab 10.000 CC | Spezialität (Vulkanboden) |
+| 3: Spezialisierung | ab 10.000 CC | Spezialität |
 
 - Meilensteine aus GDD 12.3, soweit für den Farmer relevant: „Ernte-Profi“ (1.000 Einheiten geerntet → +5 % Erntequalität dauerhaft).
 - **Tutorial** als Checkliste „Erste Schritte“ (siehe Mockup Tag 1):
@@ -321,7 +320,7 @@ Jeder Meilenstein endet mit: grünen Tests, `npm run build` ohne Fehler, Screens
 - Terrain-Mesh mit Vertex-Farben, Bäume, Hütte, Markt, Weg.
 - Overlays für Boden und Lage, Parzellen-Auswahl per Klick mit Inspektor.
 - ✅ Test: Gleicher Seed erzeugt identische Welt (Hash-Vergleich).
-- ✅ Test: Jede von 200 zufälligen Welten erfüllt die Startgarantie und hat genau eine Vulkanzone.
+- ✅ Test: Jede von 200 zufälligen Welten erfüllt die Startgarantie und hat nur die Lagen Tiefland, Hochland und kühles Hochland.
 
 ### M2: Zeit, Parzellen und Anbau
 - Spielzeit mit Pause, 1×, 2×, 4×.
@@ -370,7 +369,7 @@ Jeder Meilenstein endet mit: grünen Tests, `npm run build` ohne Fehler, Screens
 - Rösterei (GDD 5.4, 11.2: +150 %, 0,8 CC pro Einheit)
 - Personal: Feldarbeiter und Agrar-Spezialist (GDD 5.5, 11.7)
 - Versicherung (GDD 5.6)
-- Vulkan-Event, Dürre als eigenes Event
+- Dürre als eigenes Event
 - Café- und Händler-Pfad
 - Englische Lokalisierung, Steam-Release, Windows-Build
 
