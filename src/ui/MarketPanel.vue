@@ -15,6 +15,7 @@ import { bankBuyPrice, bankSellPrice, priceHistory, sellIncome } from '../sim/ma
 import { isVarietyUnlocked } from '../sim/progression/capital'
 import { hasProcessing, isRunning, processCost, runningUntil } from '../sim/processing/process'
 import type { GameState } from '../sim/state'
+import { formatDate } from './date'
 import de from './i18n/de.json'
 import { formatMoney, formatUnitPrice } from './money'
 import OrdersPanel from './OrdersPanel.vue'
@@ -95,7 +96,7 @@ const blocks = computed(() => {
             : cost > state.money
               ? t.processWhy.money
               : null,
-      runningUntil: until === undefined ? null : t.processing.replace('{day}', String(until)),
+      runningUntil: until === undefined ? null : t.processing.replace('{date}', formatDate(until)),
       seeds: state.market.seeds[variety] ?? 0,
       sellPrice: bankBuyPrice(state, variety),
       buyPrice: bankSellPrice(state, variety),

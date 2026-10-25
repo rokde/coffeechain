@@ -75,10 +75,8 @@
     "growth": "Fortschritt",
     "percent": "{n} %",
     "ripeness": "Reife",
-    "daysToRipe": "Reif in {n} Tagen",
-    "daysToRipeOne": "Reif in 1 Tag",
-    "daysToOverripe": "Überreif in {n} Tagen",
-    "daysToOverripeOne": "Überreif in 1 Tag",
+    "ripeIn": "Reif im {month}",
+    "overripeIn": "Überreif im {month}",
     "care": "Pflege",
     "careNone": "keine",
     "careTooExpensive": "Zu wenig Geld: kostet {cost}",
@@ -202,7 +200,7 @@
       "money": "Zu wenig Geld."
     },
     "sellWashed": "Gewaschen verkaufen",
-    "processing": "Aufbereitung läuft bis Tag {day}"
+    "processing": "Aufbereitung läuft bis {date}"
   },
   "orders": {
     "heading": "Aufträge",
@@ -215,7 +213,7 @@
       "Röstwerk Ost"
     ],
     "minQuality": "mind. Qualität",
-    "deadline": "bis Tag",
+    "deadline": "bis",
     "price": "je Einheit",
     "bank": "(Bank {price})",
     "stock": "Passend (roh) im Lager: {have} / {units}",
@@ -308,7 +306,7 @@
       "Öffne „Bauen“. Klicke bei „Aufbereitung“ auf „Bauen“. Sie kostet {cost} CC und ist ab Phase {phase} frei. Du kannst eine pro Farm bauen.",
       "Wähle „Ernten“ (Taste {harvestKey}) und klicke eine reife Pflanze an. Der Kaffee liegt dann als Rohkaffee im Lager.",
       "Öffne „Markt“ und klicke „Aufbereiten“. Eine Charge nimmt höchstens {batch} Einheiten und kostet {unitCost} CC je Einheit. Der älteste Kaffee kommt zuerst dran. Eine Charge wäscht eine Sorte. Es läuft immer nur eine Aufbereitung. Für mehr als {batch} Einheiten wäschst du nach dem Ende noch einmal.",
-      "Warte, bis „Aufbereitung läuft bis Tag N“ verschwindet. Die Aufbereitung dauert {days} {dayUnit}.",
+      "Warte, bis „Aufbereitung läuft bis …“ verschwindet. Die Aufbereitung dauert {days} {dayUnit}.",
       "Klicke im „Markt“ auf „Gewaschen verkaufen“."
     ],
     "washingPays": "Wann lohnt sich das? Die Bank zahlt für gewaschenen Kaffee das {factor}-Fache des Rohpreises. Die Qualität bleibt gleich. Es lohnt sich ab etwa {breakEven} CC je Einheit Rohpreis, bei voller Charge. Die Kosten werden auf ganze CC aufgerundet.",

@@ -124,7 +124,7 @@ describe('help: buildings and washing (S62)', () => {
       de.marketPanel.sellWashed,
     ]
     for (const label of labels) expect(washing).toContain(label)
-    expect(washing).toContain(de.marketPanel.processing.replace('{day}', 'N'))
+    expect(washing).toContain(de.marketPanel.processing.replace('{date}', '…'))
     expect(section(html, 'help-storage')).toContain(de.buildTool.buildings.storage)
   })
 
