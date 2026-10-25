@@ -3,7 +3,7 @@ import { balance } from '../balance'
 import type { GameState } from '../state'
 import { cares } from './care'
 import { overripeFactor } from './overripe'
-import { growth, ripeHour as ripeHourOf, stageAt, type Stage } from './plants'
+import { growth, ripeDay as ripeDayOf, stageAt, type Stage } from './plants'
 import type { Variety } from './yield'
 
 export type CareCommand = keyof typeof cares
@@ -27,12 +27,11 @@ export function fieldStatus(
 ): FieldStatus | null {
   const plant = state.farm.plants[y * state.world.size + x]
   if (!plant) return null
-  const { hour } = state.time
-  const day = cfg.time.ticksPerGameDay
-  const { progress, stage } = growth(plant, hour, cfg)
-  const ripeHour = ripeHourOf(plant, cfg)
+  const { day } = state.time
+  const { progress, stage } = growth(plant, day, cfg)
+  const ripeDay = ripeDayOf(plant, cfg)
   const { enabled, graceDays, lossPerDay } = cfg.farm.overripe
-  const overripe = overripeFactor(plant, hour, cfg) < 1
+  const overripe = overripeFactor(plant, day, cfg) < 1
   const ripe = progress >= 1
   const flags = {
     fertilized: plant.fertilized ?? false,
@@ -41,11 +40,11 @@ export function fieldStatus(
   return {
     stage,
     percent: Math.floor(progress * 100),
-    daysToRipe: ripe ? null : Math.ceil((ripeHour - hour) / day),
+    daysToRipe: ripe ? null : Math.ceil(ripeDay - day),
     // overripeFactor() drops below 1 at the first full day after the grace days.
     daysToOverripe:
       ripe && !overripe && enabled && lossPerDay > 0
-        ? Math.ceil((ripeHour + (graceDays + 1) * day - hour) / day)
+        ? Math.ceil(ripeDay + graceDays + 1 - day)
         : null,
     overripe,
     cares: flags,
@@ -76,7 +75,7 @@ export interface FieldSummary {
 // One row per field with plants, for the field list. The state follows the rule of the message panel.
 export function fieldSummaries(state: GameState, cfg: Balance = balance()): FieldSummary[] {
   const { parcels, plants } = state.farm
-  const { hour } = state.time
+  const { day } = state.time
   return state.farm.fields.flatMap(({ id, name }) => {
     const indexes = Object.keys(parcels).filter((i) => parcels[+i] === id)
     const list = indexes.flatMap((i) => plants[+i] ?? [])
@@ -85,9 +84,9 @@ export function fieldSummaries(state: GameState, cfg: Balance = balance()): Fiel
     const variety = (Object.keys(cfg.varieties) as Variety[]).reduce((a, b) =>
       count(b) > count(a) ? b : a,
     )
-    const progress = list.reduce((sum, p) => sum + growth(p, hour, cfg).progress, 0) / list.length
-    const ripe = list.some((p) => growth(p, hour, cfg).progress >= 1)
-    const status = list.some((p) => overripeFactor(p, hour, cfg) < 1)
+    const progress = list.reduce((sum, p) => sum + growth(p, day, cfg).progress, 0) / list.length
+    const ripe = list.some((p) => growth(p, day, cfg).progress >= 1)
+    const status = list.some((p) => overripeFactor(p, day, cfg) < 1)
       ? 'overripe'
       : ripe
         ? 'ripe'

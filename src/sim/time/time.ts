@@ -1,12 +1,17 @@
+import type { Balance } from '../../../config/balance.schema'
 import { balance } from '../balance'
 import { dailyOrders } from '../market/orders'
 import type { GameState } from '../state'
-import { dailyUpkeep } from '../storage/daily'
+import { monthlyUpkeep } from '../storage/daily'
+
+// The time scale: how much calendar time one real interval shows. It never changes what a step does.
+export type TimeStage = 'months' | 'weeks'
 
 export interface TimeState {
-  // Game hours since the start. One step adds one hour.
-  hour: number
+  // Calendar days since the start. Day 0 is 1 January, year 1. One step adds one day.
+  day: number
   speed: number
+  stage: TimeStage
 }
 
 export interface SetSpeed {
@@ -14,15 +19,39 @@ export interface SetSpeed {
   speed: number
 }
 
-export function step(state: GameState): GameState {
-  const hour = state.time.hour + 1
-  const next = { ...state, time: { ...state.time, hour } }
-  return hour % balance().time.ticksPerGameDay === 0 ? dailyOrders(dailyUpkeep(next)) : next
+export interface CalendarDate {
+  // All three start at 1.
+  dayOfMonth: number
+  month: number
+  year: number
 }
 
-export function clock(hour: number): { day: number; hourOfDay: number } {
-  const ticksPerDay = balance().time.ticksPerGameDay
-  return { day: Math.floor(hour / ticksPerDay) + 1, hourOfDay: hour % ticksPerDay }
+export function step(state: GameState): GameState {
+  const day = state.time.day + 1
+  const next = { ...state, time: { ...state.time, day } }
+  return dailyOrders(day % balance().time.daysPerMonth === 0 ? monthlyUpkeep(next) : next)
+}
+
+export function calendar(day: number, cfg: Balance = balance()): CalendarDate {
+  const { daysPerMonth, monthsPerYear } = cfg.time
+  const month = Math.floor(day / daysPerMonth)
+  return {
+    dayOfMonth: (day % daysPerMonth) + 1,
+    month: (month % monthsPerYear) + 1,
+    year: Math.floor(month / monthsPerYear) + 1,
+  }
+}
+
+// Months since the start. The month changes when this number grows.
+export const monthIndex = (day: number, cfg: Balance = balance()) =>
+  Math.floor(day / cfg.time.daysPerMonth)
+
+// Real milliseconds of one step at speed 1.
+export function msPerStep(stage: TimeStage, cfg: Balance = balance()): number {
+  const t = cfg.time
+  return stage === 'months'
+    ? (t.realSecondsPerMonth * 1000) / t.daysPerMonth
+    : (t.realSecondsPerWeek * 1000) / t.daysPerWeek
 }
 
 export function setSpeed(state: GameState, command: SetSpeed): GameState {

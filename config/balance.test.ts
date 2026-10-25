@@ -34,7 +34,7 @@ const copy = () => structuredClone(raw) as Record<string, any> // eslint-disable
 describe('balance.json', () => {
   it('loads through the schema', () => {
     const balance = loadBalance(raw)
-    expect(balance.time.ticksPerGameDay).toBe(24)
+    expect(balance.time.daysPerMonth).toBe(30)
     expect(balance.varieties.robusta.careCost.fertilizer).toBe(1)
   })
 
@@ -47,8 +47,8 @@ describe('balance.json', () => {
 
   it('names the path of a value with the wrong type', () => {
     const cfg = copy()
-    cfg.time.ticksPerGameDay.v = 'x'
-    expect(() => loadBalance(cfg)).toThrow('time.ticksPerGameDay.v')
+    cfg.time.daysPerMonth.v = 'x'
+    expect(() => loadBalance(cfg)).toThrow('time.daysPerMonth.v')
   })
 
   it('names the path of a missing src', () => {
@@ -99,5 +99,47 @@ describe('balance.json', () => {
       expect(variety.careCost, name).not.toHaveProperty('pestControl')
     expect(loadBalance(raw).farm).not.toHaveProperty('pestControlLossReduction')
     expect(JSON.stringify(raw)).not.toMatch(/pestControl/)
+  })
+
+  it('AC-2 (#27): changes the time values by factor 30 and removes the hour keys', () => {
+    const src = Object.fromEntries(leaves(raw).map((l) => [l.path, l.src]))
+    const cfg = loadBalance(raw)
+    const changed: [string, unknown, unknown][] = [
+      ['varieties.robusta.cycleDays', cfg.varieties.robusta.cycleDays, 90],
+      ['varieties.arabicaStandard.cycleDays', cfg.varieties.arabicaStandard.cycleDays, 150],
+      ['varieties.arabicaPremium.cycleDays', cfg.varieties.arabicaPremium.cycleDays, 300],
+      ['varieties.specialty.cycleDays', cfg.varieties.specialty.cycleDays, 450],
+      ['farm.overripe.graceDays', cfg.farm.overripe.graceDays, 60],
+      ['farm.overripe.lossPerDay', cfg.farm.overripe.lossPerDay, 0.005],
+      ['processing.washed.durationDays', cfg.processing.washed.durationDays, 30],
+      ['market.volumeWindowDays', cfg.market.volumeWindowDays, 90],
+      ['orders.chancePerDay', cfg.orders.chancePerDay, 0.01],
+      ['orders.deadlineDays', cfg.orders.deadlineDays, [150, 300]],
+      ['progression.harvestProMessageDays', cfg.progression.harvestProMessageDays, 30],
+      ['balanceSim.days', cfg.balanceSim.days, 6000],
+      ['balanceSim.phase1TargetDays', cfg.balanceSim.phase1TargetDays, 840],
+    ]
+    for (const [path, value, expected] of changed) {
+      expect(value, path).toEqual(expected)
+      expect(src[path], path).toBe('Robert 2026-10-25 (#27, Faktor 30)')
+    }
+    for (const key of ['ticksPerGameDay', 'realSecondsPerGameDay']) {
+      expect(raw.time, key).not.toHaveProperty(key)
+      expect(cfg.time, key).not.toHaveProperty(key)
+    }
+  })
+
+  it('marks the calendar values as NEU and lists them in docs/open-questions.md', () => {
+    const doc = readFileSync(new URL('../docs/open-questions.md', import.meta.url), 'utf8')
+    const src = Object.fromEntries(leaves(raw).map((l) => [l.path, l.src]))
+    for (const path of [
+      'time.realSecondsPerMonth',
+      'time.realSecondsPerWeek',
+      'time.daysPerMonth',
+      'time.monthsPerYear',
+    ]) {
+      expect(src[path], path).toBe('NEU')
+      expect(doc).toContain(`\`${path}\``)
+    }
   })
 })

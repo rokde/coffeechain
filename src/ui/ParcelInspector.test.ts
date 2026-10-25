@@ -73,14 +73,14 @@ function setupStatus(change: (s: GameState, parcels: { x: number; y: number }[])
 const text = (html: string, id: string) =>
   [...html.matchAll(new RegExp(`data-testid="${id}"[^>]*>([^<]*)<`, 'g'))].map((m) => m[1]!.trim())
 const buttons = (html: string) => html.match(/<button[^>]*inspector-care-action[^>]*>/g) ?? []
-const ripeHours = balance().varieties.robusta.cycleDays * balance().time.ticksPerGameDay
+const ripeDays = balance().varieties.robusta.cycleDays
 const irrigationCost = Math.round(balance().varieties.robusta.careCost.irrigation * 100)
 
 describe('ParcelInspector field status (S21e)', () => {
   it('AC-3: shows stage, growth, days, cares, hints and the open care buttons', async () => {
     const { pinia, game, parcel } = setupStatus((s, parcels) => {
       const irrigated = dispatch(s, { type: 'Irrigate', parcels })
-      return { ...irrigated, time: { ...irrigated.time, hour: irrigated.time.hour + 30 } }
+      return { ...irrigated, time: { ...irrigated.time, day: irrigated.time.day + 30 } }
     })
     const status = fieldStatus(game.state as GameState, parcel.x, parcel.y)!
     expect(status.daysToRipe).toBeGreaterThan(1)
@@ -128,7 +128,7 @@ describe('ParcelInspector field status (S21e)', () => {
   it('AC-4: careParcel on a ripe plant does not throw and keeps the money', () => {
     const { game, parcel } = setupStatus((s) => ({
       ...s,
-      time: { ...s.time, hour: s.time.hour + ripeHours },
+      time: { ...s.time, day: s.time.day + ripeDays },
     }))
     const before = game.state
     expect(() => careParcel('Irrigate', parcel)).not.toThrow()

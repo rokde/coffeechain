@@ -15,8 +15,7 @@ vi.stubGlobal('location', { search: '?seed=42' })
 vi.stubGlobal('sessionStorage', { getItem: () => null, removeItem: () => {} })
 
 const cared = { fertilized: true, irrigated: true }
-const day = balance().time.ticksPerGameDay
-const late = (balance().varieties.robusta.cycleDays + balance().farm.overripe.graceDays + 1) * day
+const late = balance().varieties.robusta.cycleDays + balance().farm.overripe.graceDays + 1
 
 // Field A: 2 ripe robusta parcels. B: 1 robusta without care. C: 3 arabica at 45 %. D: no plant.
 function setup(plants?: Record<number, PlantState>) {
@@ -24,21 +23,21 @@ function setup(plants?: Record<number, PlantState>) {
   setActivePinia(pinia)
   const game = useGameStore(pinia)
   const state = game.state as GameState
-  const hour = 3 * day
+  const day = 90
   game.replace({
     ...state,
-    time: { ...state.time, hour },
+    time: { ...state.time, day },
     farm: {
       parcels: { 0: 0, 1: 0, 5: 1, 10: 2, 11: 2, 12: 2, 20: 3 },
       fields: ['A', 'B', 'C', 'D'].map((name, id) => ({ id, name })),
       nextFieldId: 4,
       plants: plants ?? {
-        0: { variety: 'robusta', plantedHour: 0, ...cared },
-        1: { variety: 'robusta', plantedHour: 0, ...cared },
-        5: { variety: 'robusta', plantedHour: hour - 30 },
-        10: { variety: 'arabicaStandard', plantedHour: hour - 54, ...cared },
-        11: { variety: 'arabicaStandard', plantedHour: hour - 54, ...cared },
-        12: { variety: 'arabicaStandard', plantedHour: hour - 54, ...cared },
+        0: { variety: 'robusta', plantedDay: 0, ...cared },
+        1: { variety: 'robusta', plantedDay: 0, ...cared },
+        5: { variety: 'robusta', plantedDay: day - 37 },
+        10: { variety: 'arabicaStandard', plantedDay: day - 68, ...cared },
+        11: { variety: 'arabicaStandard', plantedDay: day - 68, ...cared },
+        12: { variety: 'arabicaStandard', plantedDay: day - 68, ...cared },
       },
     },
   })
@@ -60,7 +59,7 @@ describe('FieldList (S59)', () => {
     expect(list).toHaveLength(3)
     expect(text(list[0]!)).toContain('Feld A Erntereif 2 Parzellen · Robusta')
     expect(text(list[1]!)).toContain('Feld B Braucht Pflege 1 Parzelle · Robusta')
-    // 54 of 120 hours give 45 %, the stage Wachstum.
+    // 68 of 150 days give 45 %, the stage Wachstum.
     expect(text(list[2]!)).toContain('Feld C Wachstum · 45 % 3 Parzellen · Arabica Standard')
     expect(list[2]).not.toContain('field-state')
     expect(list[0]).toMatch(/role="progressbar"[^>]*aria-valuenow="100"/)
@@ -68,34 +67,34 @@ describe('FieldList (S59)', () => {
   })
 
   it('AC-2: shows Überreif for an overripe field', async () => {
-    const pinia = setup({ 0: { variety: 'robusta', plantedHour: 0 } })
+    const pinia = setup({ 0: { variety: 'robusta', plantedDay: 0 } })
     const game = useGameStore(pinia)
-    game.replace({ ...(game.state as GameState), time: { ...game.state.time, hour: late } })
+    game.replace({ ...(game.state as GameState), time: { ...game.state.time, day: late } })
     const list = rows(await html(pinia))
     expect(list).toHaveLength(1)
     expect(list[0]).toMatch(/data-testid="field-state"[^>]*>Überreif</)
   })
 
   it('round 2: rows that need action come first, overripe, ripe, care, then the others', async () => {
-    const hour = 3 * day
+    const day = 90
     const names = async (plants: Record<number, PlantState>) =>
       rows(await html(setup(plants))).map((r) => text(r).match(/Feld (\w)/)![1])
     // A grows, B needs care, C is ripe, D is overripe.
     expect(
       await names({
-        0: { variety: 'robusta', plantedHour: hour - 10, ...cared },
-        5: { variety: 'robusta', plantedHour: hour - 10 },
-        10: { variety: 'robusta', plantedHour: 0, ...cared },
-        20: { variety: 'robusta', plantedHour: hour - late, ...cared },
+        0: { variety: 'robusta', plantedDay: day - 12, ...cared },
+        5: { variety: 'robusta', plantedDay: day - 12 },
+        10: { variety: 'robusta', plantedDay: 0, ...cared },
+        20: { variety: 'robusta', plantedDay: day - late, ...cared },
       }),
     ).toEqual(['D', 'C', 'B', 'A'])
     // Rows with the same state keep the field order.
     expect(
       await names({
-        0: { variety: 'robusta', plantedHour: 0, ...cared },
-        5: { variety: 'robusta', plantedHour: hour - 10, ...cared },
-        10: { variety: 'robusta', plantedHour: 0, ...cared },
-        20: { variety: 'robusta', plantedHour: hour - 10, ...cared },
+        0: { variety: 'robusta', plantedDay: 0, ...cared },
+        5: { variety: 'robusta', plantedDay: day - 12, ...cared },
+        10: { variety: 'robusta', plantedDay: 0, ...cared },
+        20: { variety: 'robusta', plantedDay: day - 12, ...cared },
       }),
     ).toEqual(['A', 'C', 'B', 'D'])
   })

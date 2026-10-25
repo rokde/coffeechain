@@ -14,7 +14,7 @@ export interface Plant {
 
 export interface PlantState {
   variety: Variety
-  plantedHour: number
+  plantedDay: number
   fertilized?: boolean
   irrigated?: boolean
   // Harvested units that did not fit into the storage.
@@ -42,7 +42,7 @@ export function plant(state: GameState, command: Plant): GameState {
     if (!(index in state.farm.parcels)) throw new Error(`Parcel ${x},${y} is not owned`)
     if (index in plants) throw new Error(`Parcel ${x},${y} already has a plant or is listed twice`)
     if (index in state.buildings) throw new Error(`Parcel ${x},${y} has a building`)
-    plants[index] = { variety: command.variety, plantedHour: state.time.hour }
+    plants[index] = { variety: command.variety, plantedDay: state.time.day }
   }
 
   const count = command.parcels.length
@@ -65,17 +65,17 @@ export function quotePlant(state: GameState, variety: Variety, count: number): n
   return roundCost(Math.round(missing * bankSellPrice(state, variety, missing) * 100))
 }
 
-export const ripeHour = (plant: PlantState, cfg: Balance = balance()): number =>
-  plant.plantedHour + cfg.varieties[plant.variety].cycleDays * cfg.time.ticksPerGameDay
+export const ripeDay = (plant: PlantState, cfg: Balance = balance()): number =>
+  plant.plantedDay + cfg.varieties[plant.variety].cycleDays
 
-// Growth comes from the game hours since planting, so it needs no per-tick state.
+// Growth comes from the calendar days since planting, so it needs no per-step state.
 export function growth(
   plant: PlantState,
-  hour: number,
+  day: number,
   cfg: Balance = balance(),
 ): { progress: number; stage: Stage } {
-  const cycle = cfg.varieties[plant.variety].cycleDays * cfg.time.ticksPerGameDay
-  const progress = Math.min(1, (hour - ripeHour(plant, cfg) + cycle) / cycle)
+  const cycle = cfg.varieties[plant.variety].cycleDays
+  const progress = Math.min(1, (day - ripeDay(plant, cfg) + cycle) / cycle)
   return { progress, stage: stageAt(progress, cfg) }
 }
 

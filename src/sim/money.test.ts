@@ -8,7 +8,7 @@ import type { Variety } from './farm/yield'
 import { roundCost, roundIncome } from './money'
 import { processCost } from './processing/process'
 import { createState, type GameState } from './state'
-import { dailyUpkeep } from './storage/daily'
+import { monthlyUpkeep } from './storage/daily'
 import { step } from './time/time'
 import type { Parcel, World } from './world/types'
 
@@ -45,7 +45,7 @@ function planted(plants: Record<number, Variety>, money = 50000): GameState {
       parcels: { 0: 0, 1: 0, 2: 0, 3: 0 },
       fields: [{ id: 0, name: 'A' }],
       plants: Object.fromEntries(
-        Object.entries(plants).map(([i, variety]) => [i, { variety, plantedHour: 0 }]),
+        Object.entries(plants).map(([i, variety]) => [i, { variety, plantedDay: 0 }]),
       ),
     },
   }
@@ -120,10 +120,10 @@ describe('S57 costs round up per booking', () => {
     expect([cost(50), processCost(50)]).toEqual([1500, 1500])
   })
 
-  it('AC-1: storage per game day', () => {
+  it('AC-1: storage per month', () => {
     const day = (units: number) => {
       const state = withStock(testState(), units)
-      return state.money - dailyUpkeep(state).money
+      return state.money - monthlyUpkeep(state).money
     }
     expect([day(30), day(50), day(51), day(0)]).toEqual([100, 100, 200, 0])
   })
@@ -151,7 +151,7 @@ describe('S57 income rounds down per booking', () => {
 })
 
 describe('S57 the balance is always whole', () => {
-  it('AC-3: holds whole CC after each command and game hour', () => {
+  it('AC-3: holds whole CC after each command and game day', () => {
     let state = createState(42)
     const check = (label: string) => {
       expect(state.money % 100, `${label} money ${state.money}`).toBe(0)
@@ -161,13 +161,12 @@ describe('S57 the balance is always whole', () => {
       state = dispatch(state, command)
       check(command.type)
     }
-    const hours = (n: number) => {
+    const days = (n: number) => {
       for (let i = 0; i < n; i++) {
         state = step(state)
-        check(`hour ${state.time.hour}`)
+        check(`day ${state.time.day}`)
       }
     }
-    const perDay = balance().time.ticksPerGameDay
     const { world } = state
     const free = world.parcels.filter((p) => p.zone === 'tiefland' && isFree(state, p.x, p.y))
     const [a, b, c, d] = free.map(({ x, y }) => ({ x, y }))
@@ -180,9 +179,9 @@ describe('S57 the balance is always whole', () => {
     run({ type: 'Fertilize', parcels: [a!, b!] })
     run({ type: 'Irrigate', parcels: [a!] })
     run({ type: 'Build', building: 'processing', parcel: c! })
-    hours(balance().varieties.robusta.cycleDays * perDay)
+    days(balance().varieties.robusta.cycleDays)
     run({ type: 'Harvest', parcels: [a!, b!] })
-    hours(perDay)
+    days(30)
 
     const raw = () => state.storage.batches.reduce((sum, x) => sum + (x.washed ? 0 : x.units), 0)
     const order = {
@@ -191,13 +190,13 @@ describe('S57 the balance is always whole', () => {
       units: 13,
       minQuality: 0,
       price: 59,
-      deadlineDay: 99,
+      deadlineDay: 9999,
     }
     state = { ...state, orders: { ...state.orders, open: [...state.orders.open, order] } }
     run({ type: 'DeliverOrder', id: 99 })
     run({ type: 'Process', variety: 'robusta', units: 7 })
     run({ type: 'Sell', variety: 'robusta', units: raw() - 3 })
-    hours(2 * perDay)
+    days(60)
     run({ type: 'Sell', variety: 'robusta', units: 7, washed: true })
     run({ type: 'Sell', variety: 'robusta', units: raw() })
   })

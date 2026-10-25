@@ -28,15 +28,15 @@ function testState(money = 50000): GameState {
     ...state,
     world: testWorld(),
     money,
-    time: { ...state.time, hour: 5 },
+    time: { ...state.time, day: 5 },
     farm: {
       ...state.farm,
       parcels: { 0: 0, 1: 0, 2: 0, 3: 0 },
       fields: [{ id: 0, name: 'A' }],
       plants: {
-        0: { variety: 'robusta', plantedHour: 5 },
-        1: { variety: 'arabicaStandard', plantedHour: 5 },
-        2: { variety: 'robusta', plantedHour: 5 },
+        0: { variety: 'robusta', plantedDay: 5 },
+        1: { variety: 'arabicaStandard', plantedDay: 5 },
+        2: { variety: 'robusta', plantedDay: 5 },
       },
     },
   }
@@ -51,10 +51,10 @@ describe('Fertilize', () => {
     const before = structuredClone(state)
     const next = care(state, 'Fertilize', [0, 0], [1, 0])
     expect(next.money).toBe(50000 - 100 - 200)
-    expect(next.farm.plants[0]).toEqual({ variety: 'robusta', plantedHour: 5, fertilized: true })
+    expect(next.farm.plants[0]).toEqual({ variety: 'robusta', plantedDay: 5, fertilized: true })
     expect(next.farm.plants[1]).toEqual({
       variety: 'arabicaStandard',
-      plantedHour: 5,
+      plantedDay: 5,
       fertilized: true,
     })
     expect(next.farm.plants[2]).toEqual(state.farm.plants[2])
@@ -99,7 +99,7 @@ describe.each<[Care, 'irrigated']>([['Irrigate', 'irrigated']])('%s', (type, fla
     const state = testState()
     const next = care(state, type, [0, 0], [1, 0])
     expect(next.money).toBe(50000 - 100 - 200)
-    expect(next.farm.plants[0]).toEqual({ variety: 'robusta', plantedHour: 5, [flag]: true })
+    expect(next.farm.plants[0]).toEqual({ variety: 'robusta', plantedDay: 5, [flag]: true })
     expect(next.farm.plants[1]![flag]).toBe(true)
     expect(next.world).toEqual(state.world)
   })
@@ -115,7 +115,7 @@ describe('care once per cycle', () => {
     state = care(state, 'Irrigate', [0, 0])
     expect(state.farm.plants[0]).toEqual({
       variety: 'robusta',
-      plantedHour: 5,
+      plantedDay: 5,
       fertilized: true,
       irrigated: true,
     })
@@ -124,7 +124,7 @@ describe('care once per cycle', () => {
   it('AC-4: a new plant has no care flags', () => {
     const state = care(testState(), 'Fertilize', [0, 0])
     const next = dispatch(state, { type: 'Plant', variety: 'robusta', parcels: [{ x: 3, y: 0 }] })
-    expect(next.farm.plants[3]).toEqual({ variety: 'robusta', plantedHour: 5 })
+    expect(next.farm.plants[3]).toEqual({ variety: 'robusta', plantedDay: 5 })
     expect(care(next, 'Fertilize', [3, 0]).farm.plants[3]!.fertilized).toBe(true)
   })
 })
@@ -133,11 +133,11 @@ describe('rejected care', () => {
   const ripe = (variety: Variety) => {
     const state = testState()
     const days = balance().varieties[variety].cycleDays
-    return { ...state, time: { ...state.time, hour: 5 + days * balance().time.ticksPerGameDay } }
+    return { ...state, time: { ...state.time, day: 5 + days } }
   }
 
-  it('AC-5: Robusta is ripe 3 game days after planting', () => {
-    expect(balance().varieties.robusta.cycleDays).toBe(3)
+  it('AC-5: Robusta is ripe 90 days after planting', () => {
+    expect(balance().varieties.robusta.cycleDays).toBe(90)
   })
 
   it.each<[string, GameState, [number, number][]]>([
@@ -193,7 +193,7 @@ describe('rejected care', () => {
 
   it('AC-5: accepts a plant one hour before ripeness and a cost equal to the money', () => {
     const state = ripe('robusta')
-    const almost = { ...state, money: 100, time: { ...state.time, hour: state.time.hour - 1 } }
+    const almost = { ...state, money: 100, time: { ...state.time, day: state.time.day - 1 } }
     expect(care(almost, 'Fertilize', [0, 0]).money).toBe(0)
   })
 })

@@ -4,7 +4,7 @@ import { createState, type GameState } from '../state'
 import { step } from '../time/time'
 import type { Parcel, World } from '../world/types'
 import { soilClassOf } from '../world/generate'
-import { dailyUpkeep } from './daily'
+import { monthlyUpkeep } from './daily'
 
 const size = 4
 
@@ -30,7 +30,7 @@ function testState(): GameState {
       ...state.farm,
       parcels: { 0: 0, 1: 0, 2: 0 },
       fields: [{ id: 0, name: 'A' }],
-      plants: { 2: { variety: 'robusta', plantedHour: 0 } },
+      plants: { 2: { variety: 'robusta', plantedDay: 0 } },
     },
     storage: {
       batches: [
@@ -41,20 +41,20 @@ function testState(): GameState {
   }
 }
 
-const dailyCost = (units: number) => Math.round(units * balance().storage.costPerUnitPerDay * 100)
+const monthlyCost = (units: number) => Math.round(units * balance().storage.costPerUnitPerDay * 100)
 
-describe('dailyUpkeep', () => {
+describe('monthlyUpkeep', () => {
   it('AC-1: charges the storage cost per stored unit', () => {
     const state = testState()
-    expect(dailyUpkeep(state).money).toBe(state.money - dailyCost(50))
+    expect(monthlyUpkeep(state).money).toBe(state.money - monthlyCost(50))
     const empty = { ...state, storage: { batches: [] } }
-    expect(dailyUpkeep(empty).money).toBe(state.money)
+    expect(monthlyUpkeep(empty).money).toBe(state.money)
   })
 
   it('AC-2: lowers batch quality and stops at 0', () => {
     const loss = balance().storage.qualityLossPerDayRaw
     expect(loss).toBeGreaterThanOrEqual(0.5)
-    expect(dailyUpkeep(testState()).storage.batches).toEqual([
+    expect(monthlyUpkeep(testState()).storage.batches).toEqual([
       { variety: 'robusta', units: 30, quality: 100 - loss },
       { variety: 'arabicaStandard', units: 20, quality: 0 },
     ])
@@ -62,7 +62,7 @@ describe('dailyUpkeep', () => {
 
   it('AC-3: owned fallow parcels recover fertility up to 100', () => {
     const cfg = balance()
-    const parcels = dailyUpkeep(testState()).world.parcels
+    const parcels = monthlyUpkeep(testState()).world.parcels
     const fertility = 50 + cfg.soil.fertilityRecoveryPerFallowDay
     const soilQuality = (fertility + 50) / 200
     expect(parcels[0]).toMatchObject({
@@ -78,25 +78,41 @@ describe('dailyUpkeep', () => {
   it('AC-4: does not change the input state', () => {
     const state = testState()
     const before = structuredClone(state)
-    dailyUpkeep(state)
+    monthlyUpkeep(state)
     expect(state).toEqual(before)
   })
 })
 
 describe('step', () => {
-  it('AC-5: applies the upkeep once at the start of each game day', () => {
+  const run = (state: GameState, days: number) => {
+    const states = [state]
+    for (let i = 0; i < days; i++) states.push(step(states[i]!))
+    return states
+  }
+  const upkeep = (s: GameState) => ({
+    money: s.money,
+    batches: s.storage.batches,
+    fertility: s.world.parcels[0]!.fertility,
+  })
+
+  it('AC-3: changes nothing on days 1 to 29 and books the upkeep once on day 30', () => {
     const loss = balance().storage.qualityLossPerDayRaw
-    let state: GameState = {
-      ...createState(1),
-      storage: { batches: [{ variety: 'robusta', units: 50, quality: 100 }] },
+    const states = run(testState(), 60)
+    for (let day = 1; day < 30; day++) expect(upkeep(states[day]!)).toEqual(upkeep(states[0]!))
+    expect(upkeep(states[30]!)).toEqual(upkeep(monthlyUpkeep(states[0]!)))
+    for (let day = 31; day < 60; day++) expect(upkeep(states[day]!)).toEqual(upkeep(states[30]!))
+    expect(states[60]!.storage.batches[0]!.quality).toBe(100 - 2 * loss)
+  })
+
+  it('AC-3: 50 units cost 1 CC per month, 51 units cost 2 CC', () => {
+    const cost = (units: number) => {
+      const state = {
+        ...createState(1),
+        storage: { batches: [{ variety: 'robusta' as const, units, quality: 100 }] },
+      }
+      const states = run(state, 30)
+      return state.money - states[30]!.money
     }
-    const money = state.money
-    const ticks = balance().time.ticksPerGameDay
-    for (let i = 1; i <= 2 * ticks; i++) {
-      state = step(state)
-      const days = Math.floor(i / ticks)
-      expect(state.storage.batches[0]!.quality).toBe(100 - days * loss)
-      expect(state.money).toBe(money - days * dailyCost(50))
-    }
+    expect([cost(50), cost(51)]).toEqual([100, 200])
   })
 })

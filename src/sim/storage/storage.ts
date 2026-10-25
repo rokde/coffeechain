@@ -4,9 +4,9 @@ export interface Batch {
   variety: Variety
   units: number
   quality: number
-  // Washed batches only: the bank buys them from this game hour on.
+  // Washed batches only: the bank buys them from this calendar day on.
   washed?: true
-  readyHour?: number
+  readyDay?: number
 }
 
 export interface StorageState {

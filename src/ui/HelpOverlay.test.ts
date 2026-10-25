@@ -135,7 +135,7 @@ describe('help: buildings and washing (S62)', () => {
       'Phase 1',
       '50 Einheiten',
       '0,3 CC je Einheit',
-      '1 Tag.',
+      '30 Tage.',
       'das 1,5-Fache',
       'ab etwa 0,6 CC',
     ])

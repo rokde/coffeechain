@@ -36,7 +36,7 @@ for (const [width, height] of [
     await page.evaluate(() => {
       const key = 'coffeechain.save.slot-1'
       const save = JSON.parse(localStorage.getItem(key)!)
-      save.state.time = { ...save.state.time, hour: 998 * 24 + 8, speed: 0 }
+      save.state.time = { ...save.state.time, day: 3509, speed: 0 }
       save.state.money = 999_999_999_900
       save.state.buildings = { 0: { kind: 'storage' }, 1: { kind: 'storage' } }
       save.state.storage = { batches: [{ variety: 'robusta', units: 120, quality: 100 }] }
@@ -58,7 +58,7 @@ for (const [width, height] of [
       }),
     )
     expect(Math.max(...centres) - Math.min(...centres)).toBeLessThanOrEqual(2)
-    for (const id of ['money', 'storage', 'phase']) {
+    for (const id of ['money', 'storage', 'phase', 'clock']) {
       const box = (await page.getByTestId(id).boundingBox())!
       expect(box.x + box.width).toBeLessThanOrEqual(width)
     }

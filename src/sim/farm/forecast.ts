@@ -15,7 +15,7 @@ export function forecastYield(
   const plant = state.farm.plants[index]
   const parcel = state.world.parcels[index]
   if (!plant || !parcel) return null
-  const factor = overripeFactor(plant, state.time.hour, cfg)
+  const factor = overripeFactor(plant, state.time.day, cfg)
   if (plant.pendingUnits !== undefined) {
     const stored = plant.overripeFactor ?? 1
     return stored > 0 ? Math.floor((plant.pendingUnits * factor) / stored + 1e-9) : 0
