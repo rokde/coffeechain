@@ -71,7 +71,7 @@ describe('HelpOverlay (S35a)', () => {
 describe('tool keys and tooltips (S53)', () => {
   it('AC-3: each toolbar button has the title "<label> (<KEY>)" and aria-keyshortcuts', async () => {
     const html = await render(false)
-    expect(tools).toHaveLength(9)
+    expect(tools).toHaveLength(8)
     for (const tool of tools) {
       const button = html.match(new RegExp(`<button[^>]*data-testid="tool-${tool.id}"[^>]*>`))![0]
       expect(button).toContain(`title="${tool.label} (${tool.key})"`)
@@ -248,5 +248,13 @@ describe('help: buildings and washing (S62)', () => {
     const h = de.help
     const texts = [...h.washing, h.washingPays, ...h.storage, h.storageStage, ...h.storageAfter]
     for (const text of texts) expect(text.replace(/\{\w+\}|1 CC je/g, '')).not.toMatch(/\d/)
+  })
+})
+
+describe('no pest protection texts (#8)', () => {
+  it('AC-5: de.json has no protect texts and the care step has no "schütze"', () => {
+    expect(JSON.stringify(de)).not.toMatch(/"(protect|pestProtected|ProtectPests)"/)
+    const care = de.help.loop.find((s) => s.name === 'Pflegen')!
+    expect(care.text).toBe('Dünge und wässere die Pflanzen.')
   })
 })

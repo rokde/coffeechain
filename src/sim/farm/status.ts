@@ -14,7 +14,7 @@ export interface FieldStatus {
   daysToRipe: number | null
   daysToOverripe: number | null
   overripe: boolean
-  cares: { fertilized: boolean; irrigated: boolean; pestProtected: boolean }
+  cares: { fertilized: boolean; irrigated: boolean }
   open: CareCommand[]
 }
 
@@ -37,7 +37,6 @@ export function fieldStatus(
   const flags = {
     fertilized: plant.fertilized ?? false,
     irrigated: plant.irrigated ?? false,
-    pestProtected: plant.pestProtected ?? false,
   }
   return {
     stage,

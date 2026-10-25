@@ -116,7 +116,6 @@ describe('selection store, farm tools (S18a)', () => {
   it.each([
     ['fertilize', 'Fertilize'],
     ['irrigate', 'Irrigate'],
-    ['protect', 'ProtectPests'],
   ] as const)(
     'AC-2: %s adds only owned parcels with an unripe plant without this care',
     (tool, type) => {

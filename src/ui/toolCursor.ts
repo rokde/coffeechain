@@ -9,7 +9,6 @@ const icons: Record<BrushTool, string> = {
   fertilize:
     '<path d="M4 1h8l-1 3c3 2 4 5 4 8 0 2-1 3-3 3H4c-2 0-3-1-3-3 0-3 1-6 4-8z" fill="#c79a5b"/>',
   irrigate: '<path d="M8 1C5 6 3 8 3 11a5 5 0 0 0 10 0c0-3-2-5-5-10z" fill="#5aa9e6"/>',
-  protect: '<path d="M8 1l6 2v5c0 4-3 6-6 7-3-1-6-3-6-7V3z" fill="#b9a3e3"/>',
   harvest:
     '<ellipse cx="8" cy="8" rx="5.5" ry="7" fill="#c0392b"/><path d="M8 2c-2 3 2 9 0 12" fill="none"/>',
 }

@@ -13,19 +13,14 @@ export interface Irrigate {
   type: 'Irrigate'
   parcels: Parcels
 }
-export interface ProtectPests {
-  type: 'ProtectPests'
-  parcels: Parcels
-}
 
 export const cares = {
   Fertilize: { flag: 'fertilized', cost: 'fertilizer' },
   Irrigate: { flag: 'irrigated', cost: 'irrigation' },
-  ProtectPests: { flag: 'pestProtected', cost: 'pestControl' },
 } as const
 
 // The cost comes from varieties.*.careCost (see docs/open-questions.md).
-export function care(state: GameState, command: Fertilize | Irrigate | ProtectPests): GameState {
+export function care(state: GameState, command: Fertilize | Irrigate): GameState {
   const { flag } = cares[command.type]
   const { size } = state.world
   const cfg = balance()
@@ -64,7 +59,7 @@ export function care(state: GameState, command: Fertilize | Irrigate | ProtectPe
 }
 
 // Cost in hundredths of CC of one care for the plants on the parcels. A parcel without a plant costs nothing.
-export function quoteCare(state: GameState, command: Fertilize | Irrigate | ProtectPests): number {
+export function quoteCare(state: GameState, command: Fertilize | Irrigate): number {
   const { cost } = cares[command.type]
   const { varieties } = balance()
   return roundCost(

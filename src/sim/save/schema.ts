@@ -27,7 +27,6 @@ const plant = z.object({
   plantedHour: num,
   fertilized: z.boolean().optional(),
   irrigated: z.boolean().optional(),
-  pestProtected: z.boolean().optional(),
   pendingUnits: num.optional(),
   overripeFactor: num.optional(),
 })

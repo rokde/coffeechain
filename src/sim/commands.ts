@@ -1,5 +1,5 @@
 import { build, type Build } from './buildings/build'
-import { care, type Fertilize, type Irrigate, type ProtectPests } from './farm/care'
+import { care, type Fertilize, type Irrigate } from './farm/care'
 import { harvest, type Harvest } from './farm/harvest'
 import { createParcels, type CreateParcels } from './farm/parcels'
 import { plant, type Plant } from './farm/plants'
@@ -16,7 +16,6 @@ export type Command =
   | Plant
   | Fertilize
   | Irrigate
-  | ProtectPests
   | Harvest
   | Sell
   | Buy
@@ -35,7 +34,6 @@ const handlers: Handlers = {
   Plant: plant,
   Fertilize: care,
   Irrigate: care,
-  ProtectPests: care,
   Harvest: harvest,
   Sell: sell,
   Buy: buy,

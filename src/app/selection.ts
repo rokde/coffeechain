@@ -12,7 +12,6 @@ import type { GameState } from '../sim/state'
 export const farmTools = {
   fertilize: 'Fertilize',
   irrigate: 'Irrigate',
-  protect: 'ProtectPests',
   harvest: 'Harvest',
 } as const
 export type FarmTool = keyof typeof farmTools
@@ -36,7 +35,7 @@ export function canSelect(state: GameState, tool: string, p: ParcelPos): boolean
   if (tool === 'plant') return owned && !plant && !(index in state.buildings)
   if (tool === 'build') return canBuild(state, p.x, p.y)
   if (tool === 'harvest') return owned && ripe
-  if (tool === 'fertilize' || tool === 'irrigate' || tool === 'protect')
+  if (tool === 'fertilize' || tool === 'irrigate')
     return owned && !!plant && !ripe && !plant[cares[farmTools[tool]].flag]
   return !owned && isFree(state, p.x, p.y)
 }

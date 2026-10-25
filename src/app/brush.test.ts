@@ -34,7 +34,6 @@ const cases: [BrushTool, GameState, object, number][] = [
   ],
   ['fertilize', planted, { type: 'Fertilize' }, careCost('fertilizer')],
   ['irrigate', planted, { type: 'Irrigate' }, careCost('irrigation')],
-  ['protect', planted, { type: 'ProtectPests' }, careCost('pestControl')],
   ['harvest', ripe, { type: 'Harvest' }, 0],
 ]
 

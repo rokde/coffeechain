@@ -94,4 +94,11 @@ describe('balance.json', () => {
     expect(existsSync(new URL('../src/sim/events/', import.meta.url))).toBe(false)
     expect(sources()).not.toMatch(/from '[./]*(sim\/)?events\//)
   })
+
+  it('AC-3 (#8): has no pest control cost and no pest loss reduction', () => {
+    for (const [name, variety] of Object.entries(loadBalance(raw).varieties))
+      expect(variety.careCost, name).not.toHaveProperty('pestControl')
+    expect(loadBalance(raw).farm).not.toHaveProperty('pestControlLossReduction')
+    expect(JSON.stringify(raw)).not.toMatch(/pestControl/)
+  })
 })

@@ -17,7 +17,6 @@ export interface PlantState {
   plantedHour: number
   fertilized?: boolean
   irrigated?: boolean
-  pestProtected?: boolean
   // Harvested units that did not fit into the storage.
   pendingUnits?: number
   // Overripe factor at the time pendingUnits was set. Missing means 1.

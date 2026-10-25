@@ -18,7 +18,7 @@ const day = balance().time.ticksPerGameDay
 const ripeHour = balance().varieties.robusta.cycleDays * day
 const lateHour = ripeHour + (balance().farm.overripe.graceDays + 1) * day
 // The plant has all cares.
-const cared = { fertilized: true, irrigated: true, pestProtected: true }
+const cared = { fertilized: true, irrigated: true }
 const robusta: PlantState = { variety: 'robusta', plantedHour: 0, ...cared }
 
 // Field A has a plant on parcel 0, field B on parcel 5. The B plant is planted at hourB.

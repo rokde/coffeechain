@@ -55,7 +55,7 @@
       "seedCost": { "v": 2, "src": "GDD 11.2" },
       "baseYield": { "v": 20, "src": "GDD 11.2" },
       "referencePrice": { "v": 0.5, "src": "GDD 11.3" },
-      "careCost": { "v": { "fertilizer": 1, "irrigation": 1, "pestControl": 1 }, "src": "GDD 11.2" },
+      "careCost": { "v": { "fertilizer": 1, "irrigation": 1 }, "src": "GDD 11.2" },
       "unlockCapital": { "v": 0, "src": "PRD" }
     },
     "arabicaStandard": {
@@ -64,7 +64,7 @@
       "seedCost": { "v": 4, "src": "GDD 11.2" },
       "baseYield": { "v": 15, "src": "GDD 11.2" },
       "referencePrice": { "v": 1.0, "src": "GDD 11.3" },
-      "careCost": { "v": { "fertilizer": 2, "irrigation": 2, "pestControl": 2 }, "src": "GDD 11.2" },
+      "careCost": { "v": { "fertilizer": 2, "irrigation": 2 }, "src": "GDD 11.2" },
       "unlockCapital": { "v": 0, "src": "PRD" }
     },
     "arabicaPremium": {
@@ -73,7 +73,7 @@
       "seedCost": { "v": 8, "src": "GDD 11.2" },
       "baseYield": { "v": 8, "src": "GDD 11.2" },
       "referencePrice": { "v": 3.0, "src": "GDD 11.3" },
-      "careCost": { "v": { "fertilizer": 4, "irrigation": 3, "pestControl": 3 }, "src": "GDD 11.2" },
+      "careCost": { "v": { "fertilizer": 4, "irrigation": 3 }, "src": "GDD 11.2" },
       "unlockCapital": { "v": 2000, "src": "GDD 12.1" }
     },
     "specialty": {
@@ -82,7 +82,7 @@
       "seedCost": { "v": 15, "src": "GDD 11.2" },
       "baseYield": { "v": 4, "src": "GDD 11.2" },
       "referencePrice": { "v": 10.0, "src": "GDD 11.3" },
-      "careCost": { "v": { "fertilizer": 6, "irrigation": 5, "pestControl": 5 }, "src": "GDD 11.2" },
+      "careCost": { "v": { "fertilizer": 6, "irrigation": 5 }, "src": "GDD 11.2" },
       "unlockCapital": { "v": 10000, "src": "GDD 12.1" }
     }
   },
@@ -90,7 +90,6 @@
   "farm": {
     "fertilizerYieldBonus": { "v": 0.25, "src": "NEU" },
     "irrigationDroughtLossReduction": { "v": 0.5, "src": "NEU" },
-    "pestControlLossReduction": { "v": 0.5, "src": "NEU" },
     "yieldRandomRange": { "v": [0.9, 1.1], "src": "NEU (GDD 5.4 nennt Zufall ohne Wert)" },
     "visualStages": {
       "v": { "setzling": 0.0, "wachstum": 0.25, "bluete": 0.6, "fruchtansatz": 0.9 },

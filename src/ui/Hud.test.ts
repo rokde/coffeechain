@@ -153,15 +153,15 @@ describe('Hud overlay toggles (S60)', () => {
   const tag = (html: string, id: string) =>
     toolbar(html).match(new RegExp(`<button[^>]*data-testid="${id}"[^>]*>`))![0]
 
-  it('AC-1: the toolbar holds a labelled group with both toggles after the nine tools', async () => {
+  it('AC-1: the toolbar holds a labelled group with both toggles after the eight tools', async () => {
     const html = await render()
     expect(html).not.toContain('role="switch"')
     const nav = toolbar(html)
     const group = nav.split('role="group"')[1]!
     expect(nav).toMatch(/<div[^>]*role="group"[^>]*aria-label="Karten-Overlays"/)
     const ids = [...nav.matchAll(/data-testid="((?:tool|overlay)-[^"]+)"/g)].map((m) => m[1])
-    expect(ids.slice(0, 9).every((id) => id!.startsWith('tool-'))).toBe(true)
-    expect(ids.slice(9)).toEqual(['overlay-soil', 'overlay-zone'])
+    expect(ids.slice(0, 8).every((id) => id!.startsWith('tool-'))).toBe(true)
+    expect(ids.slice(8)).toEqual(['overlay-soil', 'overlay-zone'])
     expect(group).toContain('data-testid="overlay-soil"')
     expect(group).toContain('data-testid="overlay-zone"')
     for (const [id, label, title, key] of [

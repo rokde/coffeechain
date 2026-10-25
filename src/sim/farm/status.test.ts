@@ -30,15 +30,15 @@ describe('fieldStatus', () => {
       daysToRipe: 2,
       daysToOverripe: null,
       overripe: false,
-      cares: { fertilized: false, irrigated: false, pestProtected: false },
-      open: ['Fertilize', 'Irrigate', 'ProtectPests'],
+      cares: { fertilized: false, irrigated: false },
+      open: ['Fertilize', 'Irrigate'],
     })
   })
 
   it('AC-1: lists only the cares that the plant does not have', () => {
     const status = fieldStatus(testState(30, { irrigated: true }), 0, 0)!
-    expect(status.cares).toEqual({ fertilized: false, irrigated: true, pestProtected: false })
-    expect(status.open).toEqual(['Fertilize', 'ProtectPests'])
+    expect(status.cares).toEqual({ fertilized: false, irrigated: true })
+    expect(status.open).toEqual(['Fertilize'])
   })
 
   it('AC-2: gives the days until overripe for a ripe plant', () => {
@@ -71,14 +71,14 @@ describe('fieldNeedsCare', () => {
   it('AC-5: is true only while an unripe plant misses a care', () => {
     expect(fieldNeedsCare(testState(30), 0)).toBe(true)
     expect(fieldNeedsCare(testState(30), 1)).toBe(false)
-    const done = { fertilized: true, irrigated: true, pestProtected: true }
+    const done = { fertilized: true, irrigated: true }
     expect(fieldNeedsCare(testState(30, done), 0)).toBe(false)
     expect(fieldNeedsCare(testState(72), 0)).toBe(false)
   })
 })
 
 describe('fieldSummaries (S59)', () => {
-  const cared = { fertilized: true, irrigated: true, pestProtected: true }
+  const cared = { fertilized: true, irrigated: true }
   // Field A owns parcels 0-2, field B owns parcel 3 and has no plant.
   function farm(hour: number, plants: Record<number, PlantState>): GameState {
     const state = createState(1)
@@ -143,9 +143,7 @@ describe('fieldSummaries (S59)', () => {
   })
 
   it('AC-1: an unripe field without fertilizer gives care', () => {
-    const [row] = fieldSummaries(
-      farm(30, { 0: robusta(0, { irrigated: true, pestProtected: true }) }),
-    )
+    const [row] = fieldSummaries(farm(30, { 0: robusta(0, { irrigated: true }) }))
     expect(row).toMatchObject({ stage: 'wachstum', percent: 41, state: 'care' })
   })
 

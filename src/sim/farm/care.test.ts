@@ -8,7 +8,7 @@ import type { Parcel, World } from '../world/types'
 import type { Variety } from './yield'
 
 const size = 4
-type Care = 'Fertilize' | 'Irrigate' | 'ProtectPests'
+type Care = 'Fertilize' | 'Irrigate'
 
 function testWorld(): World {
   const parcels: Parcel[] = []
@@ -94,10 +94,7 @@ describe('Fertilize', () => {
   })
 })
 
-describe.each<[Care, 'irrigated' | 'pestProtected']>([
-  ['Irrigate', 'irrigated'],
-  ['ProtectPests', 'pestProtected'],
-])('%s', (type, flag) => {
+describe.each<[Care, 'irrigated']>([['Irrigate', 'irrigated']])('%s', (type, flag) => {
   it(`AC-3: takes the care cost, sets ${flag} and keeps the fertility`, () => {
     const state = testState()
     const next = care(state, type, [0, 0], [1, 0])
@@ -110,19 +107,17 @@ describe.each<[Care, 'irrigated' | 'pestProtected']>([
 
 describe('care once per cycle', () => {
   it('AC-4: rejects the same care twice, accepts a different care', () => {
-    for (const type of ['Fertilize', 'Irrigate', 'ProtectPests'] as const) {
+    for (const type of ['Fertilize', 'Irrigate'] as const) {
       const once = care(testState(), type, [0, 0])
       expect(() => care(once, type, [0, 0])).toThrow()
     }
     let state = care(testState(), 'Fertilize', [0, 0])
     state = care(state, 'Irrigate', [0, 0])
-    state = care(state, 'ProtectPests', [0, 0])
     expect(state.farm.plants[0]).toEqual({
       variety: 'robusta',
       plantedHour: 5,
       fertilized: true,
       irrigated: true,
-      pestProtected: true,
     })
   })
 
@@ -189,7 +184,7 @@ describe('rejected care', () => {
       ],
     ],
   ])('AC-5: rejects %s and changes nothing', (_, state, parcels) => {
-    for (const type of ['Fertilize', 'Irrigate', 'ProtectPests'] as const) {
+    for (const type of ['Fertilize', 'Irrigate'] as const) {
       const before = structuredClone(state)
       expect(() => care(state, type, ...parcels)).toThrow()
       expect(state).toEqual(before)
@@ -210,7 +205,7 @@ describe('quoteCare (S18a)', () => {
       { x: 1, y: 0 },
       { x: 3, y: 0 },
     ]
-    for (const type of ['Fertilize', 'Irrigate', 'ProtectPests'] as const)
+    for (const type of ['Fertilize', 'Irrigate'] as const)
       expect(quoteCare(testState(), { type, parcels })).toBe(100 + 200)
   })
 })

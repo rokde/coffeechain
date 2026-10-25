@@ -1,17 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
 const speeds = [0, 1, 2, 4, 8, 16]
-const tools = [
-  'select',
-  'parcel',
-  'plant',
-  'fertilize',
-  'irrigate',
-  'protect',
-  'harvest',
-  'build',
-  'market',
-]
+const tools = ['select', 'parcel', 'plant', 'fertilize', 'irrigate', 'harvest', 'build', 'market']
 
 test('M0: scene and empty HUD frame', async ({ page }) => {
   const errors: string[] = []
@@ -626,7 +616,6 @@ test('S18a: care and harvest tools, storage chip', async ({ page }) => {
     'Pflanzen',
     'Düngen',
     'Wässern',
-    'Schutz',
     'Ernten',
     'Bauen',
     'Markt',
@@ -712,21 +701,14 @@ test('S21e: field status and care buttons in the inspector', async ({ page }) =>
   await expect(page.getByTestId('inspector-growth')).toHaveText(/^\d+ %$/)
   await expect(page.getByTestId('inspector-days')).toHaveText(/^Reif in (\d+ Tagen|1 Tag)$/)
   await expect(page.getByTestId('inspector-care')).toHaveText('keine')
-  await expect(page.getByTestId('inspector-care-action')).toHaveText([
-    'Düngen',
-    'Wässern',
-    'Schützen',
-  ])
+  await expect(page.getByTestId('inspector-care-action')).toHaveText(['Düngen', 'Wässern'])
   await expect(page.getByTestId('field-row').getByTestId('field-state')).toHaveText(
     'Braucht Pflege',
   )
 
   await page.getByTestId('inspector-care-action').filter({ hasText: 'Wässern' }).click()
   await expect(page.getByTestId('inspector-care')).toHaveText('gewässert')
-  await expect(page.getByTestId('inspector-care-hint')).toHaveText([
-    'Düngen möglich',
-    'Schützen möglich',
-  ])
+  await expect(page.getByTestId('inspector-care-hint')).toHaveText(['Düngen möglich'])
   await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
   await page.screenshot({ path: 'docs/progress/S21e.png' })
 
@@ -1626,7 +1608,7 @@ async function loadFields(page: import('@playwright/test').Page, plan: FieldPlan
           if (save.state.world.parcels[index].zone === 'wasser')
             throw new Error(`Water: ${dx},${dy}`)
           parcels[index] = id
-          const care = { fertilized: true, irrigated: true, pestProtected: true }
+          const care = { fertilized: true, irrigated: true }
           plants[index] = {
             variety: 'robusta',
             plantedHour: hour - field.age,
