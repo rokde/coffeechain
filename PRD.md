@@ -189,7 +189,7 @@ menge = basisErtrag(sorte)
       × zufall             // seedbar, Startwert 0,9–1,1 (GDD 5.4: „Zufall“)
 ```
 - Ergebnis auf ganze Einheiten abgerundet.
-- **Qualität** (GDD 5.4: Sorte + Pflege + Zufall + Events) wird als Wert 0–100 pro Charge berechnet und angezeigt. Die Bank zahlt unabhängig von der Qualität. Einen Preiseffekt hat sie über Aufträge virtueller Käufer (Mindestqualität, Aufpreis über der Bank, siehe Abschnitt 12, Punkt 4).
+- **Qualität** (GDD 5.4: Sorte + Pflege + Zufall) wird als Wert 0–100 pro Charge berechnet und angezeigt. Die Bank zahlt unabhängig von der Qualität. Einen Preiseffekt hat sie über Aufträge virtueller Käufer (Mindestqualität, Aufpreis über der Bank, siehe Abschnitt 12, Punkt 4).
 - `sim/farm/yield.ts` ist eine reine Funktion mit Tabellentests.
 
 ### Überreife (NEU, im Entwurf)
@@ -240,18 +240,7 @@ menge = basisErtrag(sorte)
 
 Events entfallen vorerst (Robert 2026-10-25, #8). Das Spiel hat keine Zufallsevents (Frost, Monsun, Marktboom, Marktkrise, Schädlinge, Forschungsdurchbruch). Der Kernkreislauf soll zuerst stabil sein. Kommen Events zurück, brauchen sie ein klares Signal mit Erklärung, Restdauer und Wirkung.
 
----|---|---|---|
-| Frost-Warnung | Hochland-Ernte −30 %, Arabica-Preise +20 % | 3–5 Spieltage | ~alle 2 Spielwochen |
-| Monsun-Saison | Tiefland-Zyklen +50 % Zeit, Robusta-Preis +15 % | 5–7 Spieltage | ~alle 3 Spielwochen |
-| Marktboom | Alle Verkaufspreise +15 % | 3 Spieltage | ~alle 2 Spielwochen |
-| Marktkrise | Alle Verkaufspreise −15 % | 3 Spieltage | ~alle 3 Spielwochen |
-| Schädlingsplage | Betroffene Parzellen −20 bis −30 % Ertrag | 2–4 Spieltage | ~alle 4 Spielwochen |
-| Forschungsdurchbruch | Neue Saatgut-Variante, +10 % Ertrag | dauerhaft | ~alle 6 Spielwochen |
-
-- **Abweichung vom GDD:** Schädlingsplage maximal −30 % statt −50 %, damit die Event-Regel „maximal −30 %“ aus demselben Abschnitt eingehalten wird.
-- Regeln aus GDD 11.8: Effekte zwischen −30 % und +30 %, maximal 7 Spieltage, mindestens 1 Spieltag Vorwarnung, höchstens 2 Events gleichzeitig.
-- Events werden mit dem seedbaren PRNG erzeugt.
-- Kein Event in den ersten 5 Spieltagen (`NEU`), damit der Einstieg ruhig bleibt.
+Die alten Werte stehen in `docs/gdd.md` 11.8.
 
 ---
 

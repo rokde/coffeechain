@@ -506,7 +506,7 @@ const phaseText = computed(() => {
   max-height: 480px;
   overflow-y: auto;
 }
-/* Below 761 px the panels start 4 px below the seed tab. The right panel keeps its bottom edge, so its height limit shrinks. */
+/* Below 1280 px the panels start at 134 px, 4 px below the seed tab of narrow screens. The right panel keeps its bottom edge, so its height limit shrinks. */
 @media (max-width: 1279px) {
   .left-panel {
     --left-max: 204px;
