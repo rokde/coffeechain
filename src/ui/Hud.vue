@@ -373,6 +373,20 @@ const phaseText = computed(() => {
   outline: 2px solid #f2c48d;
   outline-offset: 2px;
 }
+/* Below 1440 px a long date does not fit in one line, so date and year get two lines. */
+@media (max-width: 1439px) {
+  .clock {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 4px 6px;
+    font-size: 12px;
+    line-height: 15px;
+  }
+  .clock-separator {
+    display: none;
+  }
+}
 /* The bar holds about 1200 px of content, so the money group and the phase get a second row. */
 @media (max-width: 1279px) {
   .top-bar {
@@ -427,18 +441,6 @@ const phaseText = computed(() => {
   .chip {
     padding: 8px 4px;
     font-size: 14px;
-  }
-  /* Date and year in two lines, so a long month name still fits. */
-  .clock {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 4px 6px;
-    font-size: 12px;
-    line-height: 15px;
-  }
-  .clock-separator {
-    display: none;
   }
   .speeds {
     gap: 0;
@@ -600,7 +602,15 @@ const phaseText = computed(() => {
     gap: 6px;
   }
 }
+/* The first row must fit "30. September" beside the speed, save and help buttons. */
 @media (max-width: 380px) {
+  .time {
+    padding: 0;
+  }
+  .clock {
+    padding: 4px;
+    font-size: 11px;
+  }
   .toolbar button {
     font-size: 11px;
   }

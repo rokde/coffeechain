@@ -26,7 +26,7 @@ test('M0: scene and empty HUD frame', async ({ page }) => {
 
 test('S9: clock and speed buttons', async ({ page }) => {
   await page.goto('/')
-  await expect(page.getByTestId('clock')).toHaveText('Tag 1 · 00:00')
+  await expect(page.getByTestId('clock')).toHaveText('1. Januar, Jahr 1')
   const expectActive = async (active: number) => {
     for (const s of speeds) {
       await expect(page.getByTestId(`speed-${s}`)).toHaveAttribute(
@@ -443,6 +443,8 @@ test('S12b: owned parcel marks and field labels', async ({ page }) => {
   page.on('pageerror', (error) => errors.push(error.message))
 
   await page.goto('/?seed=48213')
+  // A day takes 0.67 s at 1x. The pause keeps the labels from a rebuild during the test.
+  await page.getByTestId('speed-0').click()
   const labels = page.locator('[data-testid^="field-label-"]')
   await expect(page.getByTestId('hud-top-bar')).toBeVisible()
   await expect(labels).toHaveCount(0)
@@ -737,6 +739,8 @@ test('S23: field labels fade on hover', async ({ page }) => {
   page.on('pageerror', (error) => errors.push(error.message))
 
   await page.goto('/?seed=48213')
+  // A day takes 0.67 s at 1x. The pause keeps the labels from a rebuild during the test.
+  await page.getByTestId('speed-0').click()
   // Buildable lowland parcels (32, 38) and (35, 37) of seed 48213 at the start view.
   await page.getByTestId('tool-parcel').click()
   const canvas = page.locator('canvas#scene')
@@ -962,7 +966,7 @@ test('S42b: save panel saves and loads a slot', async ({ page }) => {
   const money = page.getByTestId('money')
   await expect(money).toHaveText('500 CC')
   await row.getByTestId('save-slot-save').click()
-  await expect(row.getByTestId('save-slot-status')).toHaveText(/^Tag \d+$/)
+  await expect(row.getByTestId('save-slot-status')).toHaveText(/^\d+\. \S+, Jahr \d+$/)
   await expect(row.getByTestId('save-slot-load')).toBeEnabled()
   await page.screenshot({ path: 'docs/progress/save-panel.png' })
   await page.getByTestId('save-panel-close').click()
@@ -1000,7 +1004,7 @@ for (const width of [360, 390]) {
   })
 }
 
-test('S42b: top bar fits a narrow window at day 9999', async ({ page }) => {
+test('S42b: top bar fits a narrow window at a long date', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 640 })
   await page.goto('/?seed=4294967295')
   await page.getByTestId('save-button').click()
@@ -1009,13 +1013,13 @@ test('S42b: top bar fits a narrow window at day 9999', async ({ page }) => {
   await page.evaluate(() => {
     const key = 'coffeechain.save.slot-1'
     const save = JSON.parse(localStorage.getItem(key)!)
-    save.state.time = { ...save.state.time, hour: 9998 * 24 + 23, speed: 0 }
+    save.state.time = { ...save.state.time, day: 35909, speed: 0 }
     localStorage.setItem(key, JSON.stringify(save))
   })
   await page.getByTestId('save-panel-close').click()
   await page.getByTestId('save-button').click()
   await page.getByTestId('save-slot-1').getByTestId('save-slot-load').click()
-  await expect(page.getByTestId('clock')).toHaveText('Tag 9999 · 23:00')
+  await expect(page.getByTestId('clock')).toHaveText('30. September, Jahr 100')
   const bar = page.getByTestId('hud-top-bar')
   expect(await bar.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
   for (const id of ['clock', 'speed-0', 'speed-16', 'save-button', 'help-button'])
@@ -1023,7 +1027,7 @@ test('S42b: top bar fits a narrow window at day 9999', async ({ page }) => {
   await page.screenshot({ path: 'docs/progress/save-panel-day-9999.png' })
 })
 
-test('S43: the game writes the autosave at a new day, and the panel can load it', async ({
+test('S43: the game writes the autosave at a new month, and the panel can load it', async ({
   page,
 }) => {
   test.setTimeout(60_000)
@@ -1038,19 +1042,19 @@ test('S43: the game writes the autosave at a new day, and the panel can load it'
   await expect(row.getByTestId('save-slot-save')).toHaveCount(0)
   await page.getByTestId('save-panel-close').click()
 
-  // At speed 16 one game day takes 15 real seconds.
-  await page.getByTestId('speed-16').click()
-  await expect(page.getByTestId('clock')).toHaveText(/^Tag 2 /, { timeout: 30_000 })
+  // At speed 4 one month takes 5 real seconds. The loaded autosave keeps this speed.
+  await page.getByTestId('speed-4').click()
+  await expect(page.getByTestId('clock')).toHaveText(/Februar, Jahr 1$/, { timeout: 30_000 })
   await page.getByTestId('speed-0').click()
   await page.getByTestId('save-button').click()
-  await expect(row.getByTestId('save-slot-status')).toHaveText('Tag 2')
+  await expect(row.getByTestId('save-slot-status')).toHaveText('1. Februar, Jahr 1')
   await page.screenshot({ path: 'docs/progress/save-panel-autosave.png' })
   await row.getByTestId('save-slot-load').click()
-  await expect(page.getByTestId('clock')).toHaveText(/^Tag 2 · 00:00$/)
+  await expect(page.getByTestId('clock')).toHaveText('1. Februar, Jahr 1')
   expect(errors).toEqual([])
 })
 
-test('S43b: the game resumes from the autosave, and "Neues Spiel" starts day 1', async ({
+test('S43b: the game resumes from the autosave, and "Neues Spiel" starts on 1 January', async ({
   page,
 }) => {
   test.setTimeout(60_000)
@@ -1058,12 +1062,14 @@ test('S43b: the game resumes from the autosave, and "Neues Spiel" starts day 1',
   page.on('pageerror', (error) => errors.push(error.message))
   const clock = page.getByTestId('clock')
   await page.goto('/')
-  // At speed 16 one game day takes 15 real seconds.
-  await page.getByTestId('speed-16').click()
-  await expect(clock).toHaveText(/^Tag 2 /, { timeout: 30_000 })
+  // At speed 4 one month takes 5 real seconds. The loaded autosave keeps this speed.
+  await page.getByTestId('speed-4').click()
+  await expect(clock).toHaveText(/Februar, Jahr 1$/, { timeout: 30_000 })
   await page.getByTestId('speed-0').click()
   await page.reload()
-  await expect(clock).toHaveText(/^Tag 2 /)
+  await page.getByTestId('speed-0').click()
+  await expect(clock).toHaveText(/Februar, Jahr 1$/)
+  const resumed = await clock.textContent()
 
   await page.getByTestId('save-button').click()
   await page.getByTestId('save-new-game').focus()
@@ -1077,10 +1083,10 @@ test('S43b: the game resumes from the autosave, and "Neues Spiel" starts day 1',
   await expect(page.getByTestId('save-panel')).toContainText(
     'Das laufende Spiel geht verloren. Neues Spiel beginnen?',
   )
-  await expect(clock).toHaveText(/^Tag 2 /)
+  await expect(clock).toHaveText(resumed!)
   await page.screenshot({ path: 'docs/progress/save-panel-new-game.png' })
   await page.getByTestId('save-new-game-confirm').click()
-  await expect(clock).toHaveText(/^Tag 1 /)
+  await expect(clock).toHaveText('1. Januar, Jahr 1')
   await expect(page.getByTestId('save-panel')).toHaveCount(0)
   expect(errors).toEqual([])
 })
@@ -1090,7 +1096,7 @@ test('S43b: a broken autosave gives a new game', async ({ page }) => {
   page.on('pageerror', (error) => errors.push(error.message))
   await page.addInitScript(() => localStorage.setItem('coffeechain.save.autosave', '{broken'))
   await page.goto('/')
-  await expect(page.getByTestId('clock')).toHaveText(/^Tag 1 /)
+  await expect(page.getByTestId('clock')).toHaveText('1. Januar, Jahr 1')
   const canvas = page.locator('canvas#scene')
   await expect(canvas).toHaveAttribute('data-props', 'ready')
   expect(await canvas.evaluate((c: HTMLCanvasElement) => c.getContext('webgl2') !== null)).toBe(
@@ -1212,7 +1218,7 @@ for (const [width, height] of [
       ),
     )
     await page.goto('/')
-    await expect(page.getByTestId('clock')).toHaveText(/^Tag 1 /)
+    await expect(page.getByTestId('clock')).toHaveText('1. Januar, Jahr 1')
     const panel = page.getByTestId('save-panel')
     await expect(panel).toContainText('Der geladene Spielstand ist ungültig.')
     expect(await panel.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
@@ -1246,7 +1252,7 @@ for (const [width, height] of [
     await page.evaluate(() => {
       const key = 'coffeechain.save.slot-1'
       const save = JSON.parse(localStorage.getItem(key)!)
-      save.state.time = { ...save.state.time, hour: 4 * 24 + 8, speed: 0 }
+      save.state.time = { ...save.state.time, day: 130, speed: 0 }
       localStorage.setItem(key, JSON.stringify(save))
     })
     await page.getByTestId('save-panel-close').click()
@@ -1317,7 +1323,7 @@ for (const [width, height, money] of [
     await page.evaluate((money) => {
       const key = 'coffeechain.save.slot-1'
       const save = JSON.parse(localStorage.getItem(key)!)
-      save.state.time = { ...save.state.time, hour: 998 * 24 + 8, speed: 0 }
+      save.state.time = { ...save.state.time, day: 3509, speed: 0 }
       save.state.money = money
       // Two Lager-Ausbau stages give the largest capacity, 600.
       save.state.buildings = { 0: { kind: 'storage' }, 1: { kind: 'storage' } }
@@ -1328,7 +1334,7 @@ for (const [width, height, money] of [
     await page.getByTestId('save-button').click()
     await page.getByTestId('save-slot-1').getByTestId('save-slot-load').click()
     await page.getByTestId('first-steps-close').click()
-    await expect(page.getByTestId('clock')).toHaveText('Tag 999 · 08:00')
+    await expect(page.getByTestId('clock')).toHaveText('30. September, Jahr 10')
     // 069-whole-cc drops the decimals. Whole values are the same in both forms.
     await expect(page.getByTestId('money')).toHaveText(
       `${(money / 100).toLocaleString('de-DE')} CC`,
@@ -1373,7 +1379,7 @@ test('S46: process raw coffee and sell washed coffee in the market panel', async
     const key = 'coffeechain.save.slot-1'
     const save = JSON.parse(localStorage.getItem(key)!)
     const { start, size } = save.state.world
-    save.state.time = { hour: 8, speed: 0 }
+    save.state.time = { day: 10, speed: 0, stage: 'months' }
     save.state.farm.parcels = { [start.y * size + start.x]: 0 }
     save.state.buildings = { [start.y * size + start.x]: { kind: 'processing' } }
     save.state.storage.batches = [{ variety: 'arabicaStandard', units: 60, quality: 100 }]
@@ -1392,15 +1398,16 @@ test('S46: process raw coffee and sell washed coffee in the market panel', async
   await expect(sellWashed).toBeDisabled()
   await process.click()
   await expect(block.getByTestId('market-stock')).toHaveText('10')
-  await expect(block.getByTestId('market-processing')).toHaveText('Aufbereitung läuft bis Tag 2')
+  await expect(block.getByTestId('market-processing')).toHaveText('Aufbereitung läuft bis Tag 40')
   await expect(process).toBeDisabled()
   await expect(page.getByTestId('money')).toHaveText('485 CC')
 
-  // One frame runs at most 24 ticks: one jump at speed 16 ends the processing day.
+  // One frame runs at most 24 steps: two jumps at speed 16 go past day 40, the end of the processing.
   await page.getByTestId('speed-16').click()
   await page.clock.fastForward(60_000)
+  await page.clock.fastForward(60_000)
   await page.getByTestId('speed-0').click()
-  await expect(page.getByTestId('clock')).toHaveText('Tag 2 · 08:00')
+  await expect(page.getByTestId('clock')).toHaveText(/(Februar|März), Jahr 1$/)
   await expect(block.getByTestId('market-washed-stock')).toHaveText('50')
   await expect(block.getByTestId('market-processing')).toHaveCount(0)
   await expect(process).toBeEnabled()
@@ -1490,7 +1497,7 @@ test('S56: deliver a buyer order in the market panel', async ({ page }) => {
   await page.evaluate(() => {
     const key = 'coffeechain.save.slot-1'
     const save = JSON.parse(localStorage.getItem(key)!)
-    save.state.time = { ...save.state.time, hour: 8, speed: 0 }
+    save.state.time = { ...save.state.time, day: 10, speed: 0 }
     save.state.storage = {
       batches: [
         { variety: 'robusta', units: 20, quality: 75 },
@@ -1534,8 +1541,8 @@ test('S56: deliver a buyer order in the market panel', async ({ page }) => {
 })
 
 type FieldPlan = { name: string; parcels: [number, number][]; age: number; cared: boolean }
-const day12 = 11 * 24 + 14
-// A ripe field A, an unripe field B without care and a field C in bloom. Robusta ripens after 72 hours.
+const day12 = 347
+// A ripe field A, an unripe field B without care and a field C in bloom. Robusta ripens after 90 days.
 const threeFields: FieldPlan[] = [
   {
     name: 'A',
@@ -1547,7 +1554,7 @@ const threeFields: FieldPlan[] = [
       [3, -5],
       [4, -5],
     ],
-    age: 80,
+    age: 100,
     cared: true,
   },
   {
@@ -1558,7 +1565,7 @@ const threeFields: FieldPlan[] = [
       [-6, -1],
       [-5, -1],
     ],
-    age: 20,
+    age: 25,
     cared: false,
   },
   {
@@ -1569,7 +1576,7 @@ const threeFields: FieldPlan[] = [
       [2, -2],
       [3, -2],
     ],
-    age: 50,
+    age: 63,
     cared: true,
   },
 ]
@@ -1577,7 +1584,7 @@ const threeFields: FieldPlan[] = [
 const tenFields: FieldPlan[] = Array.from({ length: 10 }, (_, i) => ({
   name: String.fromCharCode(65 + i),
   parcels: [[(i % 5) * 2 - 4, Math.floor(i / 5) * 2 - 7]],
-  age: i === 9 ? 80 : 10 + i * 5,
+  age: i === 9 ? 100 : 12 + i * 6,
   cared: true,
 }))
 
@@ -1587,7 +1594,7 @@ async function loadFields(page: import('@playwright/test').Page, plan: FieldPlan
   await page.getByTestId('save-button').click()
   await page.getByTestId('save-slot-1').getByTestId('save-slot-save').click()
   await page.evaluate(
-    ({ plan, hour }) => {
+    ({ plan, day }) => {
       const key = 'coffeechain.save.slot-1'
       const save = JSON.parse(localStorage.getItem(key)!)
       const { start, size } = save.state.world
@@ -1602,12 +1609,12 @@ async function loadFields(page: import('@playwright/test').Page, plan: FieldPlan
           const care = { fertilized: true, irrigated: true }
           plants[index] = {
             variety: 'robusta',
-            plantedHour: hour - field.age,
+            plantedDay: day - field.age,
             ...(field.cared ? care : {}),
           }
         }
       })
-      save.state.time = { hour, speed: 0 }
+      save.state.time = { day, speed: 0, stage: 'months' }
       save.state.farm = {
         parcels,
         fields: plan.map((f, id) => ({ id, name: f.name })),
@@ -1616,7 +1623,7 @@ async function loadFields(page: import('@playwright/test').Page, plan: FieldPlan
       }
       localStorage.setItem(key, JSON.stringify(save))
     },
-    { plan, hour: day12 },
+    { plan, day: day12 },
   )
   await page.getByTestId('save-panel-close').click()
   await page.getByTestId('save-button').click()
@@ -1642,7 +1649,7 @@ for (const [width, height] of [
     await expect(rows).toHaveCount(3)
     await expect(rows.nth(0).getByTestId('field-state')).toHaveText('Erntereif')
     await expect(rows.nth(1).getByTestId('field-state')).toHaveText('Braucht Pflege')
-    await expect(rows.nth(2)).toContainText('Blüte · 69 %')
+    await expect(rows.nth(2)).toContainText('Blüte · 70 %')
     await expect(page.getByTestId('message-panel')).toHaveCount(0)
     const left = (await page.getByTestId('hud-left-panel').boundingBox())!
     // All rows show whole at 800 px and more. At 390 px at least two rows show whole.
@@ -1763,7 +1770,7 @@ for (const [width, height] of [
     await page.evaluate(() => {
       const key = 'coffeechain.save.slot-1'
       const save = JSON.parse(localStorage.getItem(key)!)
-      save.state.time = { ...save.state.time, hour: 4 * 24 + 8, speed: 0 }
+      save.state.time = { ...save.state.time, day: 130, speed: 0 }
       localStorage.setItem(key, JSON.stringify(save))
     })
     await page.getByTestId('save-panel-close').click()
@@ -1928,7 +1935,7 @@ test('S58b: a sale shows an income coin at the sell button', async ({ page }) =>
   await page.evaluate(() => {
     const key = 'coffeechain.save.slot-1'
     const save = JSON.parse(localStorage.getItem(key)!)
-    save.state.time = { hour: 8, speed: 0 }
+    save.state.time = { day: 10, speed: 0, stage: 'months' }
     save.state.storage.batches = [{ variety: 'arabicaStandard', units: 60, quality: 100 }]
     localStorage.setItem(key, JSON.stringify(save))
   })
