@@ -2033,3 +2033,25 @@ for (const [width, height] of [
     expect(errors).toEqual([])
   })
 }
+
+for (const [width, height] of [
+  [1440, 900],
+  [800, 900],
+  [390, 844],
+] as const) {
+  test(`086: market panel shows the 12-month axis at ${width} px`, async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', (e) => errors.push(e.message))
+    await page.setViewportSize({ width, height })
+    await page.goto('/?seed=48213')
+    await page.getByTestId('first-steps-close').click()
+    await page.getByTestId('tool-market').click()
+    const panel = page.getByTestId('market-panel')
+    await expect(panel.getByTestId('market-axis').first()).toHaveText('FebJan')
+    await expect(panel).toContainText('Kaffee, 12 Monate')
+    expect(await panel.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+    await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
+    await page.screenshot({ path: `docs/progress/086-${width}.png` })
+    expect(errors).toEqual([])
+  })
+}
