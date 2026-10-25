@@ -115,7 +115,7 @@ tools/
 ## 5. Welt
 
 ### Generierung
-- Eingabe: Seed, angezeigt als „Welt #48213“. Neues Spiel = zufälliger Seed, optional manuell eingebbar.
+- Eingabe: Seed (ganze Zahl von 0 bis 2^32 − 1), angezeigt als „Welt #48213“. Neues Spiel = zufälliger Seed, im Startbildschirm eingebbar oder neu würfelbar (Abschnitt 11). Gleicher Seed ergibt immer dieselbe Insel.
 - Insel aus einem Raster quadratischer **Parzellen** (Startgröße 48 × 48, konfigurierbar), Form über Noise mit radialer Abschwächung, Wasser außenherum.
 - Höhe über Noise. Sehr steile Parzellen sind nicht bebaubar.
 
@@ -274,6 +274,15 @@ Die alten Werte stehen in `docs/gdd.md` 11.8.
 - Terrain als ein zusammenhängendes Mesh pro Chunk mit Vertex-Farben, keine Einzelmeshes pro Parzelle.
 - Kaffeepflanzen per Code erzeugt, eine Variante pro sichtbarer Phase und Sorte (Farbe/Größe), gerendert mit `InstancedMesh`.
 - Gebäude und Deko: Kenney (Nature Kit, Survival Kit, City Kit Suburban, Fantasy Town Kit). Nur benötigte Modelle ins Repo, Lizenzdatei dazu.
+
+### Startbildschirm (Issue #3, Entwurf A „Inselansicht“)
+- Beim Start zeigt die App zuerst den Startbildschirm, nicht sofort die Welt. Vorlage: `docs/mockups/start-screen/startscreen-a-*.png` (ohne Vulkan).
+- Hintergrund ist die echte Szene: die Insel des Seeds bzw. des Spielstands, in der Startansicht der Kamera, ohne Drehen und Zoomen. Links ein dunkelbraunes Panel im HUD-Stil.
+- Ohne lesbaren Autosave: Seed-Feld, Knopf für einen neuen Zufalls-Seed und „Spiel starten“. Jede Seed-Änderung zeigt die Insel neu. „Spiel starten“ startet genau diese Welt und schreibt sie in den Autosave.
+- Mit Autosave: „Willkommen zurück“ mit Kalenderdatum, „Welt #<Seed>“ und CC des Autosaves. „Weiterspielen“ lädt ihn. „Neues Spiel“ fragt erst „Das laufende Spiel geht verloren“ und zeigt danach das Seed-Feld.
+- „Neues Spiel“ im Spielstand-Dialog öffnet nach der Bestätigung den Startbildschirm mit dem Seed-Feld.
+- `?seed=<n>` und `?debug=models` überspringen den Startbildschirm (e2e-Tests, Debug-Links). Ein „Laden“ im Spiel überspringt ihn auch.
+- Später (eigener Job): Spielstandliste rechts mit Speicherzeit, Lageanteile und Hütten-Hinweis unter dem Seed-Feld.
 
 ### HUD (Vue)
 Aufbau wie in den Mockups:

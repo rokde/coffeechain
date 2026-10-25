@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { deserialize, serialize } from '../sim/save/save'
-import { createState, type GameState } from '../sim/state'
+import type { GameState } from '../sim/state'
+import { skipResume } from './resume'
 import { errorMessage, loadSlot, pendingLoadError, readSlot, writeSlot } from './saves'
-import { pickSeed } from './seed'
 import { useGameStore } from './store'
 
 export const slots = ['slot-1', 'slot-2', 'slot-3'] as const
@@ -64,22 +64,11 @@ export const useSavePanelStore = defineStore('savePanel', () => {
     }
   }
 
-  // The resume step at start loads the new world from the slot autosave.
-  async function newGame() {
+  // The start screen offers the seed for the new world. The autosave stays until the new game starts.
+  function newGame() {
     message.value = null
     confirmNewGame.value = false
-    const speed = game.state.time.speed
-    // A pause stops the autosave, so no day change writes the old game after the new world.
-    game.dispatch({ type: 'SetSpeed', speed: 0 })
-    try {
-      await writeSlot('autosave', serialize(createState(pickSeed(''))))
-    } catch (error) {
-      message.value = { key: 'saveFailed', reason: errorMessage(error) }
-      game.dispatch({ type: 'SetSpeed', speed })
-      return
-    }
-    // Without the query, a ?seed= link does not build its seed world again.
-    location.replace(location.pathname)
+    skipResume()
   }
 
   return { open, status, message, confirmNewGame, refresh, save, load, newGame }

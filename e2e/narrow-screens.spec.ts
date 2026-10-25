@@ -9,7 +9,7 @@ for (const [width, height] of [
 ] as const) {
   test(`079: all first steps show above the toolbar at ${width}x${height}`, async ({ page }) => {
     await page.setViewportSize({ width, height })
-    await page.goto('/')
+    await page.goto('/?seed=48213')
     const toolbarTop = (await page.getByTestId('hud-toolbar').boundingBox())!.y
     const panel = (await page.getByTestId('hud-left-panel').boundingBox())!
     expect(panel.y + panel.height).toBeLessThanOrEqual(toolbarTop)
@@ -70,7 +70,7 @@ for (const [width, height] of [
 
 // Expected boxes were read on main at 34b2b15.
 test('079: the 1440x900 layout keeps its boxes', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/?seed=48213')
   const expected = {
     'hud-top-bar': { x: 16, y: 16, width: 1408, height: 60 },
     'hud-left-panel': { x: 16, y: 92, width: 300, height: 214.9375 },

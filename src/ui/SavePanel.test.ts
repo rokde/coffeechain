@@ -7,7 +7,7 @@ import { useSavePanelStore } from '../app/savePanel'
 import { startState } from '../app/resume'
 import { pendingLoadError } from '../app/saves'
 import { setStartState, useGameStore } from '../app/store'
-import { deserialize, SAVE_VERSION, serialize } from '../sim/save/save'
+import { SAVE_VERSION, serialize } from '../sim/save/save'
 import { createState, type GameState } from '../sim/state'
 import Hud from './Hud.vue'
 import SavePanel from './SavePanel.vue'
@@ -41,7 +41,7 @@ beforeEach(() => {
 
 // main.ts reads the start state before it builds the stores.
 async function start() {
-  setStartState(await startState(location.search))
+  setStartState((await startState(location.search)).state)
   return setup()
 }
 
@@ -202,7 +202,6 @@ describe('SavePanel (S42b)', () => {
   })
 
   describe('S43b: new game', () => {
-    const AUTOSAVE = 'coffeechain.save.autosave'
     const has = (text: string, id: string) => text.includes(`data-testid="${id}"`)
 
     it('AC-3: the button shows the confirm step, cancel hides it, and both write nothing', async () => {
@@ -235,47 +234,18 @@ describe('SavePanel (S42b)', () => {
       expect(replace).not.toHaveBeenCalled()
     })
 
-    it('AC-3: confirm pauses, writes a day-1 world to the autosave one time, then reloads', async () => {
-      const { game, panel } = setup()
-      const state = game.state as GameState
-      game.replace({ ...state, time: { ...state.time, day: 180, speed: 16 } })
+    it('#3: confirm writes nothing and opens the start screen for a new seed', async () => {
+      const { panel } = setup()
       panel.confirmNewGame = true
       const setItem = vi.spyOn(localStorage, 'setItem')
-      await panel.newGame()
-      expect(setItem).toHaveBeenCalledOnce()
-      expect(setItem.mock.calls[0]![0]).toBe(AUTOSAVE)
-      const fresh = deserialize(local.get(AUTOSAVE)!)
-      expect(fresh.time.day).toBe(0)
-      expect(fresh.money).toBe(createState(1).money)
-      expect([...local.keys()]).toEqual([AUTOSAVE])
-      expect(game.state.time.speed).toBe(0)
-      expect(reload).not.toHaveBeenCalled()
-      // The path without ?seed=42, so the start reads the new autosave.
+      panel.newGame()
+      expect(setItem).not.toHaveBeenCalled()
+      expect(local.size).toBe(0)
+      expect(panel.confirmNewGame).toBe(false)
+      expect(session.get('coffeechain.skipResume')).toBe('1')
+      // The path without ?seed=42, so the start screen shows.
       expect(replace).toHaveBeenCalledExactlyOnceWith('/')
-      expect(replace.mock.invocationCallOrder[0]).toBeGreaterThan(
-        setItem.mock.invocationCallOrder[0]!,
-      )
-    })
-
-    it('AC-3: a failed write shows the error and does not reload', async () => {
-      vi.mocked(isTauri).mockReturnValue(true)
-      vi.mocked(invoke).mockRejectedValue('disk full')
-      const { pinia, game, panel } = setup()
-      game.dispatch({ type: 'SetSpeed', speed: 4 })
-      panel.confirmNewGame = true
-      await expect(panel.newGame()).resolves.toBeUndefined()
-      expect(game.state.time.speed).toBe(4)
-      expect(replace).not.toHaveBeenCalled()
-      expect(invoke).toHaveBeenCalledOnce()
-      expect(invoke).toHaveBeenCalledWith('save_write', {
-        slot: 'autosave',
-        text: expect.any(String),
-      })
       expect(reload).not.toHaveBeenCalled()
-      const text = await html(pinia)
-      expect(text).toMatch(
-        /data-testid="save-panel-message"[^>]*>\s*Speichern fehlgeschlagen: disk full/,
-      )
     })
   })
 })
