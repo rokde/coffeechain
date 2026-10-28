@@ -209,3 +209,32 @@ describe('ParcelInspector empty state (U1)', () => {
     expect(html).not.toContain('inspector-empty')
   })
 })
+
+describe('ParcelInspector title (#11)', () => {
+  it('shows the field name of an owned parcel, with the position below', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const state = useGameStore(pinia).state as GameState
+    const { x, y } = state.world.parcels.find((p) => isFree(state, p.x, p.y))!
+    const owned = dispatch(
+      { ...state, money: 100000 },
+      { type: 'CreateParcels', parcels: [{ x, y }] },
+    )
+    useGameStore(pinia).replace(owned)
+    useSelectionStore(pinia).parcel = { x, y }
+    const html = await renderToString(createSSRApp(ParcelInspector).use(pinia))
+    expect(text(html, 'inspector-title')).toEqual(['Feld A'])
+    expect(text(html, 'inspector-position')).toEqual([`Position ${x} / ${y}`])
+  })
+
+  it('shows the position as the title of a parcel the farm does not own', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const state = useGameStore(pinia).state as GameState
+    const { x, y } = state.world.parcels.find((p) => isFree(state, p.x, p.y))!
+    useSelectionStore(pinia).parcel = { x, y }
+    const html = await renderToString(createSSRApp(ParcelInspector).use(pinia))
+    expect(text(html, 'inspector-title')).toEqual([`Position ${x} / ${y}`])
+    expect(html).not.toContain('inspector-position')
+  })
+})

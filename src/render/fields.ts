@@ -1,4 +1,11 @@
-import { BufferGeometry, Float32BufferAttribute, Mesh, MeshLambertMaterial } from 'three'
+import {
+  BufferGeometry,
+  Float32BufferAttribute,
+  DoubleSide,
+  Mesh,
+  MeshBasicMaterial,
+  MeshLambertMaterial,
+} from 'three'
 import type { FarmState } from '../sim/farm/parcels'
 import type { GameState } from '../sim/state'
 import type { World } from '../sim/world/types'
@@ -8,6 +15,10 @@ import { parcelCenter } from './surface'
 
 // Render constant: the dark soil of the fields in docs/mockups/.
 const SOIL_COLOR = 0x6b4a32
+// Render constant: the warm accent of the HUD, apart from the white selection outline.
+const BORDER_COLOR = 0xf2c48d
+// Render constant: the border width as a share of the way from the edge to the parcel center.
+const BORDER_WIDTH = 0.16
 
 // One anchor per field, at the mean parcel center of its parcels.
 // The anchor goes up to the top of the highest building, so the label does not hide it.
@@ -78,6 +89,67 @@ export function createFieldMarks(terrain: Mesh) {
     // Same triangles as the terrain, so the faces point up.
     geometry.setIndex(quads.flatMap((_, q) => [0, 3, 2, 0, 2, 1].map((i) => 4 * q + i)))
     geometry.computeVertexNormals()
+    mesh.geometry.dispose()
+    mesh.geometry = geometry
+  }
+
+  return { mesh, show }
+}
+
+// The 4 edges of a parcel quad as corner pairs in the order of buildTerrainGeometry,
+// each with the step to the neighbour across it.
+const EDGES = [
+  [0, 1, 0, -1],
+  [1, 2, 1, 0],
+  [2, 3, 0, 1],
+  [3, 0, -1, 0],
+] as const
+
+// The outer edges of each field: [parcel index, corner a, corner b] for every edge of an owned
+// parcel whose neighbour is not part of the same field.
+export function fieldEdges(farm: FarmState, size: number): [number, number, number][] {
+  return Object.entries(farm.parcels).flatMap(([key, field]) => {
+    const index = +key
+    const x = index % size
+    const y = Math.floor(index / size)
+    return EDGES.filter(([, , dx, dy]) => {
+      const nx = x + dx
+      const ny = y + dy
+      const inside = nx >= 0 && ny >= 0 && nx < size && ny < size
+      return !inside || farm.parcels[ny * size + nx] !== field
+    }).map(([a, b]): [number, number, number] => [index, a, b])
+  })
+}
+
+// A permanent border around each field, so owned parcels stay visible in every overlay.
+// WebGL draws lines 1 px wide, so the border is a strip of quads on the inner side of each edge.
+// show rebuilds the geometry.
+export function createFieldBorders(terrain: Mesh, size: number) {
+  const corners = terrain.geometry.getAttribute('position')
+  const mesh = new Mesh(
+    new BufferGeometry(),
+    // The offset draws the strip in front of the field mark at the same height.
+    new MeshBasicMaterial({
+      color: BORDER_COLOR,
+      side: DoubleSide,
+      polygonOffset: true,
+      polygonOffsetFactor: -2,
+      polygonOffsetUnits: -2,
+    }),
+  )
+
+  function show(farm: FarmState) {
+    const edges = fieldEdges(farm, size)
+    const points = edges.flatMap(([index, a, b]) => {
+      const quad = [0, 1, 2, 3].map((i) => corner(corners, 4 * index + i))
+      const center = [0, 1, 2].map((k) => quad.reduce((sum, c) => sum + c[k]!, 0) / 4)
+      // A point of the edge moved towards the parcel center.
+      const inner = (c: readonly number[]) => c.map((v, k) => v + (center[k]! - v) * BORDER_WIDTH)
+      return [quad[a]!, quad[b]!, inner(quad[b]!), inner(quad[a]!)].flat()
+    })
+    const geometry = new BufferGeometry()
+    geometry.setAttribute('position', new Float32BufferAttribute(points, 3))
+    geometry.setIndex(edges.flatMap((_, e) => [0, 1, 2, 0, 2, 3].map((i) => 4 * e + i)))
     mesh.geometry.dispose()
     mesh.geometry = geometry
   }

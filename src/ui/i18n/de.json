@@ -22,7 +22,7 @@
   "inspector": {
     "heading": "Parzelle",
     "empty": "Wähle eine Parzelle.",
-    "position": "{x} / {y}",
+    "position": "Position {x} / {y}",
     "close": "Auswahl schließen",
     "zone": "Zone",
     "soilClass": "Boden",

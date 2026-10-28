@@ -17,7 +17,13 @@ import { skipResume, startState } from './app/resume'
 import { setStartState, useGameStore } from './app/store'
 import { useViewStore } from './app/view'
 import { CAMERA, createCamera, gestureZoomDelta, startView, wheelZoomDelta } from './render/camera'
-import { createFieldMarks, FIELD_LABEL_STYLE, fieldAnchors, hoveredField } from './render/fields'
+import {
+  createFieldBorders,
+  createFieldMarks,
+  FIELD_LABEL_STYLE,
+  fieldAnchors,
+  hoveredField,
+} from './render/fields'
 import { loadModel, MODEL_IDS } from './render/models'
 import { createBuildings } from './render/buildings'
 import { createPlants, plantsKey } from './render/plants'
@@ -243,7 +249,8 @@ function start() {
       })
       .catch((error: unknown) => console.error('Props did not load:', error))
     const marks = createFieldMarks(terrain)
-    scene.add(marks.mesh)
+    const borders = createFieldBorders(terrain, world.size)
+    scene.add(marks.mesh, borders.mesh)
     // Field labels lie above the canvas and below the HUD.
     const fieldLayer = document.createElement('div')
     fieldLayer.style.cssText = 'position:fixed;inset:0;pointer-events:none;overflow:hidden'
@@ -259,6 +266,7 @@ function start() {
       ([farm, built]) => {
         // show and fieldAnchors only read the farm, so the cast of the readonly snapshot is safe.
         marks.show(farm as FarmState)
+        borders.show(farm as FarmState)
         fieldLabels = fieldAnchors(world, farm as FarmState, built).map(
           ({ id, name, position }) => {
             const label = document.createElement('div')

@@ -2,8 +2,16 @@ import { describe, expect, it } from 'vitest'
 import { balance } from '../sim/balance'
 import type { FarmState } from '../sim/farm/parcels'
 import { generateWorld } from '../sim/world/generate'
-import { createFieldMarks, FIELD_LABEL_STYLE, fieldAnchors, hoveredField } from './fields'
+import {
+  createFieldBorders,
+  createFieldMarks,
+  FIELD_LABEL_STYLE,
+  fieldAnchors,
+  fieldEdges,
+  hoveredField,
+} from './fields'
 import { buildingTop } from './buildings'
+import { parcelAt } from './picking'
 import { createTerrain } from './terrain'
 import { parcelCenter } from './surface'
 
@@ -98,6 +106,61 @@ describe('createFieldMarks', () => {
         expect(position.getZ(v)).toBe(corners.getZ(c))
         expect(position.getY(v)).toBeGreaterThan(corners.getY(c))
       }
+    })
+
+    show(farm({}, []))
+    expect(mesh.geometry.getAttribute('position').count).toBe(0)
+  })
+})
+
+describe('fieldEdges (#11)', () => {
+  it('gives the 4 edges of a single parcel and only the outer edges of a merged field', () => {
+    const edges = fieldEdges(threeFields, n)
+    const of = (x: number, y: number) => edges.filter(([index]) => index === at(x, y))
+    expect(of(10, 10)).toHaveLength(4)
+    expect(of(30, 12)).toHaveLength(4)
+    // Field C is an L: (20, 20) shares its right edge, (21, 21) its top edge, (21, 20) both.
+    expect(of(20, 20).map(([, a, b]) => [a, b])).not.toContainEqual([1, 2])
+    expect(of(21, 21).map(([, a, b]) => [a, b])).not.toContainEqual([0, 1])
+    expect(of(21, 20)).toHaveLength(2)
+    expect(edges).toHaveLength(16)
+  })
+
+  it('keeps the edge between two touching parcels of different fields', () => {
+    const two = farm({ [at(5, 5)]: 0, [at(6, 5)]: 1 }, [
+      { id: 0, name: 'A' },
+      { id: 1, name: 'B' },
+    ])
+    expect(fieldEdges(two, n)).toHaveLength(8)
+  })
+
+  it('gives no edges for an empty farm', () => {
+    expect(fieldEdges(farm({}, []), n)).toEqual([])
+  })
+})
+
+describe('createFieldBorders (#11)', () => {
+  it('has one strip per outer edge that starts on the terrain corners, and none for no parcels', () => {
+    const terrain = createTerrain(world)
+    const corners = terrain.geometry.getAttribute('position')
+    const { mesh, show } = createFieldBorders(terrain, n)
+    show(threeFields)
+    const position = mesh.geometry.getAttribute('position')
+    const edges = fieldEdges(threeFields, n)
+    expect(position.count).toBe(4 * edges.length)
+    expect(mesh.geometry.getIndex()!.count).toBe(6 * edges.length)
+    edges.forEach(([index, a, b], e) => {
+      for (const [v, c] of [
+        [4 * e, 4 * index + a],
+        [4 * e + 1, 4 * index + b],
+      ] as const) {
+        expect(position.getX(v)).toBe(corners.getX(c))
+        expect(position.getZ(v)).toBe(corners.getZ(c))
+        expect(position.getY(v)).toBeGreaterThan(corners.getY(c))
+      }
+      // The inner side lies inside the parcel.
+      const inner = { x: position.getX(4 * e + 2), z: position.getZ(4 * e + 2) }
+      expect(parcelAt(inner, n)).toEqual({ x: index % n, y: Math.floor(index / n) })
     })
 
     show(farm({}, []))
