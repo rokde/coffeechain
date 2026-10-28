@@ -30,9 +30,15 @@ export function pickParcel(ndc: Vector2, camera: Camera, terrain: Mesh, size: nu
   return hit ? parcelAt(hit.point, size) : null
 }
 
-// Keep water parcels above the water plane at y = 0.
-export const corner = (corners: BufferAttribute | InterleavedBufferAttribute, i: number) =>
-  [corners.getX(i), Math.max(corners.getY(i), 0) + 0.05, corners.getZ(i)] as const
+// Keep water parcels above the water plane at y = 0. extra lifts a layer above the field marks.
+export const corner = (
+  corners: BufferAttribute | InterleavedBufferAttribute,
+  i: number,
+  extra = 0,
+) => [corners.getX(i), Math.max(corners.getY(i), 0) + 0.05 + extra, corners.getZ(i)] as const
+
+// Render constant: the selection outlines lie above the field borders (lift 0.02 in fields.ts).
+const OUTLINE_LIFT = 0.04
 
 // A white outline on the 4 corners of one parcel quad. show(null) hides it.
 export function createOutline(terrain: Mesh, size: number) {
@@ -47,7 +53,7 @@ export function createOutline(terrain: Mesh, size: number) {
     if (!parcel) return
     const first = 4 * (parcel.y * size + parcel.x)
     const position = geometry.getAttribute('position')
-    for (let i = 0; i < 4; i++) position.setXYZ(i, ...corner(corners, first + i))
+    for (let i = 0; i < 4; i++) position.setXYZ(i, ...corner(corners, first + i, OUTLINE_LIFT))
     position.needsUpdate = true
     geometry.computeBoundingSphere()
   }
@@ -64,7 +70,7 @@ export function createOutlines(terrain: Mesh, size: number) {
     const points = parcels.flatMap(({ x, y }) => {
       const first = 4 * (y * size + x)
       // The 4 edges of the quad: corner 0-1, 1-2, 2-3 and 3-0.
-      return [0, 1, 1, 2, 2, 3, 3, 0].flatMap((i) => corner(corners, first + i))
+      return [0, 1, 1, 2, 2, 3, 3, 0].flatMap((i) => corner(corners, first + i, OUTLINE_LIFT))
     })
     line.geometry.dispose()
     line.geometry = new BufferGeometry()

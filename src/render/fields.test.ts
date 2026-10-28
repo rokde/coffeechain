@@ -3,6 +3,7 @@ import { balance } from '../sim/balance'
 import type { FarmState } from '../sim/farm/parcels'
 import { generateWorld } from '../sim/world/generate'
 import {
+  BORDER_LIFT,
   createFieldBorders,
   createFieldMarks,
   FIELD_LABEL_STYLE,
@@ -11,7 +12,7 @@ import {
   hoveredField,
 } from './fields'
 import { buildingTop } from './buildings'
-import { parcelAt } from './picking'
+import { corner, createOutline, parcelAt } from './picking'
 import { createTerrain } from './terrain'
 import { parcelCenter } from './surface'
 
@@ -140,31 +141,82 @@ describe('fieldEdges (#11)', () => {
 })
 
 describe('createFieldBorders (#11)', () => {
-  it('has one strip per outer edge that starts on the terrain corners, and none for no parcels', () => {
-    const terrain = createTerrain(world)
-    const corners = terrain.geometry.getAttribute('position')
+  const terrain = createTerrain(world)
+  const corners = terrain.geometry.getAttribute('position')
+  // Builds the borders of the farm and gives vertex v as [x, y, z].
+  const build = (f: FarmState) => {
     const { mesh, show } = createFieldBorders(terrain, n)
-    show(threeFields)
+    show(f)
     const position = mesh.geometry.getAttribute('position')
+    const vertex = (v: number) => [position.getX(v), position.getY(v), position.getZ(v)]
+    return { mesh, position, vertex }
+  }
+  // The field mark surface at corner c of parcel index, or BORDER_WIDTH of the way to corner to.
+  const mark = (index: number, c: number, to = c) => {
+    const [from, end] = [corner(corners, 4 * index + c), corner(corners, 4 * index + to)]
+    return from.map((v, k) => v + (end[k]! - v) * (c === to ? 0 : 0.16))
+  }
+
+  it('has one strip per outer edge above the field mark, and none for no parcels', () => {
+    const { mesh, position, vertex } = build(threeFields)
     const edges = fieldEdges(threeFields, n)
     expect(position.count).toBe(4 * edges.length)
     expect(mesh.geometry.getIndex()!.count).toBe(6 * edges.length)
     edges.forEach(([index, a, b], e) => {
-      for (const [v, c] of [
-        [4 * e, 4 * index + a],
-        [4 * e + 1, 4 * index + b],
-      ] as const) {
-        expect(position.getX(v)).toBe(corners.getX(c))
-        expect(position.getZ(v)).toBe(corners.getZ(c))
-        expect(position.getY(v)).toBeGreaterThan(corners.getY(c))
-      }
-      // The inner side lies inside the parcel.
-      const inner = { x: position.getX(4 * e + 2), z: position.getZ(4 * e + 2) }
-      expect(parcelAt(inner, n)).toEqual({ x: index % n, y: Math.floor(index / n) })
+      // Outer corners, then the inner corners on the two quad sides next to the edge.
+      const expected = [
+        mark(index, a),
+        mark(index, b),
+        mark(index, b, (b + 1) % 4),
+        mark(index, a, (a + 3) % 4),
+      ]
+      expected.forEach(([x, y, z], i) => {
+        const [vx, vy, vz] = vertex(4 * e + i)
+        expect(vx).toBeCloseTo(x!, 5)
+        expect(vz).toBeCloseTo(z!, 5)
+        expect(vy).toBeCloseTo(y! + BORDER_LIFT, 5)
+      })
+      // The middle of the inner side lies inside the parcel.
+      const [x2, , z2] = vertex(4 * e + 2)
+      const [x3, , z3] = vertex(4 * e + 3)
+      const middle = { x: (x2! + x3!) / 2, z: (z2! + z3!) / 2 }
+      expect(parcelAt(middle, n)).toEqual({ x: index % n, y: Math.floor(index / n) })
     })
 
-    show(farm({}, []))
-    expect(mesh.geometry.getAttribute('position').count).toBe(0)
+    expect(build(farm({}, [])).position.count).toBe(0)
+  })
+
+  it('joins collinear strips of one field without a gap', () => {
+    // The top edges of (20, 20) and (21, 20) in field C meet at the corner x = 21.
+    const { vertex } = build(threeFields)
+    const edges = fieldEdges(threeFields, n)
+    const strip = (x: number, y: number) =>
+      edges.findIndex(([index, a, b]) => index === at(x, y) && a === 0 && b === 1)
+    const left = strip(20, 20)
+    const right = strip(21, 20)
+    expect(vertex(4 * left + 1)).toEqual(vertex(4 * right))
+    expect(vertex(4 * left + 2)).toEqual(vertex(4 * right + 3))
+  })
+
+  it('has faces that point up', () => {
+    const { mesh, vertex } = build(threeFields)
+    const index = mesh.geometry.getIndex()!
+    for (let t = 0; t < index.count; t += 3) {
+      const [p, q, r] = [0, 1, 2].map((i) => vertex(index.getX(t + i)))
+      const [ux, , uz] = q!.map((v, k) => v - p![k]!)
+      const [vx, , vz] = r!.map((v, k) => v - p![k]!)
+      // The y part of the face normal (q - p) × (r - p).
+      expect(uz! * vx! - ux! * vz!).toBeGreaterThan(0)
+    }
+  })
+
+  it('lies below the selection outline', () => {
+    const { vertex } = build(threeFields)
+    const [index, a] = fieldEdges(threeFields, n)[0]!
+    const outline = createOutline(terrain, n)
+    outline.show({ x: index % n, y: Math.floor(index / n) })
+    const y = outline.line.geometry.getAttribute('position').getY(a)
+    expect(y).toBeGreaterThan(vertex(0)[1]!)
   })
 })
 

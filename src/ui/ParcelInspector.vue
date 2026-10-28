@@ -54,12 +54,14 @@ const position = computed(() => {
   const p = selection.parcel
   return p ? t.location.replace('{x}', String(p.x)).replace('{y}', String(p.y)) : ''
 })
-// Name of the field that owns the parcel, or null for a parcel the farm does not own.
-const field = computed(() => {
+// Id of the field that owns the parcel, or undefined for a parcel the farm does not own.
+const fieldId = computed(() => {
   const p = selection.parcel
   const { farm, world } = game.state
-  const id = p ? farm.parcels[p.y * world.size + p.x] : undefined
-  const name = farm.fields.find((f) => f.id === id)?.name
+  return p ? farm.parcels[p.y * world.size + p.x] : undefined
+})
+const field = computed(() => {
+  const name = game.state.farm.fields.find((f) => f.id === fieldId.value)?.name
   return name === undefined ? null : de.field.label.replace('{name}', name)
 })
 
@@ -67,8 +69,9 @@ const field = computed(() => {
 const price = computed(() => {
   const p = selection.parcel
   const state = game.state as GameState
-  const owned = p && p.y * state.world.size + p.x in state.farm.parcels
-  return p && !owned && isFree(state, p.x, p.y) ? quoteParcels(state, [p]) : null
+  return p && fieldId.value === undefined && isFree(state, p.x, p.y)
+    ? quoteParcels(state, [p])
+    : null
 })
 </script>
 

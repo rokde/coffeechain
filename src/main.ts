@@ -385,12 +385,21 @@ function start({ canvas, renderer, scene, view }: Stage) {
     const fadeLabels = () => {
       for (const { id, label } of fieldLabels) label.style.opacity = id === fadedField ? '0' : '1'
     }
+    // Marks and borders depend on the owned parcels only. Plant, care and harvest updates replace
+    // the farm but keep its parcels, so they do not rebuild the geometry.
+    watch(
+      () => store.state.farm.parcels,
+      () => {
+        // show only reads the farm, so the cast of the readonly snapshot is safe.
+        marks.show(store.state.farm as FarmState)
+        borders.show(store.state.farm as FarmState)
+      },
+      { immediate: true },
+    )
     watch(
       () => [store.state.farm, store.state.buildings] as const,
       ([farm, built]) => {
-        // show and fieldAnchors only read the farm, so the cast of the readonly snapshot is safe.
-        marks.show(farm as FarmState)
-        borders.show(farm as FarmState)
+        // fieldAnchors only reads the farm, so the cast of the readonly snapshot is safe.
         fieldLabels = fieldAnchors(world, farm as FarmState, built).map(
           ({ id, name, position }) => {
             const label = document.createElement('div')
