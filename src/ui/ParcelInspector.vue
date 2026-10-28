@@ -52,7 +52,7 @@ const careCost = (command: 'Fertilize' | 'Irrigate') =>
 
 const position = computed(() => {
   const p = selection.parcel
-  return p ? t.position.replace('{x}', String(p.x)).replace('{y}', String(p.y)) : ''
+  return p ? t.location.replace('{x}', String(p.x)).replace('{y}', String(p.y)) : ''
 })
 // Name of the field that owns the parcel, or null for a parcel the farm does not own.
 const field = computed(() => {
