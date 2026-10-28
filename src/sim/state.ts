@@ -1,6 +1,5 @@
 import { balance } from './balance'
 import type { BuildingKind } from './buildings/build'
-import type { GameEvent } from './events/schedule'
 import type { FarmState } from './farm/parcels'
 import type { MarketState } from './market/market'
 import type { OrdersState } from './market/orders'
@@ -25,16 +24,13 @@ export interface GameState {
   storage: StorageState
   market: MarketState
   orders: OrdersState
-  events: GameEvent[]
-  // Start day of each research breakthrough. Breakthroughs are permanent.
-  research: number[]
-  milestones: { harvested: number; harvestProHour?: number }
+  milestones: { harvested: number; harvestProDay?: number }
 }
 
 export function createState(seed: number): GameState {
   const world = generateWorld(seed, balance())
   return {
-    time: { hour: 0, speed: 1 },
+    time: { day: 0, speed: 1, stage: 'months' },
     world,
     props: placeProps(world, balance()),
     money: Math.round(balance().economy.startCapital * 100),
@@ -44,8 +40,6 @@ export function createState(seed: number): GameState {
     storage: { batches: [] },
     market: { volumes: [], seeds: {} },
     orders: { open: [], nextId: 0 },
-    events: [],
-    research: [],
     milestones: { harvested: 0 },
   }
 }

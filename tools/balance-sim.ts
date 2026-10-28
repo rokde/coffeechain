@@ -53,7 +53,7 @@ export function runBot(seed: number, days: number): BotResult {
   const owned = () => Object.keys(state.farm.parcels).map(Number)
   const ripe = (index: number) => {
     const plant = state.farm.plants[index]
-    return plant !== undefined && growth(plant, state.time.hour, cfg).progress >= 1
+    return plant !== undefined && growth(plant, state.time.day, cfg).progress >= 1
   }
   // Seed and fertilizer for one cycle on each listed parcel, in hundredths of CC.
   const reserve = (indices: number[]) =>
@@ -119,7 +119,7 @@ export function runBot(seed: number, days: number): BotResult {
       next++
     }
 
-    for (let h = 0; h < cfg.time.ticksPerGameDay; h++) state = step(state)
+    state = step(state)
     minMoney = Math.min(minMoney, state.money)
     curve.push(capital(state) / 100)
   }

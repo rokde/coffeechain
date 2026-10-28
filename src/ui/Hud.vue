@@ -10,10 +10,9 @@ import { capital, phase, phaseProgress } from '../sim/progression/capital'
 import type { GameState } from '../sim/state'
 import { storageCapacity } from '../sim/storage/capacity'
 import { storageUsed } from '../sim/storage/storage'
-import { clock } from '../sim/time/time'
+import { dateParts } from './date'
 import de from './i18n/de.json'
 import { formatMoney } from './money'
-import EventChips from './EventChips.vue'
 import FieldList from './FieldList.vue'
 import FloatingCoins from './FloatingCoins.vue'
 import FirstSteps from './FirstSteps.vue'
@@ -37,13 +36,7 @@ const steps = useFirstStepsStore()
 const view = useViewStore()
 const savePanel = useSavePanelStore()
 const speeds = balance().time.speeds
-const clockText = computed(() => {
-  const { day, hourOfDay } = clock(store.state.time.hour)
-  return {
-    day: de.time.day.replace('{day}', String(day)),
-    hour: de.time.hour.replace('{hour}', String(hourOfDay).padStart(2, '0')),
-  }
-})
+const dateText = computed(() => dateParts(store.state.time.day))
 const moneyText = computed(() => formatMoney(store.state.money))
 // The helpers only read the state, so the cast of the readonly snapshot is safe.
 const storageText = computed(() => {
@@ -83,9 +76,9 @@ const phaseText = computed(() => {
       </div>
       <div class="time">
         <span class="chip clock" data-testid="clock"
-          ><span>{{ clockText.day }}</span
+          ><span>{{ dateText[0] }}</span
           ><span class="clock-separator">{{ de.time.separator }}</span
-          ><span>{{ clockText.hour }}</span></span
+          ><span>{{ dateText[1] }}</span></span
         >
         <div class="speeds" role="group" :aria-label="de.time.speeds">
           <button
@@ -104,6 +97,9 @@ const phaseText = computed(() => {
             <template v-else>{{ de.time.speed.replace('{speed}', String(speed)) }}</template>
           </button>
         </div>
+        <span class="time-unit" data-testid="time-unit">{{
+          de.time.units[store.state.time.stage]
+        }}</span>
       </div>
       <div class="stats">
         <div class="money-group" data-testid="money-group">
@@ -157,7 +153,6 @@ const phaseText = computed(() => {
           }}</span></span
         >
       </div>
-      <EventChips />
       <button
         type="button"
         class="save-button"
@@ -381,6 +376,25 @@ const phaseText = computed(() => {
   outline: 2px solid #f2c48d;
   outline-offset: 2px;
 }
+.time-unit {
+  font-size: 12px;
+  font-weight: 400;
+  opacity: 0.8;
+}
+/* Below 1440 px a long date does not fit in one line, so date and year get two lines. */
+@media (max-width: 1439px) {
+  .clock {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 4px 6px;
+    font-size: 12px;
+    line-height: 15px;
+  }
+  .clock-separator {
+    display: none;
+  }
+}
 /* The bar holds about 1200 px of content, so the money group and the phase get a second row. */
 @media (max-width: 1279px) {
   .top-bar {
@@ -417,8 +431,9 @@ const phaseText = computed(() => {
   .name strong {
     display: none;
   }
-  /* The bar has no room for the seed, so it hangs below the bar as a tab. */
-  .name small {
+  /* The bar has no room for the seed and the time unit, so they hang below the bar as tabs. */
+  .name small,
+  .time-unit {
     position: absolute;
     top: calc(100% + 4px);
     left: 12px;
@@ -429,24 +444,17 @@ const phaseText = computed(() => {
     line-height: 13px;
     white-space: nowrap;
   }
+  .time-unit {
+    left: auto;
+    right: 12px;
+    opacity: 1;
+  }
   .time {
     gap: 4px;
   }
   .chip {
     padding: 8px 4px;
     font-size: 14px;
-  }
-  /* Day and hour in two lines, so a long day number still fits. */
-  .clock {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 4px 6px;
-    font-size: 12px;
-    line-height: 15px;
-  }
-  .clock-separator {
-    display: none;
   }
   .speeds {
     gap: 0;
@@ -508,7 +516,7 @@ const phaseText = computed(() => {
   max-height: 480px;
   overflow-y: auto;
 }
-/* The panels start 4 px below the event tab. The right panel keeps its bottom edge, so its height limit shrinks. */
+/* Below 1280 px the panels start at 134 px, 4 px below the seed tab of narrow screens. The right panel keeps its bottom edge, so its height limit shrinks. */
 @media (max-width: 1279px) {
   .left-panel {
     --left-max: 204px;
@@ -519,16 +527,10 @@ const phaseText = computed(() => {
     max-height: 438px;
   }
 }
-/* Room for a second line of the event tab. */
 @media (max-width: 480px) {
   /* The toolbar is 161 px high here, so the panel ends 8 px above it. The steps scroll only if they do not fit. */
   .left-panel {
-    top: 148px;
-    max-height: calc(100vh - 333px);
-  }
-  .right-panel {
-    top: 148px;
-    max-height: 424px;
+    max-height: calc(100vh - 319px);
   }
 }
 .toolbar {
@@ -614,7 +616,15 @@ const phaseText = computed(() => {
     gap: 6px;
   }
 }
+/* The first row must fit "30. September" beside the speed, save and help buttons. */
 @media (max-width: 380px) {
+  .time {
+    padding: 0;
+  }
+  .clock {
+    padding: 4px;
+    font-size: 11px;
+  }
   .toolbar button {
     font-size: 11px;
   }

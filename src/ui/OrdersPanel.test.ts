@@ -47,13 +47,20 @@ describe('OrdersPanel (S56)', () => {
     const row = html.split('data-testid="order-1"')[1]!.replace(/ data-v-\w+/g, '')
     // names[1 % names.length] is the second name.
     expect(row).toContain('<span>Café Hafen</span><span>30 Arabica Standard</span>')
-    expect(row).toContain('bis Tag</dt><dd>15')
+    expect(row.replace(/<[^>]*>/g, '')).toContain('bis16. Januar, Jahr 1')
     expect(row).toContain('mind. Qualität</dt><dd>80')
     // A neutral market: the bank pays 0.8 × 1 CC for Arabica Standard.
     expect(row.replace(/<[^>]*>/g, '')).toContain('je Einheit1,2 CC (Bank 0,8 CC)')
     expect(row).not.toContain('order-stock')
     expect(html).not.toContain('Keine Aufträge')
     expect(button(html)).not.toContain('disabled')
+  })
+
+  it('AC-2 (087): shows the deadline as a calendar date and no day number', async () => {
+    const html = await render([{ ...order, deadlineDay: 431 }], 90)
+    const row = html.split('data-testid="order-1"')[1]!.replace(/ data-v-\w+/g, '')
+    expect(row.replace(/<[^>]*>/g, '')).toContain('bis12. März, Jahr 2je Einheit')
+    expect(row).not.toContain('Tag')
   })
 
   it('AC-5: disables "Liefern" and shows the qualifying stock when the stock does not qualify', async () => {

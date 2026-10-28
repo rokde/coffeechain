@@ -3,6 +3,9 @@
 ## Kontext
 3D-Aufbausimulation (Kaffeefarm) als Mac-App. Scope und Mechanik stehen in `PRD.md`, der Hintergrund im GDD (`docs/gdd.md`), alle Zahlen in `config/balance.json`. Lies `PRD.md` vor jedem Meilenstein; das GDD bei Fragen zur Mechanik. Das GDD beschreibt ein größeres Multiplayer-Browserspiel: Was davon gilt, legt `PRD.md` fest.
 
+## Entwicklungsstand
+Das Spiel ist noch in Entwicklung und nicht live, es gibt keine echten Nutzer und keine Spielstände, die erhalten bleiben müssen. Deshalb keine Backfills, keine Datenmigrationen, keine Kompatibilitätsschichten und keine Übergangslösungen für alte Daten. Ändert sich das Save-Format, `SAVE_VERSION` erhöhen und `MIN_SAVE_VERSION` mitziehen; ältere Spielstände dürfen ungültig werden. Alte Namen, Felder und Config-Werte direkt umbenennen oder löschen statt Aliase stehen zu lassen.
+
 ## Stack
 TypeScript (strict), Three.js, Vue 3 + Pinia (HUD), Vite, Tauri 2, Vitest, Playwright.
 

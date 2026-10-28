@@ -2,9 +2,9 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { balance } from '../sim/balance'
-import { deserialize } from '../sim/save/save'
+import { deserialize, readSave } from '../sim/save/save'
 import type { GameState } from '../sim/state'
-import { clock } from '../sim/time/time'
+import { calendar } from '../sim/time/time'
 import { installAutosave } from './autosave'
 import { writeSlot } from './saves'
 import { useGameStore } from './store'
@@ -17,46 +17,52 @@ beforeEach(() => {
   vi.mocked(writeSlot).mockReset().mockResolvedValue()
 })
 
-async function setHour(store: ReturnType<typeof useGameStore>, hour: number) {
+async function setDay(store: ReturnType<typeof useGameStore>, day: number) {
   const state = store.state as GameState
-  store.replace({ ...state, time: { ...state.time, hour } })
+  store.replace({ ...state, time: { ...state.time, day } })
   await nextTick()
 }
 
-describe('installAutosave (S43)', () => {
-  it('AC-1: writes the slot autosave once at a new game day, not at start or inside a day', async () => {
-    const day = balance().time.ticksPerGameDay
+const month = () => balance().time.daysPerMonth
+
+describe('installAutosave (S43, #27)', () => {
+  it('AC-6: writes the slot autosave once at the month change, not on the other 29 days', async () => {
     const store = useGameStore()
     installAutosave(store)
     await nextTick()
+    for (let day = 1; day < month(); day++) await setDay(store, day)
     expect(writeSlot).not.toHaveBeenCalled()
 
-    await setHour(store, 3)
-    await setHour(store, day - 1)
-    expect(writeSlot).not.toHaveBeenCalled()
-
-    await setHour(store, day)
+    await setDay(store, month())
     expect(writeSlot).toHaveBeenCalledOnce()
     const [slot, text] = vi.mocked(writeSlot).mock.calls[0]!
     expect(slot).toBe('autosave')
-    expect(clock(deserialize(text).time.hour).day).toBe(2)
+    expect(calendar(deserialize(text).time.day)).toEqual({ dayOfMonth: 1, month: 2, year: 1 })
 
-    await setHour(store, day + 1)
+    for (let day = month() + 1; day < 2 * month(); day++) await setDay(store, day)
     expect(writeSlot).toHaveBeenCalledOnce()
   })
 
-  it('AC-1: after a load of an earlier day, writes once at the next day', async () => {
-    const day = balance().time.ticksPerGameDay
+  it('AC-6: after a load of an earlier month, writes once at the next month', async () => {
     const store = useGameStore()
     installAutosave(store)
-    await setHour(store, day * 9)
+    await setDay(store, month() * 9)
     vi.mocked(writeSlot).mockClear()
 
-    await setHour(store, day * 2 + 5)
+    await setDay(store, month() * 2 + 5)
     expect(writeSlot).not.toHaveBeenCalled()
-    await setHour(store, day * 3)
+    await setDay(store, month() * 3)
     expect(writeSlot).toHaveBeenCalledOnce()
-    expect(clock(deserialize(vi.mocked(writeSlot).mock.calls[0]![1]).time.hour).day).toBe(4)
+    expect(calendar(deserialize(vi.mocked(writeSlot).mock.calls[0]![1]).time.day).month).toBe(4)
+  })
+
+  it('#3 AC-2: the autosave writes savedAt from the clock', async () => {
+    vi.useFakeTimers({ toFake: ['Date'], now: 1_700_000_000_000 })
+    const store = useGameStore()
+    installAutosave(store)
+    await setDay(store, month())
+    vi.useRealTimers()
+    expect(readSave(vi.mocked(writeSlot).mock.calls[0]![1]).savedAt).toBe(1_700_000_000_000)
   })
 
   it('logs a failed write and continues', async () => {
@@ -64,7 +70,7 @@ describe('installAutosave (S43)', () => {
     vi.mocked(writeSlot).mockRejectedValue('disk full')
     const store = useGameStore()
     installAutosave(store)
-    await setHour(store, balance().time.ticksPerGameDay)
+    await setDay(store, month())
     await vi.waitFor(() => expect(error).toHaveBeenCalledWith('Autosave failed', 'disk full'))
   })
 })

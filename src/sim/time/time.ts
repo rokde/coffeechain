@@ -1,15 +1,20 @@
+import type { Balance } from '../../../config/balance.schema'
 import { balance } from '../balance'
-import { cycleTimeEventFactor } from '../events/effects'
-import { activeEvents, dailyEvents } from '../events/schedule'
-import { ripeHour } from '../farm/plants'
 import { dailyOrders } from '../market/orders'
+import { phase } from '../progression/capital'
 import type { GameState } from '../state'
-import { dailyUpkeep } from '../storage/daily'
+import { monthlyUpkeep } from '../storage/daily'
+
+// The time scale: how much calendar time one real interval shows. It never changes what a step does.
+export type TimeStage = 'months' | 'weeks'
 
 export interface TimeState {
-  // Game hours since the start. One step adds one hour.
-  hour: number
+  // Calendar days since the start. Day 0 is 1 January, year 1. One step adds one day.
+  day: number
   speed: number
+  stage: TimeStage
+  // The day of the switch to weeks. The stage never goes back to months.
+  weeksFromDay?: number
 }
 
 export interface SetSpeed {
@@ -17,34 +22,43 @@ export interface SetSpeed {
   speed: number
 }
 
+export interface CalendarDate {
+  // All three start at 1.
+  dayOfMonth: number
+  month: number
+  year: number
+}
+
 export function step(state: GameState): GameState {
-  const hour = state.time.hour + 1
-  const next = { ...delayGrowth(state), time: { ...state.time, hour } }
-  return hour % balance().time.ticksPerGameDay === 0
-    ? dailyOrders(dailyEvents(dailyUpkeep(next)))
-    : next
+  const day = state.time.day + 1
+  const weeks = state.time.stage === 'months' && phase(state) >= balance().time.weeksFromPhase
+  const time = weeks
+    ? { ...state.time, day, stage: 'weeks' as const, weeksFromDay: day }
+    : { ...state.time, day }
+  const next = { ...state, time }
+  return dailyOrders(day % balance().time.daysPerMonth === 0 ? monthlyUpkeep(next) : next)
 }
 
-// A plant that is not ripe grows 1 / f game hours in this hour, where f is its cycle time factor.
-function delayGrowth(state: GameState): GameState {
-  const { hour } = state.time
-  const day = clock(hour).day
-  if (!activeEvents(state, day).some((e) => e.type === 'monsoon')) return state
-  const cfg = balance()
-  const plants = { ...state.farm.plants }
-  for (const [key, plant] of Object.entries(plants)) {
-    const index = Number(key)
-    if (hour >= ripeHour(plant, cfg)) continue
-    const f = cycleTimeEventFactor(state, index, day)
-    if (f === 1) continue
-    plants[index] = { ...plant, growthDelayHours: (plant.growthDelayHours ?? 0) + 1 - 1 / f }
+export function calendar(day: number, cfg: Balance = balance()): CalendarDate {
+  const { daysPerMonth, monthsPerYear } = cfg.time
+  const month = Math.floor(day / daysPerMonth)
+  return {
+    dayOfMonth: (day % daysPerMonth) + 1,
+    month: (month % monthsPerYear) + 1,
+    year: Math.floor(month / monthsPerYear) + 1,
   }
-  return { ...state, farm: { ...state.farm, plants } }
 }
 
-export function clock(hour: number): { day: number; hourOfDay: number } {
-  const ticksPerDay = balance().time.ticksPerGameDay
-  return { day: Math.floor(hour / ticksPerDay) + 1, hourOfDay: hour % ticksPerDay }
+// Months since the start. The month changes when this number grows.
+export const monthIndex = (day: number, cfg: Balance = balance()) =>
+  Math.floor(day / cfg.time.daysPerMonth)
+
+// Real milliseconds of one step at speed 1.
+export function msPerStep(stage: TimeStage, cfg: Balance = balance()): number {
+  const t = cfg.time
+  return stage === 'months'
+    ? (t.realSecondsPerMonth * 1000) / t.daysPerMonth
+    : (t.realSecondsPerWeek * 1000) / t.daysPerWeek
 }
 
 export function setSpeed(state: GameState, command: SetSpeed): GameState {

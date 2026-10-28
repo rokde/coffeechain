@@ -12,7 +12,7 @@ export function perfFixture(seed = 1): GameState {
   const cfg = balance()
   const state = createState(seed)
   const { size } = state.world
-  const hour = 100 * cfg.time.ticksPerGameDay
+  const day = 100 * cfg.time.daysPerMonth
   const varieties = Object.keys(cfg.varieties) as Variety[]
   // Stage k lies between bounds k and k + 1. Progress 1 and more is reif.
   const bounds = [...Object.values(cfg.farm.visualStages).sort((a, b) => a - b), 1, 2]
@@ -25,12 +25,12 @@ export function perfFixture(seed = 1): GameState {
     const variety = varieties[i % varieties.length]!
     const k = Math.floor(i / varieties.length) % stages
     const progress = (bounds[k]! + bounds[k + 1]!) / 2
-    const cycle = cfg.varieties[variety].cycleDays * cfg.time.ticksPerGameDay
-    plants[i] = { variety, plantedHour: hour - progress * cycle }
+    const cycle = cfg.varieties[variety].cycleDays
+    plants[i] = { variety, plantedDay: day - progress * cycle }
   }
   return {
     ...state,
-    time: { ...state.time, hour },
+    time: { ...state.time, day },
     farm: { parcels, fields: [{ id: 0, name: 'A' }], nextFieldId: 1, plants },
   }
 }

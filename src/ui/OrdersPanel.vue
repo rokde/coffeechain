@@ -4,6 +4,7 @@ import { useGameStore } from '../app/store'
 import { bankBuyPrice } from '../sim/market/market'
 import { deliverableUnits } from '../sim/market/orders'
 import type { GameState } from '../sim/state'
+import { dateParts } from './date'
 import de from './i18n/de.json'
 import { formatUnitPrice } from './money'
 
@@ -20,6 +21,7 @@ const rows = computed(() => {
       ...order,
       buyer: t.buyers[order.id % t.buyers.length],
       ready: have >= order.units,
+      deadline: dateParts(order.deadlineDay),
       bank: t.bank.replace('{price}', bank),
       stock: t.stock.replace('{have}', String(have)).replace('{units}', String(order.units)),
     }
@@ -40,7 +42,10 @@ const rows = computed(() => {
         <dt>{{ t.minQuality }}</dt>
         <dd>{{ o.minQuality }}</dd>
         <dt>{{ t.deadline }}</dt>
-        <dd>{{ o.deadlineDay }}</dd>
+        <dd class="date" data-testid="order-deadline">
+          <span>{{ o.deadline[0] }}</span
+          >{{ de.time.separator }}<span>{{ o.deadline[1] }}</span>
+        </dd>
         <dt>{{ t.price }}</dt>
         <dd class="price" data-testid="order-price">
           <span>{{ formatUnitPrice(o.price) }}</span> <span>{{ o.bank }}</span>
@@ -65,11 +70,13 @@ h3 {
   margin: 10px 0 0;
   font-size: 14px;
 }
-/* The bank price wraps to its own line in a narrow panel. */
-.price {
+/* The bank price and the year wrap to their own line in a narrow panel. */
+.price,
+.date {
   white-space: normal;
 }
-.price span {
+.price span,
+.date span {
   white-space: nowrap;
 }
 @media (max-width: 480px) {

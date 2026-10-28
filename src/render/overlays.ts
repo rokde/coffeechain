@@ -18,7 +18,6 @@ export const ZONE_OVERLAY_COLORS: Record<Zone, number> = {
   tiefland: 0xf2d33a,
   hochland: 0x2fa84f,
   hochlandKuehl: 0x8e5bd6,
-  vulkan: 0xd8432f,
 }
 
 // One RGB triple per vertex, 4 vertices per parcel, in the order of buildTerrainGeometry.

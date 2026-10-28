@@ -2,10 +2,13 @@
   "_format": "Jeder Wert ist ein Objekt {\"v\": Wert, \"src\": Quelle}. Quellen: \"GDD <Abschnitt>\", \"PRD\" (bewusste Abweichung) oder \"NEU\" (Startwert, noch nicht bestätigt). Geldbeträge in CC.",
 
   "time": {
-    "realSecondsPerGameDay": { "v": 240, "src": "PRD" },
-    "ticksPerGameDay": { "v": 24, "src": "PRD" },
+    "realSecondsPerMonth": { "v": 20, "src": "NEU" },
+    "realSecondsPerWeek": { "v": 20, "src": "NEU" },
+    "daysPerMonth": { "v": 30, "src": "NEU" },
+    "monthsPerYear": { "v": 12, "src": "NEU" },
     "speeds": { "v": [0, 1, 2, 4, 8, 16], "src": "Robert 2026-10-20" },
-    "daysPerWeek": { "v": 7, "src": "GDD 11.1" }
+    "daysPerWeek": { "v": 7, "src": "GDD 11.1" },
+    "weeksFromPhase": { "v": 2, "src": "NEU" }
   },
 
   "economy": {
@@ -20,8 +23,7 @@
     "maxAttempts": { "v": 50, "src": "NEU" },
     "zoneMinHeight": { "v": { "tiefland": 0.1, "hochland": 0.4, "hochlandKuehl": 0.6 }, "src": "NEU" },
     "falloffPower": { "v": 2, "src": "NEU" },
-    "noiseScale": { "v": { "height": 0.08, "fertility": 0.12, "waterRetention": 0.1 }, "src": "NEU" },
-    "volcanoSize": { "v": 12, "src": "NEU" }
+    "noiseScale": { "v": { "height": 0.08, "fertility": 0.12, "waterRetention": 0.1 }, "src": "NEU" }
   },
 
   "soil": {
@@ -39,7 +41,7 @@
     "firstCost": { "v": 15, "src": "Robert 2026-10-20 (Parzellen billiger; vorher 48, GDD 11.6)" },
     "baseCost": { "v": 25, "src": "Robert 2026-10-20 (Parzellen billiger; vorher 100, GDD 11.6)" },
     "zoneMultiplier": {
-      "v": { "tiefland": 1.0, "hochland": 1.5, "hochlandKuehl": 2.0, "vulkan": 4.0 },
+      "v": { "tiefland": 1.0, "hochland": 1.5, "hochlandKuehl": 2.0 },
       "src": "NEU (Reihenfolge aus GDD 5.3 Landpreis)"
     },
     "maxSlope": { "v": 0.15, "src": "NEU" },
@@ -51,38 +53,38 @@
   "varieties": {
     "robusta": {
       "zone": { "v": "tiefland", "src": "GDD 5.3" },
-      "cycleDays": { "v": 3, "src": "GDD 11.1" },
+      "cycleDays": { "v": 90, "src": "Robert 2026-10-25 (#27, Faktor 30)" },
       "seedCost": { "v": 2, "src": "GDD 11.2" },
       "baseYield": { "v": 20, "src": "GDD 11.2" },
       "referencePrice": { "v": 0.5, "src": "GDD 11.3" },
-      "careCost": { "v": { "fertilizer": 1, "irrigation": 1, "pestControl": 1 }, "src": "GDD 11.2" },
+      "careCost": { "v": { "fertilizer": 1, "irrigation": 1 }, "src": "GDD 11.2" },
       "unlockCapital": { "v": 0, "src": "PRD" }
     },
     "arabicaStandard": {
       "zone": { "v": "hochland", "src": "GDD 5.3" },
-      "cycleDays": { "v": 5, "src": "GDD 11.1" },
+      "cycleDays": { "v": 150, "src": "Robert 2026-10-25 (#27, Faktor 30)" },
       "seedCost": { "v": 4, "src": "GDD 11.2" },
       "baseYield": { "v": 15, "src": "GDD 11.2" },
       "referencePrice": { "v": 1.0, "src": "GDD 11.3" },
-      "careCost": { "v": { "fertilizer": 2, "irrigation": 2, "pestControl": 2 }, "src": "GDD 11.2" },
+      "careCost": { "v": { "fertilizer": 2, "irrigation": 2 }, "src": "GDD 11.2" },
       "unlockCapital": { "v": 0, "src": "PRD" }
     },
     "arabicaPremium": {
       "zone": { "v": "hochlandKuehl", "src": "GDD 5.3" },
-      "cycleDays": { "v": 10, "src": "GDD 11.1" },
+      "cycleDays": { "v": 300, "src": "Robert 2026-10-25 (#27, Faktor 30)" },
       "seedCost": { "v": 8, "src": "GDD 11.2" },
       "baseYield": { "v": 8, "src": "GDD 11.2" },
       "referencePrice": { "v": 3.0, "src": "GDD 11.3" },
-      "careCost": { "v": { "fertilizer": 4, "irrigation": 3, "pestControl": 3 }, "src": "GDD 11.2" },
+      "careCost": { "v": { "fertilizer": 4, "irrigation": 3 }, "src": "GDD 11.2" },
       "unlockCapital": { "v": 2000, "src": "GDD 12.1" }
     },
     "specialty": {
-      "zone": { "v": "vulkan", "src": "GDD 5.3" },
-      "cycleDays": { "v": 15, "src": "GDD 11.1" },
+      "zone": { "v": "hochlandKuehl", "src": "Robert 2026-10-25 (#17)" },
+      "cycleDays": { "v": 450, "src": "Robert 2026-10-25 (#27, Faktor 30)" },
       "seedCost": { "v": 15, "src": "GDD 11.2" },
       "baseYield": { "v": 4, "src": "GDD 11.2" },
       "referencePrice": { "v": 10.0, "src": "GDD 11.3" },
-      "careCost": { "v": { "fertilizer": 6, "irrigation": 5, "pestControl": 5 }, "src": "GDD 11.2" },
+      "careCost": { "v": { "fertilizer": 6, "irrigation": 5 }, "src": "GDD 11.2" },
       "unlockCapital": { "v": 10000, "src": "GDD 12.1" }
     }
   },
@@ -90,7 +92,6 @@
   "farm": {
     "fertilizerYieldBonus": { "v": 0.25, "src": "NEU" },
     "irrigationDroughtLossReduction": { "v": 0.5, "src": "NEU" },
-    "pestControlLossReduction": { "v": 0.5, "src": "NEU" },
     "yieldRandomRange": { "v": [0.9, 1.1], "src": "NEU (GDD 5.4 nennt Zufall ohne Wert)" },
     "visualStages": {
       "v": { "setzling": 0.0, "wachstum": 0.25, "bluete": 0.6, "fruchtansatz": 0.9 },
@@ -98,8 +99,8 @@
     },
     "overripe": {
       "enabled": { "v": true, "src": "NEU" },
-      "graceDays": { "v": 2, "src": "NEU" },
-      "lossPerDay": { "v": 0.15, "src": "NEU" }
+      "graceDays": { "v": 60, "src": "Robert 2026-10-25 (#27, Faktor 30)" },
+      "lossPerDay": { "v": 0.005, "src": "Robert 2026-10-25 (#27, Faktor 30)" }
     }
   },
 
@@ -123,53 +124,32 @@
       "requiresPhase": { "v": 1, "src": "PRD §10" },
       "costPerUnit": { "v": 0.3, "src": "GDD 11.2" },
       "valueMultiplier": { "v": 1.5, "src": "GDD 11.2" },
-      "durationDays": { "v": 1, "src": "NEU" },
+      "durationDays": { "v": 30, "src": "Robert 2026-10-25 (#27, Faktor 30)" },
       "batchCapacity": { "v": 50, "src": "NEU" }
     }
   },
 
   "market": {
     "bankBuyFactor": { "v": 0.8, "src": "GDD 11.3" },
-    "bankSellFactor": { "v": 1.2, "src": "GDD 11.3" },
-    "fertilizerPrice": { "v": 1.0, "src": "GDD 11.3" },
     "supplyFactorRange": { "v": [0.7, 1.1], "src": "GDD 11.3" },
     "demandFactorRange": { "v": [0.9, 1.3], "src": "GDD 11.3" },
     "priceFloor": { "v": 0.5, "src": "GDD 3.4, 11.3" },
     "priceCeiling": { "v": 1.5, "src": "GDD 3.4, 11.3" },
-    "volumeWindowDays": { "v": 3, "src": "NEU" },
+    "volumeWindowDays": { "v": 90, "src": "Robert 2026-10-25 (#27, Faktor 30)" },
     "supplyUnitsForMinFactor": { "v": 300, "src": "NEU" },
     "demandUnitsForMaxFactor": { "v": 200, "src": "NEU" },
-    "historyDays": { "v": 14, "src": "PRD" }
+    "historyMonths": { "v": 12, "src": "Robert 2026-10-25 (#27, Faktor 30)" }
   },
 
   "orders": {
     "maxOpen": { "v": 3, "src": "NEU" },
-    "chancePerDay": { "v": 0.3, "src": "NEU" },
+    "chancePerDay": { "v": 0.01, "src": "Robert 2026-10-25 (#27, Faktor 30)" },
     "units": { "v": [20, 60], "src": "NEU" },
     "minQuality": { "v": [70, 95], "src": "NEU" },
     "priceFactor": { "v": [1.0, 1.3], "src": "NEU" },
-    "deadlineDays": { "v": [5, 10], "src": "NEU" }
+    "deadlineDays": { "v": [150, 300], "src": "Robert 2026-10-25 (#27, Faktor 30)" }
   },
 
-  "events": {
-    "maxConcurrent": { "v": 2, "src": "GDD 11.8" },
-    "maxEffect": { "v": 0.3, "src": "GDD 11.8" },
-    "maxDurationDays": { "v": 7, "src": "GDD 11.8" },
-    "warningDays": { "v": 1, "src": "GDD 11.8" },
-    "graceDaysAtStart": { "v": 5, "src": "NEU" },
-    "researchMaxCount": { "v": 1, "src": "NEU" },
-    "types": {
-      "v": {
-        "frost": { "yield": { "hochland": -0.3, "hochlandKuehl": -0.3 }, "price": { "arabicaStandard": 0.2, "arabicaPremium": 0.2 }, "durationDays": [3, 5], "everyDays": 14 },
-        "monsoon": { "cycleTime": { "tiefland": 0.5 }, "price": { "robusta": 0.15 }, "durationDays": [5, 7], "everyDays": 21 },
-        "boom": { "priceAll": 0.15, "durationDays": [3, 3], "everyDays": 14 },
-        "crisis": { "priceAll": -0.15, "durationDays": [3, 3], "everyDays": 21 },
-        "pests": { "yieldAffected": [-0.3, -0.2], "durationDays": [2, 4], "everyDays": 28 },
-        "research": { "yieldBonus": 0.1, "permanent": true, "everyDays": 42 }
-      },
-      "src": "GDD 11.8 (Schädlinge auf -30 % begrenzt: PRD)"
-    }
-  },
 
   "progression": {
     "phases": {
@@ -182,12 +162,12 @@
     },
     "harvestProUnits": { "v": 1000, "src": "GDD 12.3" },
     "harvestProQualityBonus": { "v": 0.05, "src": "GDD 12.3" },
-    "harvestProMessageDays": { "v": 1, "src": "NEU" }
+    "harvestProMessageDays": { "v": 30, "src": "Robert 2026-10-25 (#27, Faktor 30)" }
   },
 
   "balanceSim": {
-    "days": { "v": 200, "src": "PRD 13 M4" },
+    "days": { "v": 6000, "src": "Robert 2026-10-25 (#27, Faktor 30)" },
     "seeds": { "v": 20, "src": "PRD 13 M4" },
-    "phase1TargetDays": { "v": 28, "src": "PRD 12" }
+    "phase1TargetDays": { "v": 840, "src": "Robert 2026-10-25 (#27, Faktor 30)" }
   }
 }

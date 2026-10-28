@@ -1,16 +1,16 @@
 import { useSelectionStore } from '../app/selection'
 import { useGameStore } from '../app/store'
 import { balance } from '../sim/balance'
-import { canPlant } from '../sim/farm/plants'
 import type { Variety } from '../sim/farm/yield'
+import { isVarietyUnlocked } from '../sim/progression/capital'
 import type { GameState } from '../sim/state'
 import { validParcels } from './farmAction'
 
 export const plantVarieties = Object.keys(balance().varieties) as Variety[]
 
-// The valid selected parcels where the variety can grow.
+// The valid selected parcels, or none while the variety is locked.
 export const plantParcels = (state: GameState, variety: Variety) =>
-  validParcels(state, 'plant').filter((p) => canPlant(state, variety, p.x, p.y))
+  isVarietyUnlocked(state, variety) ? validParcels(state, 'plant') : []
 
 // Plants the chosen variety on the valid selected parcels and clears the selection.
 export function plantSelected() {

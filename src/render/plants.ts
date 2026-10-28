@@ -85,10 +85,10 @@ export function plantGeometry(variety: Variety, stage: Stage): BufferGeometry {
   return mergeGeometries(parts)
 }
 
-export function plantVariants(plants: Plants, hour: number): Map<string, number[]> {
+export function plantVariants(plants: Plants, day: number): Map<string, number[]> {
   const variants = new Map<string, number[]>()
   for (const [index, plant] of Object.entries(plants)) {
-    const key = `${plant.variety}/${growth(plant, hour).stage}`
+    const key = `${plant.variety}/${growth(plant, day).stage}`
     const list = variants.get(key) ?? []
     list.push(Number(index))
     variants.set(key, list)
@@ -96,9 +96,9 @@ export function plantVariants(plants: Plants, hour: number): Map<string, number[
   return variants
 }
 
-export function plantsKey(plants: Plants, hour: number): string {
+export function plantsKey(plants: Plants, day: number): string {
   return Object.entries(plants)
-    .map(([index, plant]) => `${index}:${plant.variety}/${growth(plant, hour).stage}`)
+    .map(([index, plant]) => `${index}:${plant.variety}/${growth(plant, day).stage}`)
     .join(',')
 }
 
@@ -118,8 +118,8 @@ export function createPlants(world: World) {
   }
 
   const matrix = new Matrix4()
-  function show(plants: Plants, hour: number) {
-    const variants = plantVariants(plants, hour)
+  function show(plants: Plants, day: number) {
+    const variants = plantVariants(plants, day)
     for (const [key, mesh] of meshes) {
       const indexes = variants.get(key) ?? []
       indexes.forEach((index, i) => {

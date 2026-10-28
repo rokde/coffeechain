@@ -14,7 +14,8 @@ export function advance(
   msPerTick: number,
 ): Advance {
   const total = carryMs + elapsedMs * speed
-  const ticks = Math.floor(total / msPerTick)
+  // The epsilon keeps float errors of a fraction like 20000 / 7 from losing a step on its boundary.
+  const ticks = Math.floor(total / msPerTick + 1e-9)
   if (ticks > MAX_TICKS_PER_FRAME) return { ticks: MAX_TICKS_PER_FRAME, carryMs: 0 }
   return { ticks, carryMs: total - ticks * msPerTick }
 }

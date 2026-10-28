@@ -9,6 +9,7 @@ import type { Variety } from '../sim/farm/yield'
 import { dispatch } from '../sim/commands'
 import type { GameState } from '../sim/state'
 import Hud from './Hud.vue'
+import de from './i18n/de.json'
 import PlantTool from './PlantTool.vue'
 import { plantSelected, plantVarieties } from './plantAction'
 import { tools } from './toolbar'
@@ -151,16 +152,20 @@ describe('PlantTool locked varieties (S48)', () => {
     expect(html).toContain('plant-tool-locked-specialty')
   })
 
-  it('UX: Spezialität says "nur auf Vulkanboden", locked or not', async () => {
+  it('AC-4: Spezialität says "passt zu kühlem Hochland", locked or not, and no text says "Vulkan"', async () => {
     for (const money of [0, 1000000]) {
-      const specialty = button(await renderNew(money), 'specialty')
-      expect(specialty).toMatch(/plant-tool-zone-specialty[^>]*>\s*nur auf Vulkanboden\s*</)
+      const html = await renderNew(money)
+      const specialty = button(html, 'specialty')
+      expect(specialty).toMatch(/plant-tool-zone-specialty[^>]*>\s*passt zu kühlem Hochland\s*</)
       expect(specialty.includes('plant-tool-locked-specialty')).toBe(money === 0)
+      expect(html).not.toContain('Vulkan')
     }
-    expect(button(await renderNew(0), 'robusta')).not.toContain('Vulkanboden')
+    expect(button(await renderNew(0), 'robusta')).not.toContain('kühlem Hochland')
+    // Every HUD text comes from de.json.
+    expect(JSON.stringify(de)).not.toContain('Vulkan')
   })
 
-  it('AC-4: with Specialty the count and the plant action use only the volcano parcels', async () => {
+  it('AC-2: with Specialty the count and the plant action use lowland and cool highland parcels', async () => {
     const pinia = createPinia()
     setActivePinia(pinia)
     const game = useGameStore(pinia)
@@ -169,9 +174,8 @@ describe('PlantTool locked varieties (S48)', () => {
       state.world.parcels
         .filter((p) => p.zone === zone && isBuildable(state.world, p.x, p.y))
         .map(({ x, y }) => ({ x, y }))
-    const volcano = free('vulkan').slice(0, 2)
-    const parcels = [...volcano, free('tiefland')[0]!]
-    expect(volcano).toHaveLength(2)
+    const parcels = [...free('hochlandKuehl').slice(0, 2), free('tiefland')[0]!]
+    expect(parcels).toHaveLength(3)
     game.replace(dispatch({ ...state, money: 2000000 }, { type: 'CreateParcels', parcels }))
     const selection = useSelectionStore(pinia)
     selection.tool = 'plant'
@@ -179,13 +183,14 @@ describe('PlantTool locked varieties (S48)', () => {
     for (const p of parcels) selection.toggle(game.state as GameState, p)
     expect(selection.parcels).toHaveLength(3)
     const html = await renderToString(createSSRApp(PlantTool).use(pinia))
-    expect(html).toMatch(/plant-tool-count"[^>]*>2</)
+    expect(html).toMatch(/plant-tool-count"[^>]*>3</)
     plantSelected()
     const { size } = game.state.world
     expect(Object.values(game.state.farm.plants).map((p) => p.variety)).toEqual([
       'specialty',
       'specialty',
+      'specialty',
     ])
-    for (const { x, y } of volcano) expect(game.state.farm.plants[y * size + x]).toBeDefined()
+    for (const { x, y } of parcels) expect(game.state.farm.plants[y * size + x]).toBeDefined()
   })
 })

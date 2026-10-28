@@ -3,7 +3,7 @@ import { buildMenu } from '../buildings/build'
 import { dispatch } from '../commands'
 import { bankBuyPrice } from '../market/market'
 import { isFree } from '../farm/parcels'
-import { deserialize } from '../save/save'
+import { deserialize, MIGRATIONS, SAVE_VERSION } from '../save/save'
 import { createState, type GameState } from '../state'
 import { capital, isVarietyUnlocked, phase, phaseProgress } from './capital'
 
@@ -65,8 +65,8 @@ describe('capital with washed coffee (S47b)', () => {
   })
 
   it('AC-5: counts a washed batch still in processing at the washed price', () => {
-    const state = withBatches([{ ...robusta, washed: true, readyHour: 500 }])
-    expect(state.time.hour).toBeLessThan(500)
+    const state = withBatches([{ ...robusta, washed: true, readyDay: 500 }])
+    expect(state.time.day).toBeLessThan(500)
     expect(capital(state)).toBe(100_600)
   })
 })
@@ -124,7 +124,12 @@ describe('save (S47)', () => {
   it('AC-5: loads a version 5 save with invested 0', () => {
     const old: Record<string, unknown> = { ...createState(5) }
     delete old.invested
-    const loaded = deserialize(JSON.stringify({ version: 5, state: old }))
+    old.time = { hour: 0, speed: 1 } // The time shape before #27.
+    const loaded = deserialize(JSON.stringify({ version: 5, state: old }), {
+      version: SAVE_VERSION,
+      minVersion: 1,
+      migrations: MIGRATIONS,
+    })
     expect(loaded.invested).toBe(0)
     expect(loaded).toEqual(createState(5))
   })

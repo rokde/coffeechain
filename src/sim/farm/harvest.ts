@@ -1,10 +1,8 @@
 import { balance } from '../balance'
-import { yieldEventFactor } from '../events/effects'
 import { mulberry32 } from '../rng'
 import type { GameState } from '../state'
 import { storageCapacity } from '../storage/capacity'
 import { storageUsed, type Batch } from '../storage/storage'
-import { clock } from '../time/time'
 import { soilClassOf } from '../world/generate'
 import { overripeFactor } from './overripe'
 import { growth } from './plants'
@@ -15,21 +13,21 @@ export interface Harvest {
   parcels: { x: number; y: number }[]
 }
 
-// Seeds the yield roll from the world seed, the hour and the parcel, so the state needs no PRNG.
-export function harvestSeed(seed: number, hour: number, index: number): number {
-  return (seed ^ Math.imul(hour + 1, 0x9e3779b1) ^ Math.imul(index + 1, 0x85ebca6b)) >>> 0
+// Seeds the yield roll from the world seed, the day and the parcel, so the state needs no PRNG.
+export function harvestSeed(seed: number, day: number, index: number): number {
+  return (seed ^ Math.imul(day + 1, 0x9e3779b1) ^ Math.imul(index + 1, 0x85ebca6b)) >>> 0
 }
 
 export function harvestQuality(state: GameState, cfg = balance()): number {
-  const { harvestProHour } = state.milestones
+  const { harvestProDay } = state.milestones
   const base = cfg.storage.harvestQuality
-  if (harvestProHour === undefined) return base
+  if (harvestProDay === undefined) return base
   return Math.min(100, base * (1 + cfg.progression.harvestProQualityBonus))
 }
 
 export function harvest(state: GameState, command: Harvest): GameState {
   const { size } = state.world
-  const { hour } = state.time
+  const { day } = state.time
   const cfg = balance()
   const plants = { ...state.farm.plants }
   const parcels = [...state.world.parcels]
@@ -43,10 +41,10 @@ export function harvest(state: GameState, command: Harvest): GameState {
     if (!(index in state.farm.parcels)) throw new Error(`Parcel ${x},${y} is not owned`)
     const plant = plants[index]
     if (!plant) throw new Error(`Parcel ${x},${y} has no plant`)
-    if (growth(plant, hour, cfg).progress < 1)
+    if (growth(plant, day, cfg).progress < 1)
       throw new Error(`Plant on parcel ${x},${y} is not ripe`)
 
-    const factor = overripeFactor(plant, hour, cfg)
+    const factor = overripeFactor(plant, day, cfg)
     let units: number
     if (plant.pendingUnits !== undefined) {
       const stored = plant.overripeFactor ?? 1
@@ -59,8 +57,7 @@ export function harvest(state: GameState, command: Harvest): GameState {
           soilClass: parcel.soilClass,
           zoneMatches: parcel.zone === cfg.varieties[plant.variety].zone,
           fertilized: plant.fertilized ?? false,
-          eventFactor: yieldEventFactor(state, index, clock(hour).day),
-          random: yieldRandom(mulberry32(harvestSeed(state.world.seed, hour, index)), cfg),
+          random: yieldRandom(mulberry32(harvestSeed(state.world.seed, day, index)), cfg),
         },
         cfg,
       )
@@ -86,7 +83,7 @@ export function harvest(state: GameState, command: Harvest): GameState {
   const quality = harvestQuality(state, cfg)
   const total = [...stored.values()].reduce((a, b) => a + b, 0)
   const harvested = state.milestones.harvested + total
-  const { harvestProHour } = state.milestones
+  const { harvestProDay } = state.milestones
   const batches: Batch[] = [...stored].map(([variety, units]) => ({ variety, units, quality }))
   return {
     ...state,
@@ -95,8 +92,8 @@ export function harvest(state: GameState, command: Harvest): GameState {
     storage: { ...state.storage, batches: [...state.storage.batches, ...batches] },
     milestones: {
       harvested,
-      harvestProHour:
-        harvestProHour ?? (harvested >= cfg.progression.harvestProUnits ? hour : undefined),
+      harvestProDay:
+        harvestProDay ?? (harvested >= cfg.progression.harvestProUnits ? day : undefined),
     },
   }
 }

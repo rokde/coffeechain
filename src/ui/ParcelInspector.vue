@@ -9,6 +9,7 @@ import { fieldStatus } from '../sim/farm/status'
 import type { GameState } from '../sim/state'
 import { inspectParcel } from '../sim/world/inspect'
 import type { World } from '../sim/world/types'
+import { formatMonth } from './date'
 import { careParcel } from './farmAction'
 import de from './i18n/de.json'
 import { formatMoney } from './money'
@@ -34,12 +35,11 @@ const status = computed(() => {
 const days = computed(() => {
   const s = status.value
   if (!s) return null
-  const [n, many, one] =
-    s.daysToRipe !== null
-      ? [s.daysToRipe, t.daysToRipe, t.daysToRipeOne]
-      : [s.daysToOverripe, t.daysToOverripe, t.daysToOverripeOne]
+  const [n, text] =
+    s.daysToRipe !== null ? [s.daysToRipe, t.ripeIn] : [s.daysToOverripe, t.overripeIn]
   if (n === null) return null
-  return n === 1 ? one : many.replace('{n}', String(n))
+  const { day } = game.state.time
+  return text.replace('{month}', formatMonth(day + n, day))
 })
 const careDone = computed(() => {
   const s = status.value
@@ -47,7 +47,7 @@ const careDone = computed(() => {
   const done = (Object.keys(t.careDone) as (keyof typeof t.careDone)[]).filter((c) => s.cares[c])
   return done.length ? done.map((c) => t.careDone[c]).join(', ') : t.careNone
 })
-const careCost = (command: 'Fertilize' | 'Irrigate' | 'ProtectPests') =>
+const careCost = (command: 'Fertilize' | 'Irrigate') =>
   quoteCare(game.state as GameState, { type: command, parcels: [selection.parcel!] })
 
 const position = computed(() => {

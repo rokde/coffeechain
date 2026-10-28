@@ -31,9 +31,9 @@ function setup(tool: FarmTool, money: number, ripe = false, used = 0) {
   const owned = dispatch({ ...state, money: 100000 }, { type: 'CreateParcels', parcels })
   const planted = dispatch(owned, { type: 'Plant', variety: 'robusta', parcels })
   const { cycleDays } = balance().varieties.robusta
-  const hour = planted.time.hour + (ripe ? cycleDays * balance().time.ticksPerGameDay : 0)
+  const hour = planted.time.day + (ripe ? cycleDays : 0)
   const batches = used ? [{ variety: 'robusta' as const, units: used, quality: 100 }] : []
-  game.replace({ ...planted, money, time: { ...planted.time, hour }, storage: { batches } })
+  game.replace({ ...planted, money, time: { ...planted.time, day: hour }, storage: { batches } })
   const selection = useSelectionStore(pinia)
   selection.tool = tool
   for (const p of parcels) selection.toggle(game.state as GameState, p)
@@ -46,23 +46,19 @@ const applyButton = (html: string) => html.match(/<button[^>]*farm-tool-apply[^>
 const careTools = [
   ['fertilize', 'Fertilize', 'fertilized'],
   ['irrigate', 'Irrigate', 'irrigated'],
-  ['protect', 'ProtectPests', 'pestProtected'],
 ] as const
 
 describe('FarmTool (S18a)', () => {
-  it('AC-1: the toolbar has "Düngen", "Wässern", "Schutz", "Ernten" after "Pflanzen"', () => {
+  it('AC-1: the toolbar has "Düngen", "Wässern", "Ernten" after "Pflanzen" and no "Schutz"', () => {
     const ids = tools.map((t) => t.id)
     const at = ids.indexOf('plant') + 1
-    expect(ids.slice(at, at + 4)).toEqual(['fertilize', 'irrigate', 'protect', 'harvest'])
-    expect(tools.slice(at, at + 4).map((t) => t.label)).toEqual([
-      'Düngen',
-      'Wässern',
-      'Schutz',
-      'Ernten',
-    ])
+    expect(ids.slice(at, at + 3)).toEqual(['fertilize', 'irrigate', 'harvest'])
+    expect(tools.slice(at, at + 3).map((t) => t.label)).toEqual(['Düngen', 'Wässern', 'Ernten'])
+    expect(tools.map((t) => t.label)).not.toContain('Schutz')
+    expect(tools.map((t) => t.key)).not.toContain('T')
   })
 
-  it.each(['fertilize', 'irrigate', 'protect', 'harvest'] as const)(
+  it.each(['fertilize', 'irrigate', 'harvest'] as const)(
     'AC-1: with %s, the right panel shows the farm tool and not the inspector',
     async (tool) => {
       const { pinia, selection } = setup(tool, 50000)
@@ -160,8 +156,8 @@ describe('FarmTool (S18a)', () => {
     const { pinia, game, selection } = setup('fertilize', 50000)
     const { cycleDays } = balance().varieties.robusta
     const state = game.state as GameState
-    const hour = state.time.hour + cycleDays * balance().time.ticksPerGameDay
-    game.replace({ ...state, time: { ...state.time, hour } })
+    const hour = state.time.day + cycleDays
+    game.replace({ ...state, time: { ...state.time, day: hour } })
     const html = await renderToString(createSSRApp(FarmToolPanel).use(pinia))
     expect(html).toMatch(/farm-tool-count"[^>]*>0</)
     expect(html).toMatch(/farm-tool-total"[^>]*>0 CC</)

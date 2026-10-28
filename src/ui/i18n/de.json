@@ -9,9 +9,39 @@
     "seed": "Welt #{seed}"
   },
   "time": {
-    "day": "Tag {day}",
-    "separator": " · ",
-    "hour": "{hour}:00",
+    "date": "{day}. {month}",
+    "separator": ", ",
+    "year": "Jahr {year}",
+    "months": [
+      "Januar",
+      "Februar",
+      "März",
+      "April",
+      "Mai",
+      "Juni",
+      "Juli",
+      "August",
+      "September",
+      "Oktober",
+      "November",
+      "Dezember"
+    ],
+    "monthsShort": [
+      "Jan",
+      "Feb",
+      "Mär",
+      "Apr",
+      "Mai",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Okt",
+      "Nov",
+      "Dez"
+    ],
+    "units": { "months": "Monate", "weeks": "Wochen" },
+    "weeksStarted": "Ab jetzt läuft die Zeit in Wochen",
     "speeds": "Spielgeschwindigkeit",
     "pause": "Pause",
     "speed": "{speed}×"
@@ -45,27 +75,22 @@
     "growth": "Fortschritt",
     "percent": "{n} %",
     "ripeness": "Reife",
-    "daysToRipe": "Reif in {n} Tagen",
-    "daysToRipeOne": "Reif in 1 Tag",
-    "daysToOverripe": "Überreif in {n} Tagen",
-    "daysToOverripeOne": "Überreif in 1 Tag",
+    "ripeIn": "Reif im {month}",
+    "overripeIn": "Überreif im {month}",
     "care": "Pflege",
     "careNone": "keine",
     "careTooExpensive": "Zu wenig Geld: kostet {cost}",
     "careDone": {
       "fertilized": "gedüngt",
-      "irrigated": "gewässert",
-      "pestProtected": "geschützt"
+      "irrigated": "gewässert"
     },
     "careHints": {
       "Fertilize": "Düngen möglich",
-      "Irrigate": "Wässern möglich",
-      "ProtectPests": "Schützen möglich"
+      "Irrigate": "Wässern möglich"
     },
     "careActions": {
       "Fertilize": "Düngen",
-      "Irrigate": "Wässern",
-      "ProtectPests": "Schützen"
+      "Irrigate": "Wässern"
     },
     "price": "Preis",
     "tips": {
@@ -84,8 +109,7 @@
       "wasser": "Wasser",
       "tiefland": "Tiefland",
       "hochland": "Hochland",
-      "hochlandKuehl": "Kühles Hochland",
-      "vulkan": "Vulkan"
+      "hochlandKuehl": "Kühles Hochland"
     },
     "soilClasses": {
       "karg": "Karg",
@@ -115,7 +139,6 @@
     "plant": "Pflanzen",
     "fertilize": "Düngen",
     "irrigate": "Wässern",
-    "protect": "Schutz",
     "harvest": "Ernten",
     "build": "Bauen",
     "market": "Markt"
@@ -137,7 +160,7 @@
     "plant": "Pflanzen",
     "tooExpensive": "Nicht genug CC.",
     "locked": "ab Phase {phase} · Kapital {capital}",
-    "specialtyZone": "nur auf Vulkanboden"
+    "specialtyZone": "passt zu kühlem Hochland"
   },
   "buildTool": {
     "heading": "Bauen",
@@ -155,13 +178,13 @@
   },
   "marketPanel": {
     "heading": "Markt",
-    "hint": "Die Bank kauft Roh- und gewaschenen Kaffee und verkauft Saatgut. Verkäufe senken den Preis, Käufe heben ihn. Das Lager kostet jeden Tag 1 CC je angefangene {units} Einheiten. Ein leeres Lager kostet nichts.",
+    "hint": "Die Bank kauft Roh- und gewaschenen Kaffee und verkauft Saatgut. Verkäufe senken den Preis, Käufe heben ihn. Das Lager kostet jeden Monat 1 CC je angefangene {units} Einheiten. Ein leeres Lager kostet nichts.",
     "stock": "Im Lager",
     "seeds": "Saatgut",
     "sellPrice": "Bank zahlt je Einheit",
     "buyPrice": "Saatgut kostet je Einheit",
-    "coffeeLine": "Kaffee, {days} Tage",
-    "seedLine": "Saatgut, {days} Tage",
+    "coffeeLine": "Kaffee, {months} Monate",
+    "seedLine": "Saatgut, {months} Monate",
     "sell": "Verkaufen",
     "sellAmount": "Verkaufen ({units}\u00a0Einh., {income})",
     "sellWashedAmount": "Gewaschen verkaufen ({units}\u00a0Einh., {income})",
@@ -177,7 +200,7 @@
       "money": "Zu wenig Geld."
     },
     "sellWashed": "Gewaschen verkaufen",
-    "processing": "Aufbereitung läuft bis Tag {day}"
+    "processing": "Aufbereitung läuft bis {date}"
   },
   "orders": {
     "heading": "Aufträge",
@@ -190,7 +213,7 @@
       "Röstwerk Ost"
     ],
     "minQuality": "mind. Qualität",
-    "deadline": "bis Tag",
+    "deadline": "bis",
     "price": "je Einheit",
     "bank": "(Bank {price})",
     "stock": "Passend (roh) im Lager: {have} / {units}",
@@ -220,11 +243,6 @@
       "heading": "Wässern",
       "hint": "Klicke Parzellen mit einer unreifen, ungewässerten Pflanze an, um sie sofort zu wässern; halte die linke Maustaste und ziehe, um mehrere Parzellen zu wässern. Oder markiere zuerst Parzellen mit „Auswählen“ und bestätige hier.",
       "action": "Wässern"
-    },
-    "protect": {
-      "heading": "Schädlingsschutz",
-      "hint": "Klicke Parzellen mit einer unreifen, ungeschützten Pflanze an, um sie sofort zu schützen; halte die linke Maustaste und ziehe, um mehrere Parzellen zu schützen. Oder markiere zuerst Parzellen mit „Auswählen“ und bestätige hier.",
-      "action": "Schützen"
     },
     "harvest": {
       "heading": "Ernten",
@@ -269,35 +287,6 @@
       "care": "Braucht Pflege"
     }
   },
-  "events": {
-    "warnTomorrow": "{warning} ab morgen",
-    "warnDay": "{warning} ab Tag {day}",
-    "frost": {
-      "name": "Frost",
-      "warning": "Frost-Warnung",
-      "hint": "Hochland-Ernte sinkt, Arabica wird teurer."
-    },
-    "monsoon": {
-      "name": "Monsun",
-      "warning": "Monsun-Warnung",
-      "hint": "Tiefland-Pflanzen wachsen langsamer, Robusta wird teurer."
-    },
-    "boom": {
-      "name": "Marktboom",
-      "warning": "Marktboom",
-      "hint": "Die Bank zahlt mehr."
-    },
-    "crisis": {
-      "name": "Marktkrise",
-      "warning": "Marktkrise",
-      "hint": "Die Bank zahlt weniger."
-    },
-    "pests": {
-      "name": "Schädlinge",
-      "warning": "Schädlings-Warnung",
-      "hint": "Schädlingsschutz halbiert den Verlust im Tiefland. Wähle ein Feld und klicke „Schützen“."
-    }
-  },
   "help": {
     "open": "Hilfe",
     "heading": "Hilfe",
@@ -306,7 +295,7 @@
     "loop": [
       { "name": "Parzelle", "text": "Kaufe eine Parzelle auf der Insel." },
       { "name": "Pflanzen", "text": "Setze eine Kaffeepflanze auf dein Feld." },
-      { "name": "Pflegen", "text": "Dünge, wässere und schütze die Pflanzen." },
+      { "name": "Pflegen", "text": "Dünge und wässere die Pflanzen." },
       { "name": "Ernten", "text": "Ernte die reifen Pflanzen, bevor sie überreif sind." },
       { "name": "Verkaufen", "text": "Verkaufe den Kaffee aus dem Lager am Markt." },
       { "name": "Reinvestieren", "text": "Kaufe mit dem Geld neue Parzellen und pflanze mehr an." }
@@ -317,7 +306,7 @@
       "Öffne „Bauen“. Klicke bei „Aufbereitung“ auf „Bauen“. Sie kostet {cost} CC und ist ab Phase {phase} frei. Du kannst eine pro Farm bauen.",
       "Wähle „Ernten“ (Taste {harvestKey}) und klicke eine reife Pflanze an. Der Kaffee liegt dann als Rohkaffee im Lager.",
       "Öffne „Markt“ und klicke „Aufbereiten“. Eine Charge nimmt höchstens {batch} Einheiten und kostet {unitCost} CC je Einheit. Der älteste Kaffee kommt zuerst dran. Eine Charge wäscht eine Sorte. Es läuft immer nur eine Aufbereitung. Für mehr als {batch} Einheiten wäschst du nach dem Ende noch einmal.",
-      "Warte, bis „Aufbereitung läuft bis Tag N“ verschwindet. Die Aufbereitung dauert {days} {dayUnit}.",
+      "Warte, bis „Aufbereitung läuft bis …“ verschwindet. Die Aufbereitung dauert {days} {dayUnit}.",
       "Klicke im „Markt“ auf „Gewaschen verkaufen“."
     ],
     "washingPays": "Wann lohnt sich das? Die Bank zahlt für gewaschenen Kaffee das {factor}-Fache des Rohpreises. Die Qualität bleibt gleich. Es lohnt sich ab etwa {breakEven} CC je Einheit Rohpreis, bei voller Charge. Die Kosten werden auf ganze CC aufgerundet.",
@@ -331,8 +320,8 @@
     ],
     "storageStage": "Stufe {n}: Gesamtplatz {capacity} Einheiten, Kosten {cost} CC, ab Phase {phase}.",
     "storageAfter": [
-      "Das Lager kostet jeden Tag 1 CC je angefangene {units} Einheiten.",
-      "Kaffee im Lager verliert Qualität. Verlust je Tag in Qualitätspunkten: {loss}."
+      "Das Lager kostet jeden Monat 1 CC je angefangene {units} Einheiten.",
+      "Kaffee im Lager verliert Qualität. Verlust je Monat in Qualitätspunkten: {loss}."
     ],
     "controlsHeading": "Steuerung",
     "toolKey": "Werkzeug {label}",
@@ -362,6 +351,24 @@
       { "keys": "Rechtsklick", "text": "Werkzeug ablegen" }
     ]
   },
+  "startScreen": {
+    "subtitle": "Von der Bohne bis zur Tasse",
+    "island": "Deine Insel",
+    "seed": "Seed",
+    "seedHint": "Ganze Zahl von 0 bis 4294967295",
+    "reroll": "Neuer Seed",
+    "play": "Spiel starten",
+    "welcome": "Willkommen zurück",
+    "continue": "Weiterspielen",
+    "newGame": "Neues Spiel",
+    "back": "Zurück zum Spielstand",
+    "saves": "Spielstände",
+    "lastPlayed": "Zuletzt gespielt {ago}",
+    "justNow": "gerade eben",
+    "zoneShares": "Landzonen",
+    "zoneShare": "{zone} {pct} %",
+    "hut": "Deine Hütte steht im {zone} bei {parcel}, Boden {soil}."
+  },
   "savePanel": {
     "open": "Spielstand",
     "heading": "Spielstand",
@@ -370,7 +377,6 @@
     "autosave": "Automatisch",
     "save": "Speichern",
     "load": "Laden",
-    "day": "Tag {day}",
     "empty": "leer",
     "invalid": "ungültig",
     "saveFailed": "Speichern fehlgeschlagen: {reason}",
@@ -386,7 +392,6 @@
     "plant": "Pflanzen",
     "fertilize": "Dünger",
     "irrigate": "Bewässerung",
-    "protect": "Schutz",
     "harvest": "Ernte",
     "sell": "Verkauf",
     "buy": "Einkauf",

@@ -66,24 +66,20 @@ export function groundDirection(yaw: number, right: number, up: number) {
   }
 }
 
-// Frames the hut, the market, the path and the land parcels near the start for START_YAW.
-export function startView(world: World, props: WorldProps, aspect: number) {
+type Frame = { left: number; right: number; bottom: number; top: number }
+
+// The parcel corners of the parcels, at terrain height, in world space.
+function cornersOf(world: World, parcels: World['parcels']) {
   const n = world.size
-  // Sea parcels are skipped: a start on the shore would else give a small zoom.
-  const land = world.parcels.filter(
-    (q) =>
-      q.zone !== 'wasser' &&
-      Math.abs(q.x - world.start.x) <= START_REACH &&
-      Math.abs(q.y - world.start.y) <= START_REACH,
-  )
-  const corners = land.flatMap((q) =>
+  return parcels.flatMap((q) =>
     [0, 1].flatMap((dx) =>
       [0, 1].map((dz) => ({ x: q.x + dx - n / 2, y: cornerY(world, q.x + dx, q.y + dz), z: q.y + dz - n / 2 })),
     ),
   )
-  const points = [props.hut, props.market, ...props.path]
-    .map((p) => parcelCenter(world, p.x, p.y))
-    .concat(corners)
+}
+
+// The target and the largest zoom that keep the points inside the frame (NDC) for START_YAW.
+function fitView(points: { x: number; y: number; z: number }[], aspect: number, frame: Frame) {
   const xs = points.map((p) => p.x)
   const zs = points.map((p) => p.z)
   const target = {
@@ -104,14 +100,35 @@ export function startView(world: World, props: WorldProps, aspect: number) {
     const dz = q.z - target.z
     const sx = dx * right.x + dz * right.z
     const sy = dx * up.x + q.y * up.y + dz * up.z
-    const { left, right: r, bottom, top } = START_FRAME
     zoom = Math.min(
       zoom,
-      fit(sx, left, r, (VIEW_HEIGHT * aspect) / 2),
-      fit(sy, bottom, top, VIEW_HEIGHT / 2),
+      fit(sx, frame.left, frame.right, (VIEW_HEIGHT * aspect) / 2),
+      fit(sy, frame.bottom, frame.top, VIEW_HEIGHT / 2),
     )
   }
+  return { target, zoom }
+}
+
+// Frames the hut, the market, the path and the land parcels near the start for START_YAW.
+export function startView(world: World, props: WorldProps, aspect: number) {
+  // Sea parcels are skipped: a start on the shore would else give a small zoom.
+  const land = world.parcels.filter(
+    (q) =>
+      q.zone !== 'wasser' &&
+      Math.abs(q.x - world.start.x) <= START_REACH &&
+      Math.abs(q.y - world.start.y) <= START_REACH,
+  )
+  const points = [props.hut, props.market, ...props.path]
+    .map((p) => parcelCenter(world, p.x, p.y))
+    .concat(cornersOf(world, land))
+  const { target, zoom } = fitView(points, aspect, START_FRAME)
   return { target, zoom: clampZoom(zoom) }
+}
+
+// Frames all land parcels inside the frame (NDC). The frame must contain the screen centre.
+// The zoom can be below CAMERA.minZoom.
+export function islandView(world: World, aspect: number, frame: Frame) {
+  return fitView(cornersOf(world, world.parcels.filter((q) => q.zone !== 'wasser')), aspect, frame)
 }
 
 const ground = new Plane(new Vector3(0, 1, 0), 0)

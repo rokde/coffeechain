@@ -39,17 +39,8 @@ describe('factors', () => {
     ['fertilizer', { fertilized: true }, 25],
     ['random 0.9', { random: 0.9 }, 18],
     ['random 1.1', { random: 1.1 }, 22],
-    ['event factor 0.7', { eventFactor: 0.7 }, 14],
-    ['event factor 0.5 is capped at 0.7', { eventFactor: 0.5 }, 14],
-    ['event factor above 1 is not capped', { eventFactor: 1.1 }, 22],
   ])('%s', (_name, extra, expected) => {
     expect(computeYield({ ...base, ...extra })).toBe(expected)
-  })
-
-  it('gives the same result for event factor 0.5 and 0.7', () => {
-    expect(computeYield({ ...base, eventFactor: 0.5 })).toBe(
-      computeYield({ ...base, eventFactor: 0.7 }),
-    )
   })
 })
 

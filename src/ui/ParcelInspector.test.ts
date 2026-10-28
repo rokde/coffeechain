@@ -73,28 +73,50 @@ function setupStatus(change: (s: GameState, parcels: { x: number; y: number }[])
 const text = (html: string, id: string) =>
   [...html.matchAll(new RegExp(`data-testid="${id}"[^>]*>([^<]*)<`, 'g'))].map((m) => m[1]!.trim())
 const buttons = (html: string) => html.match(/<button[^>]*inspector-care-action[^>]*>/g) ?? []
-const ripeHours = balance().varieties.robusta.cycleDays * balance().time.ticksPerGameDay
+const ripeDays = balance().varieties.robusta.cycleDays
 const irrigationCost = Math.round(balance().varieties.robusta.careCost.irrigation * 100)
 
 describe('ParcelInspector field status (S21e)', () => {
   it('AC-3: shows stage, growth, days, cares, hints and the open care buttons', async () => {
     const { pinia, game, parcel } = setupStatus((s, parcels) => {
       const irrigated = dispatch(s, { type: 'Irrigate', parcels })
-      return { ...irrigated, time: { ...irrigated.time, hour: irrigated.time.hour + 30 } }
+      return { ...irrigated, time: { ...irrigated.time, day: irrigated.time.day + 30 } }
     })
     const status = fieldStatus(game.state as GameState, parcel.x, parcel.y)!
     expect(status.daysToRipe).toBeGreaterThan(1)
     const html = await renderToString(createSSRApp(ParcelInspector).use(pinia))
     expect(text(html, 'inspector-stage')).toEqual([de.inspector.stages[status.stage]])
     expect(text(html, 'inspector-growth')).toEqual([`${status.percent} %`])
-    expect(text(html, 'inspector-days')).toEqual([`Reif in ${status.daysToRipe} Tagen`])
+    expect(text(html, 'inspector-days')).toEqual(['Reif im April'])
     expect(html).toContain('Pflege')
     expect(text(html, 'inspector-care')).toEqual(['gewässert'])
-    expect(text(html, 'inspector-care-hint')).toEqual(['Düngen möglich', 'Schützen möglich'])
-    expect(text(html, 'inspector-care-action')).toEqual(['Düngen', 'Schützen'])
+    expect(text(html, 'inspector-care-hint')).toEqual(['Düngen möglich'])
+    expect(text(html, 'inspector-care-action')).toEqual(['Düngen'])
     expect(buttons(html).every((b) => !b.includes('disabled'))).toBe(true)
     expect(buttons(html).every((b) => !b.includes('title='))).toBe(true)
     expect(html).toMatch(/<dt[^>]*>Fortschritt<\/dt>/)
+  })
+
+  it('AC-3 (087): shows the month of ripeness and of overripeness, without days', async () => {
+    const sown = setupStatus((s) => s)
+    expect(sown.game.state.time.day).toBe(0)
+    const html = await renderToString(createSSRApp(ParcelInspector).use(sown.pinia))
+    // Ripe on day 90, the 1st of April.
+    expect(text(html, 'inspector-days')).toEqual(['Reif im April'])
+    expect(html).not.toMatch(/Tag/)
+
+    const ripe = setupStatus((s) => ({ ...s, time: { ...s.time, day: ripeDays } }))
+    const status = fieldStatus(ripe.game.state as GameState, ripe.parcel.x, ripe.parcel.y)!
+    // Overripe on day 90 + 60 + 1 = 151, in June.
+    expect(ripeDays + status.daysToOverripe!).toBe(151)
+    const ripeHtml = await renderToString(createSSRApp(ParcelInspector).use(ripe.pinia))
+    expect(text(ripeHtml, 'inspector-days')).toEqual(['Überreif im Juni'])
+    expect(ripeHtml).not.toMatch(/Tag/)
+  })
+
+  it('AC-5 (087): de.json has no day texts for the inspector', () => {
+    for (const key of ['daysToRipe', 'daysToRipeOne', 'daysToOverripe', 'daysToOverripeOne'])
+      expect(de.inspector).not.toHaveProperty(key)
   })
 
   it('AC-3: shows no status rows for an empty parcel', async () => {
@@ -128,7 +150,7 @@ describe('ParcelInspector field status (S21e)', () => {
   it('AC-4: careParcel on a ripe plant does not throw and keeps the money', () => {
     const { game, parcel } = setupStatus((s) => ({
       ...s,
-      time: { ...s.time, hour: s.time.hour + ripeHours },
+      time: { ...s.time, day: s.time.day + ripeDays },
     }))
     const before = game.state
     expect(() => careParcel('Irrigate', parcel)).not.toThrow()

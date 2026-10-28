@@ -18,7 +18,7 @@ const WARMUP = 3
 const RUNS = 9
 
 const state = perfFixture()
-const ticksPerDay = balance().time.ticksPerGameDay
+const daysPerMonth = balance().time.daysPerMonth
 
 const median = (times: number[]) => [...times].sort((a, b) => a - b)[Math.floor(times.length / 2)]!
 
@@ -28,11 +28,11 @@ function time(run: () => void): number {
   return performance.now() - start
 }
 
-// One game day from the fixture. The last tick is the day boundary.
-function day() {
+// One month from the fixture. The last tick is the month boundary with the upkeep.
+function month() {
   let s: GameState = state
-  const ticks = Array.from({ length: ticksPerDay }, () => time(() => (s = step(s))))
-  expect(s.time.hour % ticksPerDay).toBe(0)
+  const ticks = Array.from({ length: daysPerMonth }, () => time(() => (s = step(s))))
+  expect(s.time.day % daysPerMonth).toBe(0)
   return { ticks: ticks.slice(0, -1), boundary: ticks.at(-1)! }
 }
 
@@ -40,27 +40,27 @@ describe('performance on a full farm (S54)', () => {
   it('the fixture has 2,000 plants on the 48 × 48 world in all variants', () => {
     expect(state.world.size).toBe(balance().world.size)
     expect(Object.keys(state.farm.plants)).toHaveLength(PERF_PLANTS)
-    expect(plantVariants(state.farm.plants, state.time.hour).size).toBe(20)
+    expect(plantVariants(state.farm.plants, state.time.day).size).toBe(20)
   })
 
-  it('AC-1: one tick and the day-boundary tick of step() stay in budget', () => {
-    expect(state.time.hour % ticksPerDay).toBe(0)
-    for (let i = 0; i < WARMUP; i++) day()
-    const runs = Array.from({ length: RUNS }, day)
+  it('AC-1: one tick and the month-boundary tick of step() stay in budget', () => {
+    expect(state.time.day % daysPerMonth).toBe(0)
+    for (let i = 0; i < WARMUP; i++) month()
+    const runs = Array.from({ length: RUNS }, month)
     const tick = median(runs.flatMap((r) => r.ticks))
     const boundary = median(runs.map((r) => r.boundary))
-    console.log(`step: tick ${tick.toFixed(3)} ms, day boundary ${boundary.toFixed(3)} ms`)
+    console.log(`step: tick ${tick.toFixed(3)} ms, month boundary ${boundary.toFixed(3)} ms`)
     expect(tick).toBeLessThan(TICK_BUDGET_MS)
     expect(boundary).toBeLessThan(DAY_TICK_BUDGET_MS)
   })
 
   it('AC-2: plantsKey() and plants.show() together stay in budget', () => {
     const plants = createPlants(state.world)
-    const { hour } = state.time
+    const { day } = state.time
     // main.ts calls plantsKey() each tick and show() when the key changes.
     const update = () => {
-      plantsKey(state.farm.plants, hour)
-      plants.show(state.farm.plants, hour)
+      plantsKey(state.farm.plants, day)
+      plants.show(state.farm.plants, day)
     }
     for (let i = 0; i < WARMUP; i++) update()
     const ms = median(Array.from({ length: RUNS }, () => time(update)))
@@ -70,7 +70,7 @@ describe('performance on a full farm (S54)', () => {
 
   it('AC-3: terrain and plants need at most one draw call per variant plus one', () => {
     const plants = createPlants(state.world)
-    plants.show(state.farm.plants, state.time.hour)
+    plants.show(state.farm.plants, state.time.day)
     const scene = new Scene().add(createTerrain(state.world), plants.group)
     const drawn: Mesh[] = []
     scene.traverseVisible((o) => {
