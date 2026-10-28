@@ -53,6 +53,7 @@
     "heading": "Parzelle",
     "empty": "Wähle eine Parzelle.",
     "position": "{x} / {y}",
+    "location": "Position {x} / {y}",
     "close": "Auswahl schließen",
     "zone": "Zone",
     "soilClass": "Boden",

@@ -50,12 +50,28 @@ const careDone = computed(() => {
 const careCost = (command: 'Fertilize' | 'Irrigate') =>
   quoteCare(game.state as GameState, { type: command, parcels: [selection.parcel!] })
 
+const position = computed(() => {
+  const p = selection.parcel
+  return p ? t.location.replace('{x}', String(p.x)).replace('{y}', String(p.y)) : ''
+})
+// Id of the field that owns the parcel, or undefined for a parcel the farm does not own.
+const fieldId = computed(() => {
+  const p = selection.parcel
+  const { farm, world } = game.state
+  return p ? farm.parcels[p.y * world.size + p.x] : undefined
+})
+const field = computed(() => {
+  const name = game.state.farm.fields.find((f) => f.id === fieldId.value)?.name
+  return name === undefined ? null : de.field.label.replace('{name}', name)
+})
+
 // Only for a parcel that the farm can buy.
 const price = computed(() => {
   const p = selection.parcel
   const state = game.state as GameState
-  const owned = p && p.y * state.world.size + p.x in state.farm.parcels
-  return p && !owned && isFree(state, p.x, p.y) ? quoteParcels(state, [p]) : null
+  return p && fieldId.value === undefined && isFree(state, p.x, p.y)
+    ? quoteParcels(state, [p])
+    : null
 })
 </script>
 
@@ -64,13 +80,8 @@ const price = computed(() => {
     <header>
       <div>
         <h2>{{ t.heading }}</h2>
-        <p class="title">
-          {{
-            t.position
-              .replace('{x}', String(selection.parcel.x))
-              .replace('{y}', String(selection.parcel.y))
-          }}
-        </p>
+        <p class="title" data-testid="inspector-title">{{ field ?? position }}</p>
+        <p v-if="field" class="position" data-testid="inspector-position">{{ position }}</p>
       </div>
       <button
         type="button"
@@ -174,6 +185,11 @@ h2 {
   margin: 4px 0 0;
   font-size: 20px;
   font-weight: 700;
+}
+.position {
+  margin: 2px 0 0;
+  font-size: 12px;
+  opacity: 0.8;
 }
 button {
   width: 44px;

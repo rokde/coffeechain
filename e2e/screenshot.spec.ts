@@ -472,6 +472,9 @@ test('S12b: owned parcel marks and field labels', async ({ page }) => {
   await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
   await page.getByTestId('tool-select').click()
   await page.screenshot({ path: 'docs/progress/S12b.png' })
+  // #11: the field borders keep the owned parcels visible in the soil view.
+  await page.getByTestId('overlay-soil').click()
+  await page.screenshot({ path: 'docs/progress/S12b-soil.png' })
   expect(errors).toEqual([])
 })
 
