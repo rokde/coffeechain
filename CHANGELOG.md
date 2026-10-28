@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.0](https://github.com/rokde/coffeechain/compare/v0.3.0...v0.4.0) (2026-10-28)
+
+### Features
+
+- make parcels identifiable by field name and border ([#32](https://github.com/rokde/coffeechain/issues/32)) ([634e990](https://github.com/rokde/coffeechain/commit/634e990d906083e1b74b95547c21ca6cc1c6a8ee))
+
 ## [0.3.0](https://github.com/rokde/coffeechain/compare/v0.2.1...v0.3.0) (2026-10-25)
 
 ### ⚠ BREAKING CHANGES
