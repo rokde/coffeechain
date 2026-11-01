@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lager-Panel (Issue #9)</title>
+<style>
+  :root {
+    --hud-bg: rgb(43 36 32 / 92%);
+    --hud-fg: #f5ece0;
+    --amber: #f2c48d;
+    --dark: #2b2420;
+    --soft: rgb(255 255 255 / 8%);
+    --line: rgb(255 255 255 / 12%);
+    --green: #9ccf7a;
+    --red: #e8735f;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #e9e4dc; color: #2b2420; font-family: "DM Sans", "Segoe UI", system-ui, sans-serif; }
+  button { font: inherit; color: inherit; }
+
+  /* ---------- Übersichtsseite (nicht Teil des Spiels) ---------- */
+  .overview { padding: 32px; max-width: 1520px; margin: 0 auto; }
+  .overview h1 { margin: 0 0 4px; font-size: 28px; }
+  .overview > p { margin: 0 0 28px; max-width: 80ch; line-height: 1.5; }
+  .shot { margin: 0 0 56px; }
+  .shot h2 { margin: 0 0 4px; font-size: 20px; }
+  .shot > p { margin: 0 0 12px; max-width: 90ch; line-height: 1.5; }
+  .shot .scroll { overflow-x: auto; padding-bottom: 8px; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin: 0 0 24px; padding: 0; list-style: none; font-size: 14px; }
+  .legend li::before { content: ""; display: inline-block; width: 22px; height: 12px; margin-right: 6px; vertical-align: -1px; border: 1.5px dashed #a6743a; border-radius: 4px; }
+  .states { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+  .states figure { margin: 0; }
+  .states figcaption { margin: 0 0 8px; font-weight: 700; }
+  .crop { width: 700px; overflow: hidden; border-radius: 12px; }
+  .crop .frame { transform: translateX(-740px); }
+  .stage { position: relative; background: #86bcc4; overflow: hidden; border-radius: 12px; }
+
+  /* ---------- Rahmen (ein Spielfenster) ---------- */
+  .frame { position: relative; overflow: hidden; container-type: size; background: #86bcc4; flex: none; }
+  .frame[data-size="desktop"] { width: 1440px; height: 900px; }
+  .frame[data-size="tablet"] { width: 800px; height: 900px; }
+  .frame[data-size="phone"] { width: 390px; height: 844px; }
+  .frame svg.scene { position: absolute; inset: 0; width: 100%; height: 100%; }
+  body.single { background: none; }
+  body.single .frame { margin: 0; }
+
+  .hud { position: absolute; inset: 0; color: var(--hud-fg); font-size: 14px; line-height: 1.35; }
+  .box { position: absolute; background: var(--hud-bg); border-radius: 12px; }
+  .top-bar { top: 16px; left: 16px; right: 16px; height: 60px; display: flex; align-items: center; padding: 0 16px; }
+  .name { display: flex; flex-direction: column; }
+  .name strong { font-size: 18px; }
+  .name small { font-size: 12px; opacity: .8; }
+  .time { display: flex; align-items: center; gap: 8px; margin: 0 auto; font-size: 15px; font-weight: 600; }
+  .chip { padding: 8px 12px; border-radius: 999px; background: var(--soft); white-space: nowrap; font-size: 15px; font-weight: 600; border: 0; }
+  .clock b { font-weight: 600; }
+  .clock .sep { display: inline; }
+  .clock .line2 { display: inline; }
+  .speeds { display: flex; gap: 4px; padding: 2px; border-radius: 10px; background: var(--soft); }
+  .speeds span { min-width: 44px; height: 44px; display: grid; place-items: center; border-radius: 8px; }
+  .speeds span.on { background: var(--amber); color: var(--dark); }
+  .time-unit { font-size: 12px; font-weight: 400; opacity: .8; }
+  .stats { display: flex; align-items: center; gap: 12px; font-weight: 600; }
+  .money-group { display: flex; gap: 8px; font-size: 20px; font-weight: 700; align-items: center; }
+  .money-group > * { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .storage-btn { height: 40px; padding: 0 12px; border: 0; border-radius: 999px; background: var(--soft); font-size: 20px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+  .storage-btn[aria-pressed="true"] { background: var(--amber); color: var(--dark); }
+  .storage-btn .hint { font-size: 11px; font-weight: 600; letter-spacing: .02em; opacity: .8; }
+  .sq { width: 44px; height: 44px; margin-left: 8px; border-radius: 8px; background: var(--soft); display: grid; place-items: center; font-weight: 600; font-size: 20px; flex: none; }
+  .save { height: 44px; margin-left: 8px; padding: 0 12px; border-radius: 8px; background: var(--soft); display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; flex: none; }
+
+  .left-panel { top: 92px; left: 16px; width: 300px; padding: 14px 20px; }
+  h2.cap { margin: 0 0 4px; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+  .field { padding: 6px 0; }
+  .field .line { display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+  .field small { font-size: 12px; opacity: .8; }
+  .field .badge { padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; background: #c0392b; color: #fff; }
+  .field .badge.care { background: var(--amber); color: var(--dark); }
+  .field .prog { display: block; height: 4px; margin-top: 4px; border-radius: 2px; background: rgb(255 255 255 / 15%); }
+  .field .prog i { display: block; height: 100%; border-radius: 2px; background: #8fc65a; }
+
+  .toolbar { bottom: 16px; left: 50%; transform: translateX(-50%); width: min(1000px, calc(100cqw - 32px)); height: 82px; display: flex; gap: 8px; padding: 8px; }
+  .toolbar span { flex: 1 0 0; display: grid; place-items: center; border-radius: 8px; background: var(--soft); font-size: 14px; font-weight: 600; }
+  .toolbar .ov { flex: 2 0 0; display: flex; gap: 8px; padding-left: 8px; border-left: 1px solid rgb(255 255 255 / 25%); background: none; }
+  .toolbar .ov span { flex: 1 0 0; flex-direction: column; gap: 2px; }
+
+  /* ---------- Lager-Panel ---------- */
+  .storage { top: 92px; right: 16px; width: 640px; max-height: calc(100cqh - 92px - 16px - 82px - 12px); display: flex; flex-direction: column; padding: 16px 20px 14px; z-index: 5; }
+  .storage header { display: flex; justify-content: space-between; align-items: flex-start; }
+  .storage h2.cap { margin: 0; }
+  .storage .title { margin: 2px 0 0; font-size: 20px; font-weight: 700; }
+  .storage .title small { font-size: 14px; font-weight: 400; opacity: .8; }
+  .close { width: 44px; height: 44px; border: 0; border-radius: 8px; background: var(--soft); font-size: 20px; flex: none; margin: -4px -6px 0 8px; }
+
+  .capacity { margin-top: 10px; display: grid; grid-template-columns: 1fr auto; gap: 6px 24px; align-items: end; }
+  .meter { grid-column: 1 / -1; display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: rgb(255 255 255 / 15%); }
+  .meter i { display: block; height: 100%; }
+  .meter .raw { background: var(--amber); }
+  .meter .washed { background: var(--green); }
+  .meter.full .raw, .meter.full .washed { filter: saturate(.8); }
+  .keys { display: flex; flex-wrap: wrap; gap: 2px 14px; font-size: 12px; opacity: .85; }
+  .keys b::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; background: rgb(255 255 255 / 25%); }
+  .keys .k-raw::before { background: var(--amber); }
+  .keys .k-washed::before { background: var(--green); }
+  .booking { font-size: 12px; text-align: right; opacity: .85; }
+  .booking strong { font-size: 14px; opacity: 1; }
+  .alert { margin-top: 8px; padding: 8px 12px; border-radius: 8px; background: rgb(232 115 95 / 18%); color: #ffb3a4; font-size: 13px; }
+
+  .filters { display: flex; gap: 6px; margin-top: 12px; }
+  .filters button { height: 36px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--soft); font-size: 13px; font-weight: 600; cursor: pointer; }
+  .filters button[aria-pressed="true"] { background: var(--amber); color: var(--dark); }
+  .filters .thr { margin-left: auto; align-self: center; font-size: 12px; opacity: .85; display: flex; align-items: center; gap: 6px; }
+  .filters .thr b { padding: 2px 8px; border-radius: 6px; background: var(--soft); font-weight: 700; border: 1px dashed rgb(242 196 141 / 60%); }
+
+  .list { margin-top: 8px; overflow-y: auto; min-height: 0; flex: 1 1 auto; margin-right: -8px; padding-right: 8px; }
+  .thead, .row { display: grid; grid-template-columns: 78px 52px 88px 56px 66px 1fr 1fr; column-gap: 8px; align-items: center; }
+  .thead { padding: 6px 0; font-size: 11px; line-height: 1.2; text-transform: uppercase; letter-spacing: .04em; opacity: .75; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: #2b2420; z-index: 1; }
+  .thead .r, .row .r { text-align: right; }
+  .group { display: flex; align-items: baseline; gap: 10px; padding: 8px 0 3px; }
+  .group h3 { margin: 0; font-size: 15px; }
+  .group .sum { font-size: 12px; opacity: .8; }
+  .slot { margin-left: auto; align-self: center; padding: 1px 8px; border: 1.5px dashed rgb(242 196 141 / 55%); border-radius: 999px; font-size: 11px; font-weight: 600; color: var(--amber); opacity: .85; white-space: nowrap; }
+  .row { padding: 5px 0; border-top: 1px solid var(--line); font-size: 13px; }
+  .row:hover { background: rgb(255 255 255 / 4%); }
+  .row b { font-weight: 700; }
+  .row small { display: block; font-size: 11px; opacity: .75; }
+  .tag { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; border: 1px solid rgb(255 255 255 / 35%); }
+  .tag.washed { background: var(--green); color: #1f2d14; border-color: var(--green); }
+  .qv { display: flex; flex-direction: column; gap: 3px; }
+  .qv b { font-size: 14px; }
+  .bar { position: relative; height: 5px; border-radius: 3px; background: rgb(255 255 255 / 15%); }
+  .bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: var(--amber); }
+  .bar s { position: absolute; top: -2px; bottom: -2px; width: 2px; background: #f5ece0; opacity: .85; }
+  .under .bar i { background: var(--red); }
+  .under .qv b, .under .hold { color: #ffb3a4; }
+  .soon .hold { color: var(--amber); }
+  .ok { color: var(--green); font-weight: 700; }
+  .wait { color: var(--amber); font-weight: 700; }
+  .lab { display: none; }
+  .c-units .u { display: none; }
+  .stats-cells { display: contents; }
+  .none { opacity: .45; }
+
+  .seed-slot { margin-top: 10px; padding: 8px 12px; border: 1.5px dashed rgb(242 196 141 / 55%); border-radius: 10px; font-size: 12px; color: var(--amber); opacity: .85; }
+  .seed-slot strong { display: block; font-size: 13px; }
+  .empty { margin: 18px 0 8px; padding: 22px 16px; text-align: center; border: 1px dashed rgb(255 255 255 / 25%); border-radius: 10px; }
+  .empty strong { display: block; font-size: 16px; margin-bottom: 4px; }
+  .empty span { font-size: 13px; opacity: .85; }
+
+  footer.foot { display: flex; align-items: center; gap: 12px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12px; }
+  footer.foot p { margin: 0; flex: 1; opacity: .85; }
+  .btn { height: 44px; padding: 0 16px; border: 0; border-radius: 8px; background: var(--soft); font-weight: 600; font-size: 14px; cursor: pointer; white-space: nowrap; }
+  .btn.primary { background: var(--amber); color: var(--dark); }
+
+  /* ---------- unter 1280 px: Karten, Panel neben der linken Spalte ---------- */
+  @container (max-width: 1439px) {
+    .clock { display: flex; flex-direction: column; align-items: center; padding: 4px 6px; font-size: 12px; line-height: 15px; }
+    .clock .sep { display: none; }
+  }
+  @container (max-width: 1279px) {
+    .top-bar { height: 94px; flex-wrap: wrap; align-content: space-between; padding: 8px 16px 6px; }
+    .stats { order: 1; flex-basis: 100%; justify-content: center; height: 40px; }
+    .stats .chip { padding: 4px 12px; font-size: 14px; }
+    .save span.t { display: none; }
+    .save { width: 36px; padding: 0; justify-content: center; margin-left: 2px; }
+    .left-panel { top: 134px; }
+    .storage { top: 134px; width: calc(100cqw - 348px); max-height: calc(100cqh - 134px - 16px - 82px - 12px); }
+
+    .thead { display: none; }
+    .row { grid-template-columns: auto 1fr auto; grid-template-areas: "state q units" "stats stats stats"; row-gap: 8px; column-gap: 12px; padding: 10px 0; }
+    .row .c-state { grid-area: state; }
+    .row .c-q { grid-area: q; }
+    .row .c-units { grid-area: units; font-size: 14px; }
+    .c-units .u { display: inline; }
+    .row .stats-cells { grid-area: stats; display: grid; grid-template-columns: minmax(0,.85fr) minmax(0,.95fr) minmax(0,1.35fr) minmax(0,1.15fr); gap: 6px; }
+    .row .stats-cells > div { white-space: nowrap; }
+    .row .stats-cells > div { padding: 6px 8px; border-radius: 8px; background: rgb(255 255 255 / 5%); text-align: left; }
+    .row .lab { display: block; margin-bottom: 1px; font-size: 11px; opacity: .7; }
+    .row .c-ready.none { display: none; }
+    .row .c-ready { text-align: left; }
+  }
+  @container (max-width: 760px) { /* HUD: Seed und Zeiteinheit hängen unter der Leiste */
+    .name strong { display: none; }
+    .name small, .time-unit { position: absolute; top: calc(100% + 4px); left: 12px; padding: 1px 8px; border-radius: 6px; background: var(--hud-bg); font-size: 11px; line-height: 13px; white-space: nowrap; }
+    .time-unit { left: auto; right: 12px; opacity: 1; }
+    .speeds { gap: 0; }
+    .speeds span { min-width: 22px; height: 44px; padding: 0 1px; font-size: 14px; }
+    .chip { padding: 8px 4px; font-size: 14px; }
+  }
+  /* ---------- bis 480 px: Sheet über die ganze Breite, Toolbar verdeckt ---------- */
+  @container (max-width: 480px) {
+    .top-bar { min-height: 94px; height: auto; padding: 8px 4px 6px; }
+    .stats, .money-group { gap: 6px; }
+    .storage-btn { height: 36px; padding: 0 10px; font-size: 18px; }
+    .storage-btn .hint, .storage-word, .phase-progress { display: none; }
+    .toolbar { display: none; }
+    .storage { left: 16px; right: 16px; top: 134px; bottom: 16px; width: auto; max-height: none; padding: 14px 16px 14px; }
+    .storage .title { font-size: 18px; }
+    .capacity { grid-template-columns: 1fr; }
+    .booking { text-align: left; }
+    .row .stats-cells { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .row .stats-cells > div { padding: 6px; }
+    .row .c-ready { grid-column: 1 / -1; }
+    .filters button { padding: 0 12px; }
+    footer.foot p { display: none; }
+    footer.foot .btn { flex: 1; }
+  }
+  .frame.dim-bg::after { content: ""; position: absolute; inset: 0; background: rgb(0 0 0 / 0); }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ---------- Daten (nur für das Mockup, spiegeln Batch aus src/sim/storage/storage.ts) ----------
+const MONTHS = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+const TODAY = { day: 12, month: 3, year: 2 };          // 12. März, Jahr 2
+const THRESHOLD = 70;                                   // offene Frage: Schwelle für „haltbar bis“
+const LOSS = 1;                                         // storage.qualityLossPerDayRaw, gilt pro Monat
+const COST = 0.02;                                      // storage.costPerUnitPerDay, gilt pro Monat
+const CAPACITY = 250;
+const NORMAL = [
+  { v: 'Robusta',          washed: false, q: 82, u: 40 },
+  { v: 'Robusta',          washed: false, q: 74, u: 32 },
+  { v: 'Robusta',          washed: false, q: 69, u: 18 },
+  { v: 'Arabica Standard', washed: false, q: 85, u: 24 },
+  { v: 'Arabica Standard', washed: true,  q: 81, u: 20, ready: { day: 5,  month: 3 } },
+  { v: 'Arabica Standard', washed: true,  q: 79, u: 30, ready: { day: 28, month: 3 }, inDays: 16 },
+];
+const FULL = [
+  { v: 'Robusta',          washed: false, q: 82, u: 90 },
+  { v: 'Robusta',          washed: false, q: 74, u: 72 },
+  { v: 'Robusta',          washed: false, q: 69, u: 18 },
+  { v: 'Arabica Standard', washed: false, q: 85, u: 40 },
+  { v: 'Arabica Standard', washed: true,  q: 81, u: 30, ready: { day: 5, month: 3 } },
+];
+
+const de = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const esc = (s) => String(s);
+function monthLabel(offset) {                            // wie formatMonth(): Jahr nur, wenn es nicht das heutige ist
+  const idx = (TODAY.year - 1) * 12 + (TODAY.month - 1) + offset;
+  const year = Math.floor(idx / 12) + 1, name = MONTHS[idx % 12];
+  return year === TODAY.year ? name : `${name}, Jahr ${year}`;
+}
+function shelf(q) {
+  const n = Math.floor((q - THRESHOLD) / LOSS);
+  if (n < 0) return { state: 'under', main: 'unter Q ' + THRESHOLD, sub: 'seit ' + monthLabel(n + 1) };
+  return { state: n <= 3 ? 'soon' : 'ok', main: 'bis ' + monthLabel(n), sub: 'noch ' + n + ' Mon.' };
+}
+
+// ---------- Szene ----------
+function scene(w, h, cx) {
+  const tw = Math.min(84, w / 13), th = tw / 2, n = 9;
+  const cy = h * 0.5 - (n * th) / 2 + 10;
+  const greens = ['#8db556', '#7fa84c', '#97bf60', '#86b04f'];
+  let out = '', hash = (i, j) => Math.abs(Math.sin(i * 12.9898 + j * 78.233) * 43758.5453) % 1;
+  const pt = (i, j, z = 0) => [cx + (i - j) * tw / 2, cy + (i + j) * th / 2 - z];
+  const poly = (pts, fill) => `<polygon points="${pts.map(p => p.join(',')).join(' ')}" fill="${fill}"/>`;
+  for (let s = 0; s < 2 * n - 1; s++) for (let i = 0; i < n; i++) {
+    const j = s - i; if (j < 0 || j >= n) continue;
+    const field = (i >= 2 && i <= 4 && j >= 2 && j <= 3);
+    const road = (j === 5 && i > 1 && i < 8);
+    const fill = field ? '#5f9138' : road ? '#d9c79a' : greens[Math.floor(hash(i, j) * greens.length)];
+    const [x, y] = pt(i, j), [x2, y2] = pt(i + 1, j), [x3, y3] = pt(i + 1, j + 1), [x4, y4] = pt(i, j + 1);
+    if (i === n - 1) out += poly([[x2, y2], [x3, y3], [x3, y3 + 16], [x2, y2 + 16]], '#7a5a3c');
+    if (j === n - 1) out += poly([[x3, y3], [x4, y4], [x4, y4 + 16], [x3, y3 + 16]], '#8d6a47');
+    out += poly([[x, y], [x2, y2], [x3, y3], [x4, y4]], fill);
+    if (field) { const [px, py] = pt(i + .5, j + .5); for (const [dx, dy] of [[-10, 0], [0, -5], [10, 0], [0, 6]]) out += `<circle cx="${px + dx}" cy="${py + dy - 4}" r="${tw / 11}" fill="#3f6b2a"/>`; }
+    if (!field && !road && hash(i + 3, j + 7) > 0.82) { const [px, py] = pt(i + .5, j + .5); out += `<polygon points="${px},${py - tw / 2.2} ${px - tw / 9},${py} ${px + tw / 9},${py}" fill="#3c6e3b"/>`; }
+  }
+  return `<svg class="scene" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="${w}" height="${h}" fill="#86bcc4"/>${out}</svg>`;
+}
+
+// ---------- HUD ----------
+const icon = {
+  coin: '<svg viewBox="0 0 16 16" width="22" height="22"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="3.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>',
+  crate: '<svg viewBox="0 0 16 16" width="22" height="22"><path d="M2 5h12v9H2z M2 5l1.5-3h9L14 5 M6 8h4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
+  save: '<svg viewBox="0 0 16 16" width="18" height="18"><path d="M2 2h9l3 3v9H2z M4.5 2v4h6V2 M4.5 14V9.5h7V14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
+};
+function hud(items, size, open) {
+  const used = items.reduce((s, b) => s + b.u, 0);
+  return `
+  <div class="box top-bar">
+    <div class="name"><strong>CoffeeChain</strong><small>Welt #48213</small></div>
+    <div class="time">
+      <span class="chip clock"><span>${TODAY.day}. ${MONTHS[TODAY.month - 1]}</span><span class="sep">, </span><span>Jahr ${TODAY.year}</span></span>
+      <div class="speeds"><span>‖</span><span class="on">1×</span><span>2×</span><span>4×</span><span>8×</span><span>16×</span></div>
+      <span class="time-unit">Monate</span>
+    </div>
+    <div class="stats">
+      <div class="money-group">
+        <span>${icon.coin}1.250 CC</span>
+        <button class="storage-btn" aria-pressed="${open}" title="Lager öffnen">${icon.crate}<span><span class="storage-word">Lager </span>${used} / ${CAPACITY}</span></button>
+      </div>
+      <span class="chip">Phase 1 <span class="phase-progress">· 38 %</span></span>
+    </div>
+    <span class="save">${icon.save}<span class="t">Spielstand</span></span>
+    <span class="sq">?</span>
+  </div>
+  ${size === 'phone' && open ? '' : `
+  <div class="box left-panel">
+    <h2 class="cap">Deine Felder</h2>
+    <div class="field"><div class="line"><b>Feld A</b><span class="badge">Erntereif</span></div><small>6 Parzellen · Boden sehr gut</small><span class="prog"><i style="width:100%;background:#d9503c"></i></span></div>
+    <div class="field"><div class="line"><b>Feld B</b><span class="badge care">Pflege</span></div><small>4 Parzellen · Blüte · 64 %</small><span class="prog"><i style="width:64%"></i></span></div>
+  </div>`}
+  <div class="box toolbar">
+    ${['Auswählen','Parzelle','Pflanzen','Düngen','Wässern','Ernten','Bauen','Markt'].map(t => `<span>${t}</span>`).join('')}
+    <div class="ov"><span>Boden</span><span>Lagen</span></div>
+  </div>`;
+}
+
+// ---------- Panel ----------
+function row(b) {
+  const sh = shelf(b.q);
+  const q = b.q, under = q < THRESHOLD;
+  let ready;
+  if (!b.washed) ready = '<span class="none">–</span>';
+  else if (b.inDays) ready = `<span class="wait">${b.ready.day}. ${MONTHS[b.ready.month - 1]}</span><small>in ${b.inDays} Tagen</small>`;
+  else ready = '<span class="ok">✓ verkaufbar</span><small>seit ' + b.ready.day + '. ' + MONTHS[b.ready.month - 1] + '</small>';
+  const cls = under ? 'under' : sh.state === 'soon' ? 'soon' : '';
+  return `
+  <div class="row ${cls}" role="row">
+    <div class="c-state"><span class="tag ${b.washed ? 'washed' : ''}">${b.washed ? 'gewaschen' : 'roh'}</span></div>
+    <div class="c-units r"><b>${b.u}</b> <span class="u">Einh.</span></div>
+    <div class="c-q qv"><b>Q ${q}</b><span class="bar"><i style="width:${q}%"></i><s style="left:${THRESHOLD}%"></s></span></div>
+    <div class="stats-cells">
+      <div class="c-loss r"><span class="lab">Verlust / Monat</span>−${LOSS} Q</div>
+      <div class="c-cost r"><span class="lab">Kosten / Monat</span>${de.format(b.u * COST)} CC</div>
+      <div class="c-hold"><span class="lab">Haltbar</span><span class="hold">${sh.main}</span><small>${sh.sub}</small></div>
+      <div class="c-ready ${b.washed ? '' : 'none'}"><span class="lab">Verkaufbar ab</span>${ready}</div>
+    </div>
+  </div>`;
+}
+function panel(items, { filter = 'all', closed = false } = {}) {
+  const used = items.reduce((s, b) => s + b.u, 0);
+  const rawU = items.filter(b => !b.washed).reduce((s, b) => s + b.u, 0), washU = used - rawU;
+  const cost = items.reduce((s, b) => s + b.u * COST, 0);
+  const booked = Math.ceil(Math.round(cost * 100) / 100);
+  const full = used >= CAPACITY;
+  const shown = items.filter(b => filter === 'all' || (filter === 'raw') === !b.washed);
+  const varieties = [...new Set(shown.map(b => b.v))];
+  const groups = varieties.map(v => {
+    const rows = shown.filter(b => b.v === v).sort((a, b) => a.washed - b.washed || b.q - a.q);
+    const sum = rows.reduce((s, b) => s + b.u, 0);
+    return `<div class="group"><h3>${v}</h3><span class="sum">${sum} Einh.</span><span class="slot" title="Platzhalter für #22">Aufträge · #22</span></div>${rows.map(row).join('')}`;
+  }).join('');
+  const body = items.length === 0
+    ? `<div class="empty"><strong>Das Lager ist leer.</strong><span>Ernte reife Parzellen, dann erscheint der Kaffee hier, getrennt nach Sorte und Qualität.</span></div>`
+    : `<div class="thead" role="row"><span>Zustand</span><span class="r">Menge</span><span>Qualität</span><span class="r">Verlust / Monat</span><span class="r">Kosten / Monat</span><span>Haltbar bis</span><span>Verkaufbar ab</span></div>${groups}`;
+  return `
+  <section class="box storage" aria-label="Lager" data-testid="storage-panel">
+    <header>
+      <div><h2 class="cap">Lager</h2><p class="title">${used} <small>von ${CAPACITY} Einheiten belegt</small></p></div>
+      <button class="close" aria-label="Lager schließen">×</button>
+    </header>
+    <div class="capacity">
+      <div class="meter ${full ? 'full' : ''}" role="img" aria-label="${used} von ${CAPACITY} Einheiten belegt"><i class="raw" style="width:${rawU / CAPACITY * 100}%"></i><i class="washed" style="width:${washU / CAPACITY * 100}%"></i></div>
+      <div class="keys"><b class="k-raw">roh ${rawU}</b><b class="k-washed">gewaschen ${washU}</b><b>frei ${Math.max(0, CAPACITY - used)}</b></div>
+      <div class="booking">Nächster Monatswechsel: <strong>1. April</strong><br>Lagerkosten: <strong>${booked} CC</strong> <span>(${de.format(cost)} aufgerundet)</span></div>
+    </div>
+    ${full ? '<div class="alert">Lager voll. Weitere Ernten bleiben an der Pflanze. Verkaufe Kaffee oder baue einen Lager-Ausbau.</div>' : ''}
+    <div class="filters" role="group" aria-label="Filter">
+      <button aria-pressed="${filter === 'all'}" data-f="all">Alle</button>
+      <button aria-pressed="${filter === 'raw'}" data-f="raw">Roh</button>
+      <button aria-pressed="${filter === 'washed'}" data-f="washed">Gewaschen</button>
+      <span class="thr" title="Haltbar bis = Qualität bleibt mindestens auf diesem Wert. Schwelle noch offen."><span class="lbl">Haltbar ab Q</span><b>${THRESHOLD}</b></span>
+    </div>
+    <div class="list">
+      ${body}
+      <div class="seed-slot"><strong>Saatgut · folgt mit #26</strong>Eigene Zeilen je Sorte und Qualität, getrennt von Roh- und gewaschenem Kaffee.</div>
+    </div>
+    <footer class="foot">
+      <p>Kosten und Qualitätsverlust werden am Monatswechsel gebucht.</p>
+      <button class="btn primary">Zum Markt</button>
+    </footer>
+  </section>`;
+}
+
+// ---------- Aufbau ----------
+const SIZES = { desktop: [1440, 900], tablet: [800, 900], phone: [390, 844] };
+function frame(size, items, opts = {}) {
+  const [w, h] = SIZES[size];
+  const cx = size === 'desktop' ? 420 : size === 'tablet' ? 290 : 195;
+  return `<div class="frame" data-size="${size}"><div class="stage" style="position:absolute;inset:0;border-radius:0">${scene(w, h, cx)}</div><div class="hud">${hud(items, size, true)}${opts.noPanel ? '' : panel(items, opts)}</div></div>`;
+}
+function crop(items, opts, h) {
+  const p = panel(items, opts).replace('class="box storage"', `class="box storage" style="top:16px;max-height:${h - 32}px"`);
+  return `<div class="crop" style="height:${h}px"><div class="frame" data-size="desktop" style="width:1440px;height:${h}px">${scene(1440, h, 420)}<div class="hud">${p}</div></div></div>`;
+}
+const params = new URLSearchParams(location.search);
+const app = document.getElementById('app');
+if (params.get('frame')) {
+  document.body.classList.add('single');
+  app.innerHTML = frame(params.get('frame'), params.get('state') === 'full' ? FULL : params.get('state') === 'empty' ? [] : NORMAL, { filter: params.get('filter') || 'all' });
+} else {
+  app.innerHTML = `
+  <div class="overview">
+    <h1>Lager-Panel · Mockup für Issue #9</h1>
+    <p>Entwurf, nichts gebaut. Datenstand: 12. März, Jahr 2, Phase 1, Lager mit 250 Einheiten. Die Werte stammen aus <code>config/balance.json</code> (Verlust 1 Qualitätspunkt und 0,02 CC je Einheit, beides pro Monat). Alle Texte stehen später in <code>src/ui/i18n/de.json</code>.</p>
+    <ul class="legend"><li>gestrichelt = Platzhalter, nicht ausgearbeitet (#22 Aufträge, #26 Saatgut)</li><li>weißer Strich im Qualitätsbalken = Schwelle für „haltbar bis“ (offene Frage)</li></ul>
+
+    <section class="shot"><h2>1440 px · Panel rechts, Tabelle</h2>
+      <p>Das Lager-Chip in der Leiste wird zum Knopf und öffnet das Panel rechts (640 px statt 330 px, die linke Spalte bleibt). Eine Zeile je Sorte × roh/gewaschen × Qualität, Zeilen einer Sorte unter einer Überschrift mit Summe. Der Slot „Aufträge“ in der Überschrift ist für #22 reserviert.</p>
+      <div class="scroll">${frame('desktop', NORMAL)}</div></section>
+
+    <section class="shot"><h2>800 px · Panel neben der linken Spalte, Karten</h2>
+      <p>Die Tabelle passt nicht mehr. Jede Zeile wird zur Karte: oben Zustand, Qualität und Menge, darunter Verlust, Kosten, Haltbarkeit und bei gewaschenem Kaffee „Verkaufbar ab“. Das Panel nimmt die Breite neben der linken Spalte (Breite − 348 px) und scrollt in der Liste.</p>
+      <div class="scroll">${frame('tablet', NORMAL)}</div></section>
+
+    <section class="shot"><h2>390 px · Sheet über die ganze Breite</h2>
+      <p>Das Panel wird zum Sheet und deckt die Werkzeugleiste ab (die rechte Spalte hat hier nur etwa 170 px). Die Kennzahlen stehen dreispaltig, „Verkaufbar ab“ bekommt die volle Breite. Schließen über × oder erneut auf das Lager-Chip tippen.</p>
+      <div class="scroll">${frame('phone', NORMAL)}</div></section>
+
+    <section class="shot"><h2>Zustände (1440 px, nur Panel)</h2>
+      <div class="states">
+        <figure><figcaption>Gefiltert: nur gewaschen</figcaption>${crop(NORMAL, { filter: 'washed' }, 640)}</figure>
+        <figure><figcaption>Lager voll</figcaption>${crop(FULL, {}, 640)}</figure>
+        <figure><figcaption>Leer</figcaption>${crop([], {}, 480)}</figure>
+      </div>
+    </section>
+  </div>`;
+  // Filter-Knöpfe sind in der Übersicht bedienbar.
+  app.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-f]');
+    if (!btn) return;
+    const section = btn.closest('.storage');
+    const frameEl = btn.closest('.frame');
+    const items = frameEl.getAttribute('data-full') ? FULL : NORMAL;
+    const tmp = document.createElement('div');
+    tmp.innerHTML = panel(items, { filter: btn.dataset.f });
+    section.replaceWith(tmp.firstElementChild.cloneNode(true));
+  });
+}
+</script>
+</body>
+</html>
