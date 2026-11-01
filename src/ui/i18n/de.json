@@ -64,6 +64,8 @@
     "notBuildable": "nicht bebaubar",
     "yield": "Ertragsprognose",
     "yieldUnits": "{n} Einheiten",
+    "quality": "Qualitätsprognose",
+    "qualityPoints": "{n} von 100",
     "stage": "Stadium",
     "stages": {
       "setzling": "Setzling",
@@ -100,6 +102,7 @@
       "variety": "Die Kaffeesorte, die auf dieser Parzelle am besten wächst.",
       "terrain": "Nur auf bebaubarem Gelände kannst du eine Parzelle anlegen.",
       "yield": "Die erwartete Erntemenge, wenn du rechtzeitig erntest.",
+      "quality": "Die erwartete Qualität der Ernte. Sie hängt von Sorte, Boden, Lage und Pflege ab, dazu kommt etwas Zufall. Überreife senkt sie.",
       "stage": "Die aktuelle Wachstumsphase der Pflanze.",
       "growth": "Der Fortschritt der Pflanze bis zur Reife.",
       "ripeness": "Die Zeit bis zur Reife oder bis die Pflanze überreif ist.",

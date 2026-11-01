@@ -682,6 +682,7 @@ test('S18c: inspector yield forecast', async ({ page }) => {
   await page.getByTestId('tool-select').click()
   await canvas.click({ position })
   await expect(page.getByTestId('inspector-yield')).toHaveText(/^\d+ Einheiten$/)
+  await expect(page.getByTestId('inspector-quality')).toHaveText(/^\d+ von 100$/)
   await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
   await page.screenshot({ path: 'docs/progress/S18c.png' })
   expect(errors).toEqual([])

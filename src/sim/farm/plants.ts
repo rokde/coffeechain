@@ -19,6 +19,8 @@ export interface PlantState {
   irrigated?: boolean
   // Harvested units that did not fit into the storage.
   pendingUnits?: number
+  // Quality points of pendingUnits before overripeness (baseQuality). Set together with pendingUnits.
+  pendingQuality?: number
   // Overripe factor at the time pendingUnits was set. Missing means 1.
   overripeFactor?: number
 }

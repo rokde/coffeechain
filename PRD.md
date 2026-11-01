@@ -191,7 +191,16 @@ menge = basisErtrag(sorte)
       × zufall             // seedbar, Startwert 0,9–1,1 (GDD 5.4: „Zufall“)
 ```
 - Ergebnis auf ganze Einheiten abgerundet.
-- **Qualität** (GDD 5.4: Sorte + Pflege + Zufall) wird als Wert 0–100 pro Charge berechnet und angezeigt. Die Bank zahlt unabhängig von der Qualität. Einen Preiseffekt hat sie über Aufträge virtueller Käufer (Mindestqualität, Aufpreis über der Bank, siehe Abschnitt 12, Punkt 4).
+- **Qualität** (GDD 5.4: Sorte + Pflege + Zufall) wird als Wert 0–100 pro Charge berechnet und angezeigt (#21, Werte in `farm.quality`, alle `NEU`):
+  ```
+  punkte   = basis + bodenBonus(bodenklasse)
+           − (lagePasst ? 0 : abzugFremdeLage)
+           + (gedüngt ? düngerBonus : 0) + (bewässert ? bewässerungsBonus : 0)
+           + zufall                    // seedbar, Startwert −5 bis +5
+  qualität = runden((punkte − überreifeAbzug × (1 − überreifeFaktor)) × (ernteProfi ? 1,05 : 1)), begrenzt auf 0–100
+  ```
+  **Abweichung vom GDD (5.2):** Alle Sorten starten mit derselben Basis. Die Qualität misst, wie gut eine Ernte für ihre Sorte ist, so wie real Arabica (SCA) und Robusta (Q Robusta) je auf einer eigenen 100-Punkte-Skala bewertet werden. Den höheren Wert von Premium und Spezialität trägt der Referenzpreis (Quelle: Bastian 2026-11-01, Herleitung in #21, Bestätigung durch Robert offen).
+  Ernten verschiedener Qualität bleiben getrennte Chargen im Lager. Das Parzellen-Panel zeigt eine Qualitätsprognose ohne den Zufallsanteil. Die Bank zahlt unabhängig von der Qualität. Einen Preiseffekt hat sie über Aufträge virtueller Käufer (Mindestqualität, Aufpreis über der Bank, siehe Abschnitt 12, Punkt 4).
 - `sim/farm/yield.ts` ist eine reine Funktion mit Tabellentests.
 
 ### Überreife (NEU, im Entwurf)

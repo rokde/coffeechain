@@ -3,7 +3,7 @@ import { balance } from '../balance'
 import { dispatch } from '../commands'
 import { createState, type GameState } from '../state'
 import type { Parcel, World } from '../world/types'
-import { forecastYield } from './forecast'
+import { forecastQuality, forecastYield } from './forecast'
 import { overripeFactor } from './overripe'
 import type { PlantState } from './plants'
 import { computeYield } from './yield'
@@ -92,11 +92,47 @@ describe('forecastYield', () => {
       variety: 'robusta' as const,
       plantedDay: 5,
       pendingUnits: 10,
+      pendingQuality: 62,
       overripeFactor: 0.85,
     }
     const state = testState(plant, lateDay)
     const next = dispatch(state, { type: 'Harvest', parcels: [{ x: 0, y: 0 }] })
     const units = next.storage.batches.reduce((sum, b) => sum + b.units, 0)
     expect(forecastYield(state, 0, 0)).toBe(units)
+  })
+})
+
+describe('forecastQuality (#21)', () => {
+  const plant = { variety: 'robusta' as const, plantedDay: 5 }
+
+  it('returns null for a parcel without a plant', () => {
+    expect(forecastQuality(testState(undefined), 0, 0)).toBeNull()
+  })
+
+  it('uses no random part, and care raises it', () => {
+    expect(forecastQuality(testState(plant), 0, 0)).toBe(72)
+    const cared = { ...plant, fertilized: true, irrigated: true }
+    expect(forecastQuality(testState(cared), 0, 0)).toBe(80)
+  })
+
+  it('lowers the quality of an overripe plant', () => {
+    const factor = overripeFactor(plant, lateDay)
+    const penalty = balance().farm.quality.overripePenalty
+    expect(forecastQuality(testState(plant, lateDay), 0, 0)).toBe(
+      Math.round(72 - penalty * (1 - factor)),
+    )
+  })
+
+  it('uses pendingQuality for units left on the plant', () => {
+    expect(
+      forecastQuality(testState({ ...plant, pendingUnits: 3, pendingQuality: 66.4 }), 0, 0),
+    ).toBe(66)
+  })
+
+  it('equals the quality that harvest() stores for pending units', () => {
+    const pending = { ...plant, pendingUnits: 10, pendingQuality: 64.2, overripeFactor: 0.85 }
+    const state = testState(pending, lateDay)
+    const next = dispatch(state, { type: 'Harvest', parcels: [{ x: 0, y: 0 }] })
+    expect(forecastQuality(state, 0, 0)).toBe(next.storage.batches[0]!.quality)
   })
 })
