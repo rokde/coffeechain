@@ -2,14 +2,13 @@
 
 ## [0.4.0](https://github.com/rokde/coffeechain/compare/v0.3.0...v0.4.0) (2026-11-04)
 
-
 ### Features
 
-* add touch and trackpad gestures: pinch to zoom, two-finger pan and rotate ([#31](https://github.com/rokde/coffeechain/issues/31)) ([6fbf582](https://github.com/rokde/coffeechain/commit/6fbf58232751962c031d96fa44c7c867b3923483))
-* add touch and trackpad gestures: pinch to zoom, two-finger pan and rotate ([#31](https://github.com/rokde/coffeechain/issues/31)) ([3976f71](https://github.com/rokde/coffeechain/commit/3976f71f210c96ee00408694ae0ace25d9d870c7))
-* add touch and trackpad gestures: pinch to zoom, two-finger pan and rotate ([#31](https://github.com/rokde/coffeechain/issues/31)) ([4d9818e](https://github.com/rokde/coffeechain/commit/4d9818e41c8327985baa81984247f0b60ef9f68f))
-* add touch and trackpad gestures: pinch to zoom, two-finger pan and rotate ([#31](https://github.com/rokde/coffeechain/issues/31)) ([bb32ea6](https://github.com/rokde/coffeechain/commit/bb32ea665e4966eb57c08b164a5e780148761477))
-* make parcels identifiable by field name and border ([#32](https://github.com/rokde/coffeechain/issues/32)) ([634e990](https://github.com/rokde/coffeechain/commit/634e990d906083e1b74b95547c21ca6cc1c6a8ee))
+- add touch and trackpad gestures: pinch to zoom, two-finger pan and rotate ([#31](https://github.com/rokde/coffeechain/issues/31)) ([6fbf582](https://github.com/rokde/coffeechain/commit/6fbf58232751962c031d96fa44c7c867b3923483))
+- add touch and trackpad gestures: pinch to zoom, two-finger pan and rotate ([#31](https://github.com/rokde/coffeechain/issues/31)) ([3976f71](https://github.com/rokde/coffeechain/commit/3976f71f210c96ee00408694ae0ace25d9d870c7))
+- add touch and trackpad gestures: pinch to zoom, two-finger pan and rotate ([#31](https://github.com/rokde/coffeechain/issues/31)) ([4d9818e](https://github.com/rokde/coffeechain/commit/4d9818e41c8327985baa81984247f0b60ef9f68f))
+- add touch and trackpad gestures: pinch to zoom, two-finger pan and rotate ([#31](https://github.com/rokde/coffeechain/issues/31)) ([bb32ea6](https://github.com/rokde/coffeechain/commit/bb32ea665e4966eb57c08b164a5e780148761477))
+- make parcels identifiable by field name and border ([#32](https://github.com/rokde/coffeechain/issues/32)) ([634e990](https://github.com/rokde/coffeechain/commit/634e990d906083e1b74b95547c21ca6cc1c6a8ee))
 
 ## [0.3.0](https://github.com/rokde/coffeechain/compare/v0.2.1...v0.3.0) (2026-10-25)
 
