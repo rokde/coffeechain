@@ -10,6 +10,7 @@ import {
   createCamera,
   gestureZoomDelta,
   islandView,
+  isTrackpadScroll,
   nextZoom,
   rotateYaw,
   START_FRAME,
@@ -38,6 +39,18 @@ describe('rotateYaw', () => {
     expect(rotateYaw(START_YAW, 1)).toBe(START_YAW + 90)
     expect(rotateYaw(START_YAW, -1)).toBe(START_YAW + 270)
     expect(rotateYaw(315, 1)).toBe(45)
+  })
+})
+
+describe('isTrackpadScroll', () => {
+  it('tells a trackpad scroll from a mouse wheel', () => {
+    expect(isTrackpadScroll({ deltaX: 0, deltaY: 100, deltaMode: 0, wheelDeltaY: -120 })).toBe(
+      false,
+    )
+    expect(isTrackpadScroll({ deltaX: 0, deltaY: 3, deltaMode: 0, wheelDeltaY: -9 })).toBe(true)
+    expect(isTrackpadScroll({ deltaX: 2, deltaY: 0, deltaMode: 0 })).toBe(true)
+    expect(isTrackpadScroll({ deltaX: 0, deltaY: 3, deltaMode: 1 })).toBe(false)
+    expect(isTrackpadScroll({ deltaX: 0, deltaY: 3, deltaMode: 0 })).toBe(false)
   })
 })
 

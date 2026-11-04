@@ -23,6 +23,7 @@ import {
   createCamera,
   gestureZoomDelta,
   islandView,
+  isTrackpadScroll,
   startView,
   twistSteps,
   wheelZoomDelta,
@@ -247,32 +248,58 @@ function start({ canvas, renderer, scene, view }: Stage) {
       (event.offsetX / canvas.clientWidth) * 2 - 1,
       1 - (event.offsetY / canvas.clientHeight) * 2,
     )
-  // Chromium sends a trackpad pinch as wheel events with ctrlKey. preventDefault stops the page zoom.
+  const ndcAt = (x: number, y: number) => {
+    const rect = canvas.getBoundingClientRect()
+    return new Vector2(
+      ((x - rect.left) / rect.width) * 2 - 1,
+      1 - ((y - rect.top) / rect.height) * 2,
+    )
+  }
+  // Adds a twist (radians, clockwise) and rotates once it reaches a 90° step.
+  let twist = 0
+  const addTwist = (angle: number) => {
+    const { steps, rest } = twistSteps(twist + angle)
+    twist = rest
+    if (steps) view.rotate(steps)
+  }
+  // Touch pointers on the canvas by pointerId.
+  const touches = new Map<number, { x: number; y: number }>()
+  // A mouse wheel zooms. A trackpad pinch (Chromium: wheel with ctrlKey) zooms, a two-finger
+  // trackpad scroll pans. preventDefault stops the page zoom and scroll.
   canvas.addEventListener(
     'wheel',
     (event) => {
       event.preventDefault()
-      view.zoomAt(ndcOf(event), wheelZoomDelta(event.deltaY, event.ctrlKey))
+      if (!event.ctrlKey && isTrackpadScroll(event))
+        view.pan(-event.deltaX, -event.deltaY, canvas.clientHeight)
+      else view.zoomAt(ndcOf(event), wheelZoomDelta(event.deltaY, event.ctrlKey))
     },
     { passive: false },
   )
-  // WebKit (Tauri on macOS) sends a trackpad pinch as gesture events. TypeScript has no type for them.
-  type GestureEvent = UIEvent & { scale: number; clientX: number; clientY: number }
+  // WebKit (Tauri on macOS, Safari) sends a trackpad pinch and twist as gesture events.
+  // TypeScript has no type for them. iOS also sends them for touch, which the pointer events handle.
+  type GestureEvent = UIEvent & {
+    scale: number
+    rotation: number
+    clientX: number
+    clientY: number
+  }
   let lastScale = 1
+  let lastRotation = 0
   canvas.addEventListener('gesturestart', (event) => {
     event.preventDefault()
     lastScale = 1
+    lastRotation = 0
+    twist = 0
   })
   canvas.addEventListener('gesturechange', (event) => {
     event.preventDefault()
-    const { scale, clientX, clientY } = event as GestureEvent
-    const rect = canvas.getBoundingClientRect()
-    const ndc = new Vector2(
-      ((clientX - rect.left) / rect.width) * 2 - 1,
-      1 - ((clientY - rect.top) / rect.height) * 2,
-    )
-    view.zoomAt(ndc, gestureZoomDelta(scale, lastScale))
+    if (touches.size > 0) return
+    const { scale, rotation, clientX, clientY } = event as GestureEvent
+    view.zoomAt(ndcAt(clientX, clientY), gestureZoomDelta(scale, lastScale))
+    addTwist(((rotation - lastRotation) * Math.PI) / 180)
     lastScale = scale
+    lastRotation = rotation
   })
   canvas.addEventListener('gestureend', (event) => event.preventDefault())
   canvas.addEventListener('contextmenu', (event) => event.preventDefault())
@@ -295,11 +322,12 @@ function start({ canvas, renderer, scene, view }: Stage) {
   canvas.addEventListener('pointerup', endDrag)
   canvas.addEventListener('pointercancel', endDrag)
 
-  // Touch: two fingers pinch to zoom, move to pan and twist to rotate in 90° steps.
-  const touches = new Map<number, { x: number; y: number }>()
-  // True from the second finger until the next press, so the gesture does not click or paint.
+  // Touch: one finger pans (if oneFingerPans), two fingers pinch to zoom, move to pan
+  // and twist to rotate in 90° steps.
+  let oneFingerPans = () => true
+  // True once a touch pans or zooms, until the next press, so it does not click, mark or paint.
   let touchGesture = false
-  let twist = 0
+  let touchStart = { x: 0, y: 0 }
   const twoFingers = () => {
     const [a, b] = [...touches.values()] as [{ x: number; y: number }, { x: number; y: number }]
     return {
@@ -313,13 +341,21 @@ function start({ canvas, renderer, scene, view }: Stage) {
     if (touches.size === 0) touchGesture = false
     if (event.pointerType !== 'touch') return
     touches.set(event.pointerId, { x: event.clientX, y: event.clientY })
+    if (touches.size === 1) touchStart = { x: event.clientX, y: event.clientY }
     if (touches.size === 2) {
       touchGesture = true
       twist = 0
     }
   })
   canvas.addEventListener('pointermove', (event) => {
-    if (!touches.has(event.pointerId)) return
+    const last = touches.get(event.pointerId)
+    if (!last) return
+    if (touches.size === 1 && oneFingerPans()) {
+      if (!touchGesture && isClick(event.clientX - touchStart.x, event.clientY - touchStart.y))
+        return
+      touchGesture = true
+      view.pan(event.clientX - last.x, event.clientY - last.y, canvas.clientHeight)
+    }
     if (touches.size !== 2) {
       touches.set(event.pointerId, { x: event.clientX, y: event.clientY })
       return
@@ -328,17 +364,10 @@ function start({ canvas, renderer, scene, view }: Stage) {
     touches.set(event.pointerId, { x: event.clientX, y: event.clientY })
     const after = twoFingers()
     view.pan(after.x - before.x, after.y - before.y, canvas.clientHeight)
-    const rect = canvas.getBoundingClientRect()
-    const ndc = new Vector2(
-      ((after.x - rect.left) / rect.width) * 2 - 1,
-      1 - ((after.y - rect.top) / rect.height) * 2,
-    )
-    if (before.distance > 0) view.zoomAt(ndc, gestureZoomDelta(after.distance, before.distance))
+    if (before.distance > 0)
+      view.zoomAt(ndcAt(after.x, after.y), gestureZoomDelta(after.distance, before.distance))
     // The angle change in (-π, π].
-    twist += Math.atan2(Math.sin(after.angle - before.angle), Math.cos(after.angle - before.angle))
-    const { steps, rest } = twistSteps(twist)
-    twist = rest
-    if (steps) view.rotate(steps)
+    addTwist(Math.atan2(Math.sin(after.angle - before.angle), Math.cos(after.angle - before.angle)))
   })
   const endTouch = (event: PointerEvent) => touches.delete(event.pointerId)
   canvas.addEventListener('pointerup', endTouch)
@@ -490,6 +519,8 @@ function start({ canvas, renderer, scene, view }: Stage) {
       fadeLabels()
     })
     const selection = useSelectionStore(pinia)
+    // One finger marks or paints with a brush tool and pans with the select tool.
+    oneFingerPans = () => selection.tool === 'select'
     watch(() => (selection.tool === 'select' ? selection.parcel : null), outline.show)
     watch(() => selection.parcels, outlines.show)
     watch(
@@ -537,7 +568,7 @@ function start({ canvas, renderer, scene, view }: Stage) {
     }
     canvas.addEventListener('pointerdown', (event) => {
       if (event.button === 2) rightDown = { x: event.clientX, y: event.clientY }
-      if (event.button === 0 && selection.tool === 'select') {
+      if (event.button === 0 && selection.tool === 'select' && event.pointerType !== 'touch') {
         dragged = false
         marking = {
           x: event.clientX,
@@ -554,7 +585,7 @@ function start({ canvas, renderer, scene, view }: Stage) {
       brush(event)
     })
     canvas.addEventListener('pointermove', (event) => {
-      // A two-finger gesture ends the stroke and the marking of its first finger.
+      // A touch gesture ends the stroke and the marking of its first finger.
       if (touchGesture) {
         stroke = null
         marking = null
