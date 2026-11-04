@@ -47,9 +47,31 @@ export function wheelZoomDelta(deltaY: number, ctrlKey: boolean): number {
   return ctrlKey ? (deltaY * CAMERA.pinchFactor) / CAMERA.wheelFactor : deltaY
 }
 
+// True for a two-finger trackpad scroll, false for a mouse wheel.
+// WebKit and Chromium give a trackpad scroll wheelDeltaY = -3 * deltaY, a mouse wheel notch ±120.
+// Firefox gives a mouse wheel in lines (deltaMode 1). A sideways scroll comes from a trackpad.
+export function isTrackpadScroll(event: {
+  deltaX: number
+  deltaY: number
+  deltaMode: number
+  wheelDeltaY?: number
+}): boolean {
+  if (event.deltaMode !== 0) return false
+  if (event.deltaX !== 0) return true
+  return event.wheelDeltaY !== undefined && event.wheelDeltaY === -3 * event.deltaY
+}
+
 // Turns a WebKit gesture scale step into a deltaY, so that the zoom changes by scale / lastScale.
 export function gestureZoomDelta(scale: number, lastScale: number): number {
   return -Math.log(scale / lastScale) / CAMERA.wheelFactor
+}
+
+// Turns the angle change (radians) of a two-finger twist into the 90° steps for rotate.
+// The steps follow the whole twist rounded to 90°. Returns the steps and the rest.
+export function twistSteps(angle: number): { steps: number; rest: number } {
+  // || 0 turns -0 into 0.
+  const steps = Math.round(angle / (Math.PI / 2)) || 0
+  return { steps, rest: angle - (steps * Math.PI) / 2 }
 }
 
 export function clampTarget(target: { x: number; z: number }, size: number) {
@@ -73,7 +95,11 @@ function cornersOf(world: World, parcels: World['parcels']) {
   const n = world.size
   return parcels.flatMap((q) =>
     [0, 1].flatMap((dx) =>
-      [0, 1].map((dz) => ({ x: q.x + dx - n / 2, y: cornerY(world, q.x + dx, q.y + dz), z: q.y + dz - n / 2 })),
+      [0, 1].map((dz) => ({
+        x: q.x + dx - n / 2,
+        y: cornerY(world, q.x + dx, q.y + dz),
+        z: q.y + dz - n / 2,
+      })),
     ),
   )
 }
@@ -128,7 +154,14 @@ export function startView(world: World, props: WorldProps, aspect: number) {
 // Frames all land parcels inside the frame (NDC). The frame must contain the screen centre.
 // The zoom can be below CAMERA.minZoom.
 export function islandView(world: World, aspect: number, frame: Frame) {
-  return fitView(cornersOf(world, world.parcels.filter((q) => q.zone !== 'wasser')), aspect, frame)
+  return fitView(
+    cornersOf(
+      world,
+      world.parcels.filter((q) => q.zone !== 'wasser'),
+    ),
+    aspect,
+    frame,
+  )
 }
 
 const ground = new Plane(new Vector3(0, 1, 0), 0)
