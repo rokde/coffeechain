@@ -322,12 +322,10 @@ function start({ canvas, renderer, scene, view }: Stage) {
   canvas.addEventListener('pointerup', endDrag)
   canvas.addEventListener('pointercancel', endDrag)
 
-  // Touch: one finger pans (if oneFingerPans), two fingers pinch to zoom, move to pan
-  // and twist to rotate in 90° steps.
-  let oneFingerPans = () => true
-  // True once a touch pans or zooms, until the next press, so it does not click, mark or paint.
+  // Touch: two fingers pinch to zoom, move to pan and twist to rotate in 90° steps.
+  // One finger acts like the left mouse button.
+  // True from the second finger until the next press, so the gesture does not click, mark or paint.
   let touchGesture = false
-  let touchStart = { x: 0, y: 0 }
   const twoFingers = () => {
     const [a, b] = [...touches.values()] as [{ x: number; y: number }, { x: number; y: number }]
     return {
@@ -341,21 +339,13 @@ function start({ canvas, renderer, scene, view }: Stage) {
     if (touches.size === 0) touchGesture = false
     if (event.pointerType !== 'touch') return
     touches.set(event.pointerId, { x: event.clientX, y: event.clientY })
-    if (touches.size === 1) touchStart = { x: event.clientX, y: event.clientY }
     if (touches.size === 2) {
       touchGesture = true
       twist = 0
     }
   })
   canvas.addEventListener('pointermove', (event) => {
-    const last = touches.get(event.pointerId)
-    if (!last) return
-    if (touches.size === 1 && oneFingerPans()) {
-      if (!touchGesture && isClick(event.clientX - touchStart.x, event.clientY - touchStart.y))
-        return
-      touchGesture = true
-      view.pan(event.clientX - last.x, event.clientY - last.y, canvas.clientHeight)
-    }
+    if (!touches.has(event.pointerId)) return
     if (touches.size !== 2) {
       touches.set(event.pointerId, { x: event.clientX, y: event.clientY })
       return
@@ -519,8 +509,6 @@ function start({ canvas, renderer, scene, view }: Stage) {
       fadeLabels()
     })
     const selection = useSelectionStore(pinia)
-    // One finger marks or paints with a brush tool and pans with the select tool.
-    oneFingerPans = () => selection.tool === 'select'
     watch(() => (selection.tool === 'select' ? selection.parcel : null), outline.show)
     watch(() => selection.parcels, outlines.show)
     watch(
@@ -568,7 +556,7 @@ function start({ canvas, renderer, scene, view }: Stage) {
     }
     canvas.addEventListener('pointerdown', (event) => {
       if (event.button === 2) rightDown = { x: event.clientX, y: event.clientY }
-      if (event.button === 0 && selection.tool === 'select' && event.pointerType !== 'touch') {
+      if (event.button === 0 && selection.tool === 'select') {
         dragged = false
         marking = {
           x: event.clientX,
@@ -585,7 +573,7 @@ function start({ canvas, renderer, scene, view }: Stage) {
       brush(event)
     })
     canvas.addEventListener('pointermove', (event) => {
-      // A touch gesture ends the stroke and the marking of its first finger.
+      // A two-finger gesture ends the stroke and the marking of its first finger.
       if (touchGesture) {
         stroke = null
         marking = null
