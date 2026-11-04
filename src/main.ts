@@ -24,6 +24,7 @@ import {
   gestureZoomDelta,
   islandView,
   startView,
+  twistSteps,
   wheelZoomDelta,
 } from './render/camera'
 import {
@@ -294,6 +295,55 @@ function start({ canvas, renderer, scene, view }: Stage) {
   canvas.addEventListener('pointerup', endDrag)
   canvas.addEventListener('pointercancel', endDrag)
 
+  // Touch: two fingers pinch to zoom, move to pan and twist to rotate in 90° steps.
+  const touches = new Map<number, { x: number; y: number }>()
+  // True from the second finger until the next press, so the gesture does not click or paint.
+  let touchGesture = false
+  let twist = 0
+  const twoFingers = () => {
+    const [a, b] = [...touches.values()] as [{ x: number; y: number }, { x: number; y: number }]
+    return {
+      x: (a.x + b.x) / 2,
+      y: (a.y + b.y) / 2,
+      distance: Math.hypot(b.x - a.x, b.y - a.y),
+      angle: Math.atan2(b.y - a.y, b.x - a.x),
+    }
+  }
+  canvas.addEventListener('pointerdown', (event) => {
+    if (touches.size === 0) touchGesture = false
+    if (event.pointerType !== 'touch') return
+    touches.set(event.pointerId, { x: event.clientX, y: event.clientY })
+    if (touches.size === 2) {
+      touchGesture = true
+      twist = 0
+    }
+  })
+  canvas.addEventListener('pointermove', (event) => {
+    if (!touches.has(event.pointerId)) return
+    if (touches.size !== 2) {
+      touches.set(event.pointerId, { x: event.clientX, y: event.clientY })
+      return
+    }
+    const before = twoFingers()
+    touches.set(event.pointerId, { x: event.clientX, y: event.clientY })
+    const after = twoFingers()
+    view.pan(after.x - before.x, after.y - before.y, canvas.clientHeight)
+    const rect = canvas.getBoundingClientRect()
+    const ndc = new Vector2(
+      ((after.x - rect.left) / rect.width) * 2 - 1,
+      1 - ((after.y - rect.top) / rect.height) * 2,
+    )
+    if (before.distance > 0) view.zoomAt(ndc, gestureZoomDelta(after.distance, before.distance))
+    // The angle change in (-π, π].
+    twist += Math.atan2(Math.sin(after.angle - before.angle), Math.cos(after.angle - before.angle))
+    const { steps, rest } = twistSteps(twist)
+    twist = rest
+    if (steps) view.rotate(steps)
+  })
+  const endTouch = (event: PointerEvent) => touches.delete(event.pointerId)
+  canvas.addEventListener('pointerup', endTouch)
+  canvas.addEventListener('pointercancel', endTouch)
+
   const debugModels = new URLSearchParams(location.search).get('debug') === 'models'
   let placeLabels = () => {}
   // Checks the hover again for the last pointer position.
@@ -449,7 +499,7 @@ function start({ canvas, renderer, scene, view }: Stage) {
     )
     // Select tool: a click on the terrain selects and marks its parcel, a click beside it clears both.
     canvas.addEventListener('click', (event) => {
-      if (isBrushTool(selection.tool) || dragged) return
+      if (isBrushTool(selection.tool) || dragged || touchGesture) return
       const parcel = pickParcel(ndcOf(event), view.camera, terrain, world.size)
       // selectParcel only reads the state, so the cast of the readonly snapshot is safe.
       selectParcel(selection, store.state as GameState, parcel)
@@ -504,6 +554,11 @@ function start({ canvas, renderer, scene, view }: Stage) {
       brush(event)
     })
     canvas.addEventListener('pointermove', (event) => {
+      // A two-finger gesture ends the stroke and the marking of its first finger.
+      if (touchGesture) {
+        stroke = null
+        marking = null
+      }
       if (event.buttons & 1) {
         brush(event)
         mark(event)

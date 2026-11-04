@@ -16,6 +16,7 @@ import {
   START_REACH,
   START_YAW,
   startView,
+  twistSteps,
   wheelZoomDelta,
 } from './camera'
 import { parcelAt, pickParcel } from './picking'
@@ -37,6 +38,23 @@ describe('rotateYaw', () => {
     expect(rotateYaw(START_YAW, 1)).toBe(START_YAW + 90)
     expect(rotateYaw(START_YAW, -1)).toBe(START_YAW + 270)
     expect(rotateYaw(315, 1)).toBe(45)
+  })
+})
+
+describe('twistSteps', () => {
+  it('turns one step per 90° twist, from a twist of 45° on', () => {
+    expect(twistSteps(0.7).steps).toBe(0)
+    expect(twistSteps(0.8).steps).toBe(1)
+    expect(twistSteps(-0.8).steps).toBe(-1)
+    expect(twistSteps(Math.PI).steps).toBe(2)
+  })
+
+  it('keeps the rest, so a twist back below 45° undoes the step', () => {
+    const { steps, rest } = twistSteps(0.8)
+    expect(steps).toBe(1)
+    expect(rest).toBeCloseTo(0.8 - Math.PI / 2)
+    expect(twistSteps(rest + 0.1).steps).toBe(0)
+    expect(twistSteps(rest - 0.1).steps).toBe(-1)
   })
 })
 

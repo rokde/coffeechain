@@ -52,6 +52,14 @@ export function gestureZoomDelta(scale: number, lastScale: number): number {
   return -Math.log(scale / lastScale) / CAMERA.wheelFactor
 }
 
+// Turns the angle change (radians) of a two-finger twist into the 90° steps for rotate.
+// The steps follow the whole twist rounded to 90°. Returns the steps and the rest.
+export function twistSteps(angle: number): { steps: number; rest: number } {
+  // || 0 turns -0 into 0.
+  const steps = Math.round(angle / (Math.PI / 2)) || 0
+  return { steps, rest: angle - (steps * Math.PI) / 2 }
+}
+
 export function clampTarget(target: { x: number; z: number }, size: number) {
   const clamp = (v: number) => Math.min(size / 2, Math.max(-size / 2, v))
   return { x: clamp(target.x), z: clamp(target.z) }
