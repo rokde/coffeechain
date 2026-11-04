@@ -41,3 +41,9 @@ Nach Änderungen an Szene oder HUD: `npm run screenshot` (Playwright gegen den V
 
 ## Sprache
 Code, Bezeichner und Commits auf Englisch. Spieltexte auf Deutsch in `src/ui/i18n/de.json`.
+
+## Commits und PRs
+release-please erzeugt Version und `CHANGELOG.md` aus den Commits auf `main`. Deshalb:
+- Commit-Messages und PR-Titel im Conventional-Commits-Format: `feat: …`, `fix: …`, `perf: …` erscheinen im Changelog; `docs`, `style`, `chore`, `refactor`, `test`, `build`, `ci` nicht.
+- PRs per Squash mergen, der PR-Titel wird zur Commit-Message auf `main`. Die Prüfung „PR title“ muss grün sein.
+- Ging doch ein Commit ohne Präfix nach `main`: im Text des gemergten PRs einen Block `BEGIN_COMMIT_OVERRIDE` … `END_COMMIT_OVERRIDE` mit der korrekten Message ergänzen; der nächste Push auf `main` übernimmt ihn.
