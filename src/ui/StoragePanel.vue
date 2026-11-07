@@ -626,13 +626,14 @@ footer button {
     display: none;
   }
 }
-/* In the portrait layout the panel is a sheet below the top bar over the full width and covers the toolbar. */
+/* In the portrait layout the panel is a flush sheet from the 129 px top bar down and covers the toolbar. */
 @media (max-width: 760px) {
   .storage-panel {
-    inset: 148px 12px max(12px, env(safe-area-inset-bottom));
+    inset: calc(129px + env(safe-area-inset-top)) 0 0;
     width: auto;
     max-height: none;
-    padding: 14px 16px;
+    padding: 14px 16px max(14px, env(safe-area-inset-bottom));
+    border-radius: 0;
   }
 }
 @media (max-width: 480px) {

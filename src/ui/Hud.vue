@@ -554,16 +554,22 @@ button:active {
   .hud {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
     box-sizing: border-box;
   }
+  /* Flush with the screen edges: every pixel goes to the island and the panels. */
   .hud > .frame {
     position: relative;
     inset: auto;
     transform: none;
     width: auto;
     flex: 0 0 auto;
+    border-radius: 0;
+  }
+  .hud > .left-panel {
+    border-radius: 0 0 12px 12px;
+  }
+  .hud > .right-panel {
+    border-radius: 12px 12px 0 0;
   }
   /* The left panel keeps its content up to a third of the screen, the sheet takes what is left. */
   .hud > .right-panel {
@@ -581,7 +587,7 @@ button:active {
       'seed seed unit unit';
     align-items: center;
     gap: 4px;
-    padding: 8px;
+    padding: max(8px, env(safe-area-inset-top)) 8px 8px;
   }
   .time,
   .name {
@@ -641,7 +647,7 @@ button:active {
     display: grid;
     grid-template-columns: repeat(10, minmax(0, 1fr));
     gap: 4px;
-    padding: 6px;
+    padding: 6px 6px max(6px, env(safe-area-inset-bottom));
   }
   .toolbar button {
     height: 56px;
