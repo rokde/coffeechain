@@ -2122,5 +2122,10 @@ for (const [width, height] of [
     await page.getByTestId('storage-to-market').click()
     await expect(panel).toHaveCount(0)
     await expect(page.getByTestId('tool-market')).toHaveAttribute('aria-pressed', 'true')
+    // The I key opens and closes the panel.
+    await page.keyboard.press('i')
+    await expect(panel).toBeVisible()
+    await page.keyboard.press('i')
+    await expect(panel).toHaveCount(0)
   })
 }

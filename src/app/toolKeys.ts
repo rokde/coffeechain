@@ -21,6 +21,10 @@ export function overlayForKey(
   return overlays.find((overlay) => overlay.key === key.toUpperCase())?.id
 }
 
+// I opens or closes the storage panel.
+export const isStorageKey = (key: string, typing: boolean, helpOpen: boolean) =>
+  !typing && !helpOpen && key.toUpperCase() === 'I'
+
 export function installToolKeys(
   view: ReturnType<typeof useViewStore>,
   selection: ReturnType<typeof useSelectionStore>,
@@ -33,5 +37,6 @@ export function installToolKeys(
     if (id) pickTool(selection, store.state as GameState, id)
     const overlay = overlayForKey(event.key, typing, view.helpOpen)
     if (overlay) view.toggle(overlay)
+    if (isStorageKey(event.key, typing, view.helpOpen)) view.toggleStorage()
   })
 }

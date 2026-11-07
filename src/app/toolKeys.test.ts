@@ -4,7 +4,7 @@ import { isBuildable } from '../sim/farm/parcels'
 import type { GameState } from '../sim/state'
 import { useSelectionStore } from './selection'
 import { useGameStore } from './store'
-import { installToolKeys, overlayForKey, toolForKey } from './toolKeys'
+import { installToolKeys, isStorageKey, overlayForKey, toolForKey } from './toolKeys'
 import { useViewStore } from './view'
 
 vi.stubGlobal('location', { search: '?seed=42' })
@@ -144,5 +144,16 @@ describe('installToolKeys (S53)', () => {
     view.helpOpen = false
     press('o')
     expect(view.overlay).toBe('none')
+  })
+})
+
+describe('isStorageKey (#9)', () => {
+  it('I toggles the storage panel, unless the player types or the help is open', () => {
+    expect(isStorageKey('i', false, false)).toBe(true)
+    expect(isStorageKey('I', false, false)).toBe(true)
+    expect(isStorageKey('i', true, false)).toBe(false)
+    expect(isStorageKey('i', false, true)).toBe(false)
+    for (const key of [...Object.keys(map), ...other])
+      expect(isStorageKey(key, false, false)).toBe(false)
   })
 })

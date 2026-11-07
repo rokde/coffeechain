@@ -130,6 +130,7 @@ const phaseText = computed(() => {
             :title="storageText.full"
             :aria-label="storageText.full"
             :aria-pressed="view.storageOpen"
+            aria-keyshortcuts="I"
             @click="view.toggleStorage()"
           >
             <svg viewBox="0 0 16 16" width="22" height="22" aria-hidden="true">
