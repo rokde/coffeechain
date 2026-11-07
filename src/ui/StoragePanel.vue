@@ -4,6 +4,7 @@ import { pickTool, useSelectionStore } from '../app/selection'
 import { useGameStore } from '../app/store'
 import { useViewStore } from '../app/view'
 import { balance } from '../sim/balance'
+import { sellIncome } from '../sim/market/market'
 import type { GameState } from '../sim/state'
 import { storageOverview, type OverviewRow } from '../sim/storage/overview'
 import { formatDate, formatMonth } from './date'
@@ -16,7 +17,6 @@ const view = useViewStore()
 const selection = useSelectionStore()
 const cfg = balance()
 const min = cfg.storage.shelfLifeMinQuality
-const loss = cfg.storage.qualityLossPerMonth
 type Filter = keyof typeof t.filters
 const filter = ref<Filter>('all')
 const decimals = new Intl.NumberFormat('de-DE', {
@@ -61,6 +61,28 @@ function ready(r: OverviewRow) {
         main: formatDate(r.readyDay),
         sub: t.readyIn.replace('{days}', String(r.readyDay - today)),
       }
+}
+
+// Sells the whole row to the bank. Raw rows and ready washed rows only; a sale that pays 0 CC is blocked.
+function sale(r: OverviewRow) {
+  const state = game.state as GameState
+  const ready = !r.washed || (r.readyDay ?? 0) <= state.time.day
+  const income = ready ? sellIncome(state, r.variety, r.units, r.washed) : 0
+  return {
+    disabled: income === 0,
+    label: t.sellLabel.replace('{units}', String(r.units)).replace('{income}', formatMoney(income)),
+  }
+}
+
+function sell(r: OverviewRow) {
+  game.dispatch({
+    type: 'Sell',
+    variety: r.variety,
+    units: r.units,
+    ...(r.washed && { washed: true }),
+    quality: r.quality,
+    storedDay: r.storedDay,
+  })
 }
 
 function toMarket() {
@@ -138,7 +160,8 @@ function toMarket() {
           ><span class="r">{{ t.columns.loss }}</span
           ><span class="r">{{ t.columns.cost }}</span
           ><span>{{ t.columns.shelf }}</span
-          ><span>{{ t.columns.ready }}</span>
+          ><span>{{ t.columns.ready }}</span
+          ><span />
         </div>
         <template v-for="g in groups" :key="g.variety">
           <div class="group">
@@ -147,7 +170,7 @@ function toMarket() {
           </div>
           <div
             v-for="r in g.rows"
-            :key="`${r.washed}-${r.quality}-${r.readyDay}`"
+            :key="`${r.washed}-${r.quality}-${r.storedDay}-${r.readyDay}`"
             class="row"
             :class="shelf(r).cls"
             data-testid="storage-row"
@@ -156,6 +179,7 @@ function toMarket() {
               <span class="tag" :class="{ washed: r.washed }">{{
                 r.washed ? t.state.washed : t.state.raw
               }}</span>
+              <small class="age">{{ t.age.replace('{months}', String(r.age)) }}</small>
             </div>
             <div class="c-units r">
               <b>{{ r.units }}</b>
@@ -171,7 +195,7 @@ function toMarket() {
             <div class="stats-cells">
               <div class="r">
                 <span class="lab">{{ t.columns.loss }}</span
-                >{{ t.loss.replace('{loss}', String(loss)) }}
+                >{{ t.loss.replace('{loss}', String(r.loss)) }}
               </div>
               <div class="r">
                 <span class="lab">{{ t.columns.cost }}</span
@@ -190,6 +214,18 @@ function toMarket() {
                 >
                 <span v-else class="dash">–</span>
               </div>
+            </div>
+            <div class="c-sell">
+              <button
+                type="button"
+                data-testid="storage-sell"
+                :disabled="sale(r).disabled"
+                :title="sale(r).label"
+                :aria-label="sale(r).label"
+                @click="sell(r)"
+              >
+                {{ t.sell }}
+              </button>
             </div>
           </div>
         </template>
@@ -212,7 +248,7 @@ function toMarket() {
   position: absolute;
   top: 92px;
   right: 16px;
-  width: 640px;
+  width: 760px;
   max-height: calc(100vh - 92px - 16px - 82px - 12px);
   box-sizing: border-box;
   display: flex;
@@ -374,7 +410,7 @@ button.primary {
 .thead,
 .row {
   display: grid;
-  grid-template-columns: 78px 52px 88px 56px 66px 1fr 1fr;
+  grid-template-columns: 78px 52px 88px 56px 66px 1fr 1fr auto;
   column-gap: 8px;
   align-items: center;
 }
@@ -484,6 +520,21 @@ button.primary {
 .u {
   display: none;
 }
+.age {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  opacity: 0.75;
+}
+.c-sell button {
+  height: 32px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
 .dash {
   opacity: 0.45;
 }
@@ -534,12 +585,16 @@ footer button {
   }
   .row {
     grid-template-columns: auto 1fr auto;
-    grid-template-areas: 'state q units' 'stats stats stats';
+    grid-template-areas: 'state q units' 'stats stats stats' 'sell sell sell';
     gap: 8px 12px;
     padding: 10px 0;
   }
   .c-state {
     grid-area: state;
+  }
+  .c-sell {
+    grid-area: sell;
+    text-align: right;
   }
   .c-q {
     grid-area: q;

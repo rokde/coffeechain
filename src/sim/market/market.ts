@@ -28,6 +28,9 @@ export interface Sell {
   variety: Variety
   units: number
   washed?: true
+  // Both set: sells only the batches of this quality and storage day (one storage panel row).
+  quality?: number
+  storedDay?: number
 }
 
 export interface Buy {
@@ -141,7 +144,9 @@ export function sell(state: GameState, command: Sell): GameState {
   // A washed sale takes only ready washed batches. A raw sale takes only raw batches.
   const sellable = (b: Batch) =>
     b.variety === variety &&
-    (washed ? b.washed === true && !isRunning(b, state.time.day) : !b.washed)
+    (washed ? b.washed === true && !isRunning(b, state.time.day) : !b.washed) &&
+    (command.quality === undefined || b.quality === command.quality) &&
+    (command.storedDay === undefined || b.storedDay === command.storedDay)
   const stored = state.storage.batches.filter(sellable).reduce((sum, b) => sum + b.units, 0)
   if (units > stored) throw new Error(`Not enough ${variety} in storage: ${stored} < ${units}`)
 

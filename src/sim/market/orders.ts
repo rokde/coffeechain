@@ -72,16 +72,23 @@ export function deliverOrder(state: GameState, command: DeliverOrder): GameState
   const stock = deliverableUnits(state, order)
   if (stock < order.units) throw new Error(`Not enough units for order: ${stock} < ${order.units}`)
 
-  // Batches are in harvest order, so the first batches are the oldest.
-  const take = qualifies(order)
+  // The lowest qualifying quality goes first, so better coffee stays for better orders.
+  // Within one quality the oldest batch goes first.
+  const all = state.storage.batches
+  const picks = all
+    .map((b, i) => i)
+    .filter((i) => qualifies(order)(all[i]!))
+    .sort((a, b) => all[a]!.quality - all[b]!.quality || all[a]!.storedDay - all[b]!.storedDay)
+  const taken = new Map<number, number>()
   let rest = order.units
-  const batches = state.storage.batches
-    .map((b) => {
-      if (!take(b) || rest === 0) return b
-      const units = Math.min(rest, b.units)
-      rest -= units
-      return { ...b, units: b.units - units }
-    })
+  for (const i of picks) {
+    const units = Math.min(rest, all[i]!.units)
+    taken.set(i, units)
+    rest -= units
+    if (rest === 0) break
+  }
+  const batches = all
+    .map((b, i) => ({ ...b, units: b.units - (taken.get(i) ?? 0) }))
     .filter((b) => b.units > 0)
 
   return {

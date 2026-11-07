@@ -214,7 +214,8 @@ menge = basisErtrag(sorte)
 ### Lager (GDD 5.5, 6.5)
 - Kapazität in Einheiten, Start: 100 Einheiten (`NEU`). Ausbaustufen über das Bauen-Menü.
 - Lagerkosten pro Einheit und Monat, gebucht am Monatswechsel (Startwert: 0,02 CC, `NEU`).
-- Qualitätsverlust über die Zeit: Rohkaffee langsam (Startwert: −1 Qualitätspunkt pro Monat, am Monatswechsel, `NEU`).
+- Qualitätsverlust über die Zeit, am Monatswechsel, für Roh- und gewaschenen Kaffee. Er steigt mit dem Alter der Charge (Startwerte: −1 Qualitätspunkt pro Monat, ab 6 Monaten −2, ab 12 Monaten −3, `NEU`; Robert 2026-11-07 in #34). Jede Charge speichert ihren Einlagerungstag; Aufbereiten behält ihn.
+- Das Lager-Panel verkauft eine einzelne Zeile (Sorte, Zustand, Qualität, Einlagerungstag) an die Bank. Aufträge nehmen zuerst die niedrigste passende Qualität, bei gleicher Qualität die älteste Charge.
 - Ernte über Kapazität: Die Ernte wird nur so weit eingefahren, wie Platz ist. Der Rest bleibt an der Pflanze (und kann überreif werden). Der Spieler bekommt eine Meldung.
 
 ### Aufbereitung (GDD 5.4 Phase 4, 11.2)

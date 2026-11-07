@@ -161,7 +161,10 @@ describe('help: buildings and washing (S62)', () => {
         ...base.storage,
         startCapacity: 80,
         costPerUnitPerMonth: 0.1,
-        qualityLossPerMonth: 3,
+        qualityLossByAge: [
+          { fromMonth: 0, loss: 3 },
+          { fromMonth: 4, loss: 5 },
+        ],
         upgrades: [
           { capacity: 111, cost: 11, requiresPhase: 1 },
           { capacity: 222, cost: 22, requiresPhase: 2 },
@@ -194,7 +197,7 @@ describe('help: buildings and washing (S62)', () => {
     for (const text of [
       'Stufe 3: Gesamtplatz 333 Einheiten, Kosten 33 CC, ab Phase 4',
       'je angefangene 10 Einheiten',
-      'Qualitätspunkten: 3',
+      'Qualitätspunkten: 3 ab dem 1. Monat, 5 ab dem 5. Monat',
     ])
       expect(storage).toContain(text)
   })

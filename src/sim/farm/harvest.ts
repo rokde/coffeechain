@@ -75,7 +75,12 @@ export function harvest(state: GameState, command: Harvest): GameState {
       const quality = finalQuality(base, factor, harvestPro, cfg)
       const key = `${plant.variety}:${quality}`
       const batch = stored.get(key)
-      stored.set(key, { variety: plant.variety, units: (batch?.units ?? 0) + take, quality })
+      stored.set(key, {
+        variety: plant.variety,
+        units: (batch?.units ?? 0) + take,
+        quality,
+        storedDay: day,
+      })
     }
     if (take === units) delete plants[index]
     else

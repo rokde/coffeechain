@@ -86,7 +86,7 @@ export const balanceSchema = z.object({
     startCapacity: val(num),
     upgrades: val(z.array(z.object({ capacity: num, cost: num, requiresPhase: int }))),
     costPerUnitPerMonth: val(num),
-    qualityLossPerMonth: val(num),
+    qualityLossByAge: val(z.array(z.object({ fromMonth: int, loss: num })).min(1)),
     shelfLifeMinQuality: val(num),
   }),
   processing: z.object({

@@ -198,8 +198,8 @@ describe('washed batches (S46)', () => {
       ...base,
       storage: {
         batches: [
-          { variety: 'robusta', units: 3, quality: 80 },
-          { variety: 'robusta', units: 7, quality: 80, washed: true, readyDay: 24 },
+          { variety: 'robusta', units: 3, quality: 80, storedDay: 0 },
+          { variety: 'robusta', units: 7, quality: 80, storedDay: 0, washed: true, readyDay: 24 },
         ],
       },
       market: {
@@ -212,13 +212,15 @@ describe('washed batches (S46)', () => {
       version: 5,
       state: {
         ...v11(base),
-        storage: { batches: [{ variety: 'robusta', units: 3, quality: 80 }] },
+        storage: { batches: [{ variety: 'robusta', units: 3, quality: 80, storedDay: 0 }] },
       },
     })
-    const raw = { variety: 'robusta', units: 3, quality: 80, readyDay: 24 }
+    const raw = { variety: 'robusta', units: 3, quality: 80, storedDay: 0, readyDay: 24 }
     const bad = serialize({ ...base, storage: { batches: [raw as never] } }, 0)
     expect(() => deserialize(bad)).toThrow(/readyDay needs washed/)
-    expect(loadOld(old).storage.batches).toEqual([{ variety: 'robusta', units: 3, quality: 80 }])
+    expect(loadOld(old).storage.batches).toEqual([
+      { variety: 'robusta', units: 3, quality: 80, storedDay: 0 },
+    ])
   })
 })
 
@@ -384,8 +386,8 @@ describe('save timestamp (#3)', () => {
   it('AC-1: writes the version with savedAt, and readSave gives the state and savedAt', () => {
     const state = runDays(populated(), 60)
     const text = serialize(state, 1_700_000_000_000)
-    expect(JSON.parse(text)).toMatchObject({ version: 14, savedAt: 1_700_000_000_000 })
-    expect(SAVE_VERSION).toBe(14)
+    expect(JSON.parse(text)).toMatchObject({ version: 15, savedAt: 1_700_000_000_000 })
+    expect(SAVE_VERSION).toBe(15)
     expect(readSave(text)).toEqual({ state, savedAt: 1_700_000_000_000 })
     expect(deserialize(text)).toEqual(state)
   })
@@ -404,9 +406,9 @@ describe('save timestamp (#3)', () => {
 })
 
 describe('harvest quality (#21)', () => {
-  it('rejects a version 13 save', () => {
-    expect(MIN_SAVE_VERSION).toBe(14)
-    const text = JSON.stringify({ version: 13, state: createState(5) })
+  it('rejects a version 14 save', () => {
+    expect(MIN_SAVE_VERSION).toBe(15)
+    const text = JSON.stringify({ version: 14, state: createState(5) })
     expect(() => deserialize(text)).toThrow('unknown or old version')
   })
 
@@ -420,5 +422,20 @@ describe('harvest quality (#21)', () => {
     }
     const state = { ...base, farm: { ...base.farm, parcels: { 0: 0 }, plants: { 0: plant } } }
     expect(deserialize(serialize(state, 0)).farm.plants[0]).toEqual(plant)
+  })
+})
+
+describe('batch age (#9)', () => {
+  it('round-trips storedDay and rejects a batch without it', () => {
+    const base = createState(5)
+    const batch = { variety: 'robusta' as const, units: 3, quality: 80, storedDay: 42 }
+    const state = { ...base, storage: { batches: [batch] } }
+    expect(deserialize(serialize(state, 0)).storage.batches).toEqual([batch])
+    const old = { variety: batch.variety, units: batch.units, quality: batch.quality }
+    const text = JSON.stringify({
+      version: SAVE_VERSION,
+      state: { ...base, storage: { batches: [old] } },
+    })
+    expect(() => deserialize(text)).toThrow()
   })
 })

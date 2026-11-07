@@ -23,7 +23,10 @@ function setup() {
   const state = game.state as GameState
   game.replace({
     ...state,
-    storage: { ...state.storage, batches: [{ variety: 'robusta', units: 10, quality: 1 }] },
+    storage: {
+      ...state.storage,
+      batches: [{ variety: 'robusta', units: 10, quality: 1, storedDay: 0 }],
+    },
     market: { volumes: [], seeds: { robusta: 3 } },
   })
   return { pinia, game }
@@ -107,7 +110,10 @@ describe('MarketPanel (S20)', () => {
   it('S61 AC-1/AC-4: a sale that pays 0 CC disables the button and shows why', async () => {
     const { pinia, game } = setup()
     const state = game.state as GameState
-    game.replace({ ...state, storage: { batches: [{ variety: 'robusta', units: 2, quality: 1 }] } })
+    game.replace({
+      ...state,
+      storage: { batches: [{ variety: 'robusta', units: 2, quality: 1, storedDay: 0 }] },
+    })
     const html = block(await renderToString(createSSRApp(MarketPanel).use(pinia)), 'robusta')
     expect(field(html, 'sell')!.trim()).toBe('Verkaufen (2\u00a0Einh., 0\u00a0CC)')
     expect(sellButton(html)).toContain('disabled')
@@ -120,7 +126,13 @@ describe('MarketPanel (S20)', () => {
 
   it('S61 AC-2/AC-4: washed units that pay 0 CC disable the washed button and show why', async () => {
     const { pinia, game } = setup()
-    const washed = { variety: 'robusta' as const, units: 1, quality: 1, washed: true as const }
+    const washed = {
+      variety: 'robusta' as const,
+      units: 1,
+      quality: 1,
+      storedDay: 0,
+      washed: true as const,
+    }
     game.replace({ ...(game.state as GameState), storage: { batches: [washed] } })
     const html = block(await renderToString(createSSRApp(MarketPanel).use(pinia)), 'robusta')
     const btn = html.match(/<button[^>]*data-testid="market-sell-washed"[^>]*>/)![0]
@@ -209,7 +221,7 @@ describe('MarketPanel processing (S46)', () => {
     game.replace({
       ...state,
       buildings: building ? { 0: { kind: 'processing' } } : {},
-      storage: { batches: [{ variety: 'arabicaStandard', units: 60, quality: 100 }] },
+      storage: { batches: [{ variety: 'arabicaStandard', units: 60, quality: 100, storedDay: 0 }] },
     })
     return { pinia, game }
   }
@@ -251,7 +263,14 @@ describe('MarketPanel processing (S46)', () => {
       storage: {
         batches: [
           ...state.storage.batches,
-          { variety: 'arabicaStandard', units: 50, quality: 100, washed: true, readyDay: 431 },
+          {
+            variety: 'arabicaStandard',
+            units: 50,
+            quality: 100,
+            storedDay: 0,
+            washed: true,
+            readyDay: 431,
+          },
         ],
       },
     })
@@ -279,7 +298,7 @@ describe('MarketPanel processing (S46)', () => {
     sellAllWashed(game, 'arabicaStandard')
     expect(game.state.money).toBe(before + income)
     expect(game.state.storage.batches).toEqual([
-      { variety: 'arabicaStandard', units: 10, quality: 100 },
+      { variety: 'arabicaStandard', units: 10, quality: 100, storedDay: 0 },
     ])
   })
 
@@ -307,7 +326,7 @@ describe('MarketPanel processing (S46)', () => {
   it('S57 AC-5: the button shows the whole cost from processCost, the unit prices keep decimals', async () => {
     const { pinia, game } = processing(true)
     const state = game.state as GameState
-    const batches = [{ variety: 'arabicaStandard' as const, units: 7, quality: 100 }]
+    const batches = [{ variety: 'arabicaStandard' as const, units: 7, quality: 100, storedDay: 0 }]
     // 15 sold units lower the bank price to 0.8 × (1 − 0.3 × 15 / 300) = 0.788 CC.
     const volumes = [
       { kind: 'coffee' as const, variety: 'arabicaStandard' as const, day: 0, units: 15 },
@@ -329,6 +348,7 @@ describe('MarketPanel processing (S46)', () => {
       variety: 'arabicaPremium' as const,
       units: 5,
       quality: 90,
+      storedDay: 0,
       washed: true as const,
     }
     game.replace({ ...(game.state as GameState), storage: { batches: [washed] } })
@@ -355,7 +375,10 @@ describe('MarketPanel varieties (S48)', () => {
   it('AC-5: shows Arabica Premium with stock of it', async () => {
     const html = await render((s) => ({
       ...s,
-      storage: { ...s.storage, batches: [{ variety: 'arabicaPremium', units: 1, quality: 1 }] },
+      storage: {
+        ...s.storage,
+        batches: [{ variety: 'arabicaPremium', units: 1, quality: 1, storedDay: 0 }],
+      },
     }))
     expect(html).toContain('data-testid="market-arabicaPremium"')
     expect(html).not.toContain('data-testid="market-specialty"')

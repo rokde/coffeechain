@@ -27,7 +27,10 @@ describe('bookings from the game store', () => {
     const state = game.state as GameState
     game.replace({
       ...state,
-      storage: { ...state.storage, batches: [{ variety: 'robusta', units: 10, quality: 1 }] },
+      storage: {
+        ...state.storage,
+        batches: [{ variety: 'robusta', units: 10, quality: 1, storedDay: 0 }],
+      },
     })
     bookings.toasts = []
     const before = game.state.money

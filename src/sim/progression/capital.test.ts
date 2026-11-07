@@ -14,7 +14,7 @@ describe('capital (S47)', () => {
   it('AC-1: adds balance, stock at the bank buy price and the invested amount', () => {
     const state: GameState = {
       ...withMoney(100_000),
-      storage: { batches: [{ variety: 'robusta', units: 10, quality: 100 }] },
+      storage: { batches: [{ variety: 'robusta', units: 10, quality: 100, storedDay: 0 }] },
       invested: 5_000,
     }
     expect(capital(state)).toBe(105_400)
@@ -35,7 +35,7 @@ describe('capital (S47)', () => {
 })
 
 describe('capital with washed coffee (S47b)', () => {
-  const robusta = { variety: 'robusta' as const, units: 10, quality: 100 }
+  const robusta = { variety: 'robusta' as const, units: 10, quality: 100, storedDay: 0 }
   const withBatches = (batches: GameState['storage']['batches'], invested = 0): GameState => ({
     ...withMoney(100_000),
     storage: { batches },
@@ -56,7 +56,7 @@ describe('capital with washed coffee (S47b)', () => {
 
   it('AC-4: values washed stock at the market panel price', () => {
     const state = withBatches([
-      { variety: 'arabicaStandard', units: 20, quality: 100, washed: true },
+      { variety: 'arabicaStandard', units: 20, quality: 100, storedDay: 0, washed: true },
     ])
     expect(capital(state) - state.money).toBe(
       Math.round(20 * bankBuyPrice(state, 'arabicaStandard', 0, true) * 100),

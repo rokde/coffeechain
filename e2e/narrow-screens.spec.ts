@@ -39,7 +39,9 @@ for (const [width, height] of [
       save.state.time = { ...save.state.time, day: 3509, speed: 0 }
       save.state.money = 999_999_999_900
       save.state.buildings = { 0: { kind: 'storage' }, 1: { kind: 'storage' } }
-      save.state.storage = { batches: [{ variety: 'robusta', units: 120, quality: 100 }] }
+      save.state.storage = {
+        batches: [{ variety: 'robusta', units: 120, quality: 100, storedDay: 0 }],
+      }
       localStorage.setItem(key, JSON.stringify(save))
     })
     await page.getByTestId('save-panel-close').click()

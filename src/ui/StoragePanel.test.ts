@@ -30,23 +30,47 @@ describe('StoragePanel (#9)', () => {
 
   it('AC-2: shows one row per variety, state and quality with shelf life and cost', async () => {
     const html = await render([
-      { variety: 'robusta', units: 40, quality: 82 },
-      { variety: 'robusta', units: 10, quality: 69 },
-      { variety: 'arabicaStandard', units: 20, quality: 81, washed: true, readyDay: 65 },
-      { variety: 'arabicaStandard', units: 30, quality: 79, washed: true, readyDay: 87 },
+      { variety: 'robusta', units: 40, quality: 82, storedDay: 71 },
+      { variety: 'robusta', units: 10, quality: 69, storedDay: 0 },
+      {
+        variety: 'arabicaStandard',
+        units: 20,
+        quality: 81,
+        storedDay: 0,
+        washed: true,
+        readyDay: 65,
+      },
+      {
+        variety: 'arabicaStandard',
+        units: 30,
+        quality: 79,
+        storedDay: 0,
+        washed: true,
+        readyDay: 87,
+      },
     ])
     const rows = html.split('data-testid="storage-row"').slice(1).map(text)
     expect(rows).toHaveLength(4)
-    expect(rows[0]).toContain('roh 40')
+    expect(rows[0]).toContain('roh 0 Mon. alt 40')
     expect(rows[0]).toContain('Q 82')
     expect(rows[0]).toContain('0,80 CC')
-    expect(rows[0]).toContain('bis März, Jahr 2')
-    expect(rows[0]).toContain('noch 12 Mon.')
+    // 1 point per month for 6 months, then 2: 12 points above Q 70 last 9 month turns.
+    expect(rows[0]).toContain('bis Dezember')
+    expect(rows[0]).toContain('noch 9 Mon.')
+    expect(rows[1]).toContain('roh 2 Mon. alt 10')
     expect(rows[1]).toContain('unter Q 70')
     expect(rows[2]).toContain('✓ verkaufbar')
     expect(rows[2]).toContain('seit 6. März')
     expect(rows[3]).toContain('28. März')
     expect(rows[3]).toContain('in 16 Tagen')
+    // Each row sells on its own. A washed batch that is not ready cannot be sold yet.
+    const sell = (row: string) =>
+      html
+        .split('data-testid="storage-row"')
+        [row === 'last' ? 4 : 1]!.match(/<button[^>]*data-testid="storage-sell"[^>]*>/)![0]
+    expect(sell('first')).not.toContain('disabled')
+    expect(sell('first')).toContain('40 Einh. für')
+    expect(sell('last')).toContain('disabled')
     const booking = text(html.split('data-testid="storage-booking"')[1]!)
     expect(booking).toContain('Nächster Monatswechsel: 1. April')
     // 100 units cost exactly 2 CC, so the booking needs no rounding note.
@@ -55,7 +79,7 @@ describe('StoragePanel (#9)', () => {
   })
 
   it('AC-3: warns when the storage is full', async () => {
-    const html = await render([{ variety: 'robusta', units: 100, quality: 80 }])
+    const html = await render([{ variety: 'robusta', units: 100, quality: 80, storedDay: 0 }])
     expect(html).toContain('data-testid="storage-full"')
   })
 })

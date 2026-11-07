@@ -48,7 +48,9 @@ function render(
       nextFieldId: 2,
       plants,
     },
-    storage: { batches: used ? [{ variety: 'robusta', units: used, quality: 1 }] : [] },
+    storage: {
+      batches: used ? [{ variety: 'robusta', units: used, quality: 1, storedDay: 0 }] : [],
+    },
   })
   return renderToString(createSSRApp(MessagePanel).use(pinia))
 }

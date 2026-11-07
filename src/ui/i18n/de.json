@@ -263,6 +263,9 @@
     "shelfUnder": "unter Q {quality}",
     "shelfForever": "unbegrenzt",
     "readyIn": "in {days} Tagen",
+    "age": "{months} Mon. alt",
+    "sell": "Verkaufen",
+    "sellLabel": "{units} Einh. für {income} an die Bank verkaufen",
     "readyNow": "✓ verkaufbar",
     "readySince": "seit {date}",
     "empty": "Das Lager ist leer.",
@@ -364,10 +367,11 @@
       "Wähle mit „Auswählen“ eine eigene, leere Parzelle. Öffne „Bauen“. Klicke bei „Lager-Ausbau“ auf „Bauen“.",
       "Jeder „Lager-Ausbau“ ist ein neues Gebäude auf einer eigenen, leeren Parzelle. Er setzt den Gesamtplatz auf die nächste Stufe."
     ],
+    "lossStage": "{loss} ab dem {month}. Monat",
     "storageStage": "Stufe {n}: Gesamtplatz {capacity} Einheiten, Kosten {cost} CC, ab Phase {phase}.",
     "storageAfter": [
       "Das Lager kostet jeden Monat 1 CC je angefangene {units} Einheiten.",
-      "Kaffee im Lager verliert Qualität. Verlust je Monat in Qualitätspunkten: {loss}."
+      "Kaffee im Lager verliert Qualität, ältere Chargen mehr. Verlust je Monat in Qualitätspunkten: {loss}."
     ],
     "controlsHeading": "Steuerung",
     "toolKey": "Werkzeug {label}",

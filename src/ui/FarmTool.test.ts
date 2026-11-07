@@ -32,7 +32,9 @@ function setup(tool: FarmTool, money: number, ripe = false, used = 0) {
   const planted = dispatch(owned, { type: 'Plant', variety: 'robusta', parcels })
   const { cycleDays } = balance().varieties.robusta
   const hour = planted.time.day + (ripe ? cycleDays : 0)
-  const batches = used ? [{ variety: 'robusta' as const, units: used, quality: 100 }] : []
+  const batches = used
+    ? [{ variety: 'robusta' as const, units: used, quality: 100, storedDay: 0 }]
+    : []
   game.replace({ ...planted, money, time: { ...planted.time, day: hour }, storage: { batches } })
   const selection = useSelectionStore(pinia)
   selection.tool = tool
