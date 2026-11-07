@@ -15,7 +15,7 @@ function processingState(batches: Batch[] = []): GameState {
     money: 100_000,
     buildings: { 0: { kind: 'processing' } },
     storage: {
-      batches: [{ variety: 'arabicaStandard', units: 10, quality: 90 }, ...batches],
+      batches: [{ variety: 'arabicaStandard', units: 10, quality: 90, storedDay: 0 }, ...batches],
     },
   }
 }
@@ -33,25 +33,59 @@ describe('Process (S46)', () => {
     expect(raw(next)).toBe(0)
     expect(washed(next)).toBe(10)
     expect(next.storage.batches).toEqual([
-      { variety: 'arabicaStandard', units: 10, quality: 90, washed: true, readyDay: day },
+      {
+        variety: 'arabicaStandard',
+        units: 10,
+        quality: 90,
+        storedDay: 0,
+        washed: true,
+        readyDay: day,
+      },
     ])
     const market = { volumes: [], seeds: {} }
     expect(marketPrice(market, { kind: 'washed', variety: 'arabicaStandard' }, 1)).toBeCloseTo(1.5)
     expect(marketPrice(market, { kind: 'coffee', variety: 'arabicaStandard' }, 1)).toBeCloseTo(1.0)
   })
 
+  it('#9: washed batches keep the storage day of the raw batch', () => {
+    const state = processingState([
+      { variety: 'arabicaStandard', units: 5, quality: 80, storedDay: 20 },
+    ])
+    const later = { ...state, time: { ...state.time, day: 40 } }
+    const next = dispatch(later, { type: 'Process', variety: 'arabicaStandard', units: 15 })
+    expect(next.storage.batches.map((b) => b.storedDay)).toEqual([0, 20])
+  })
+
   it('AC-1: takes the oldest raw batches first and keeps their quality', () => {
-    const state = processingState([{ variety: 'arabicaStandard', units: 10, quality: 100 }])
+    const state = processingState([
+      { variety: 'arabicaStandard', units: 10, quality: 100, storedDay: 0 },
+    ])
     const next = dispatch(state, { type: 'Process', variety: 'arabicaStandard', units: 15 })
     expect(next.storage.batches).toEqual([
-      { variety: 'arabicaStandard', units: 5, quality: 100 },
-      { variety: 'arabicaStandard', units: 10, quality: 90, washed: true, readyDay: day },
-      { variety: 'arabicaStandard', units: 5, quality: 100, washed: true, readyDay: day },
+      { variety: 'arabicaStandard', units: 5, quality: 100, storedDay: 0 },
+      {
+        variety: 'arabicaStandard',
+        units: 10,
+        quality: 90,
+        storedDay: 0,
+        washed: true,
+        readyDay: day,
+      },
+      {
+        variety: 'arabicaStandard',
+        units: 5,
+        quality: 100,
+        storedDay: 0,
+        washed: true,
+        readyDay: day,
+      },
     ])
   })
 
   it('AC-2: throws and keeps the state for bad commands', () => {
-    const big = processingState([{ variety: 'arabicaStandard', units: 100, quality: 100 }])
+    const big = processingState([
+      { variety: 'arabicaStandard', units: 100, quality: 100, storedDay: 0 },
+    ])
     const running = dispatch(processingState(), {
       type: 'Process',
       variety: 'arabicaStandard',

@@ -17,9 +17,9 @@ function testState(): GameState {
     ...state,
     storage: {
       batches: [
-        { variety: 'robusta', units: 6, quality: 90 },
-        { variety: 'arabicaStandard', units: 5, quality: 100 },
-        { variety: 'robusta', units: 500, quality: 100 },
+        { variety: 'robusta', units: 6, quality: 90, storedDay: 0 },
+        { variety: 'arabicaStandard', units: 5, quality: 100, storedDay: 0 },
+        { variety: 'robusta', units: 500, quality: 100, storedDay: 0 },
       ],
     },
   }
@@ -39,8 +39,8 @@ describe('market', () => {
     // S57: the income of 3.98 CC rounds down to 3 CC.
     expect(next.money).toBe(state.money + 300)
     expect(next.storage.batches).toEqual([
-      { variety: 'arabicaStandard', units: 5, quality: 100 },
-      { variety: 'robusta', units: 496, quality: 100 },
+      { variety: 'arabicaStandard', units: 5, quality: 100, storedDay: 0 },
+      { variety: 'robusta', units: 496, quality: 100, storedDay: 0 },
     ])
   })
 
@@ -128,7 +128,9 @@ describe('market', () => {
     let state: GameState = {
       ...testState(),
       storage: {
-        batches: [{ variety: 'robusta', units: m.supplyUnitsForMinFactor, quality: 100 }],
+        batches: [
+          { variety: 'robusta', units: m.supplyUnitsForMinFactor, quality: 100, storedDay: 0 },
+        ],
       },
     }
     state = dispatch(state, { type: 'Sell', variety: 'robusta', units: m.supplyUnitsForMinFactor })
@@ -198,7 +200,9 @@ describe('market', () => {
         const units = 1 + Math.floor(rand() * 400)
         state = {
           ...state,
-          storage: { batches: [...state.storage.batches, { variety, units, quality: 100 }] },
+          storage: {
+            batches: [...state.storage.batches, { variety, units, quality: 100, storedDay: 0 }],
+          },
         }
         state = dispatch(state, { type: 'Sell', variety, units })
         state = dispatch(state, {
@@ -227,7 +231,7 @@ describe('washed coffee (S46)', () => {
   // 10 washed Arabica Standard units from a Process on day 0, and 5 raw units.
   function washedState(): GameState {
     const state = createState(1)
-    const raw = { variety: 'arabicaStandard' as const, units: 15, quality: 90 }
+    const raw = { variety: 'arabicaStandard' as const, units: 15, quality: 90, storedDay: 0 }
     return dispatch(
       { ...state, buildings: { 0: { kind: 'processing' } }, storage: { batches: [raw] } },
       { type: 'Process', variety: 'arabicaStandard', units: 10 },
@@ -244,7 +248,9 @@ describe('washed coffee (S46)', () => {
     expect(price).toBeCloseTo(1.5 * m.bankBuyFactor * (1 - 0.3 * (5 / 300)))
     const next = dispatch(state, sell(10, true))
     expect(next.money).toBe(state.money + Math.floor(10 * price) * 100)
-    expect(next.storage.batches).toEqual([{ variety: 'arabicaStandard', units: 5, quality: 90 }])
+    expect(next.storage.batches).toEqual([
+      { variety: 'arabicaStandard', units: 5, quality: 90, storedDay: 0 },
+    ])
     expect(next.market.volumes).toEqual([
       { kind: 'washed', variety: 'arabicaStandard', day: 30, units: 10 },
     ])
@@ -263,5 +269,29 @@ describe('washed coffee (S46)', () => {
     expect(() => dispatch(state, sell(11, true))).toThrow(/Not enough/)
     const washedSold = dispatch(state, sell(10, true))
     expect(washedSold.storage.batches.every((b) => !b.washed)).toBe(true)
+  })
+})
+
+describe('sell one row (#9)', () => {
+  it('sells only the batches of the given quality and storage day', () => {
+    const base = createState(1)
+    const batches = [
+      { variety: 'robusta' as const, units: 6, quality: 80, storedDay: 0 },
+      { variety: 'robusta' as const, units: 4, quality: 90, storedDay: 0 },
+      { variety: 'robusta' as const, units: 3, quality: 90, storedDay: 30 },
+    ]
+    const state = { ...base, storage: { batches } }
+    const next = dispatch(state, {
+      type: 'Sell',
+      variety: 'robusta',
+      units: 3,
+      quality: 90,
+      storedDay: 30,
+    })
+    expect(next.storage.batches).toEqual(batches.slice(0, 2))
+    expect(next.money).toBeGreaterThan(state.money)
+    expect(() =>
+      dispatch(state, { type: 'Sell', variety: 'robusta', units: 5, quality: 90, storedDay: 0 }),
+    ).toThrow(/Not enough/)
   })
 })

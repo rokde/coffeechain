@@ -2,15 +2,15 @@ import { balance } from '../balance'
 import type { GameState } from '../state'
 import { soilClassOf } from '../world/generate'
 import { monthlyStorageCost } from './overview'
+import { ageMonths, monthlyLoss } from './storage'
 
 // Applies the storage cost, the quality loss and the fallow recovery for one month.
 export function monthlyUpkeep(state: GameState): GameState {
   const cfg = balance()
   const cost = monthlyStorageCost(state.storage, cfg)
-  const loss = cfg.storage.qualityLossPerMonth
   const batches = state.storage.batches.map((batch) => ({
     ...batch,
-    quality: Math.max(0, batch.quality - loss),
+    quality: Math.max(0, batch.quality - monthlyLoss(ageMonths(batch, state.time.day, cfg), cfg)),
   }))
   const parcels = [...state.world.parcels]
   for (const key of Object.keys(state.farm.parcels)) {

@@ -54,7 +54,9 @@ function planted(plants: Record<number, Variety>, money = 50000): GameState {
 const withStock = (state: GameState, units: number, washed = false): GameState => ({
   ...state,
   storage: {
-    batches: units ? [{ variety: 'robusta', units, quality: 90, ...(washed && { washed }) }] : [],
+    batches: units
+      ? [{ variety: 'robusta', units, quality: 90, storedDay: 0, ...(washed && { washed }) }]
+      : [],
   },
 })
 

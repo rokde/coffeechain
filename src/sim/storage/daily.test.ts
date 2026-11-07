@@ -5,6 +5,7 @@ import { step } from '../time/time'
 import type { Parcel, World } from '../world/types'
 import { soilClassOf } from '../world/generate'
 import { monthlyUpkeep } from './daily'
+import { monthlyLoss } from './storage'
 
 const size = 4
 
@@ -34,8 +35,8 @@ function testState(): GameState {
     },
     storage: {
       batches: [
-        { variety: 'robusta', units: 30, quality: 100 },
-        { variety: 'arabicaStandard', units: 20, quality: 0.5 },
+        { variety: 'robusta', units: 30, quality: 100, storedDay: 0 },
+        { variety: 'arabicaStandard', units: 20, quality: 0.5, storedDay: 0 },
       ],
     },
   }
@@ -53,11 +54,11 @@ describe('monthlyUpkeep', () => {
   })
 
   it('AC-2: lowers batch quality and stops at 0', () => {
-    const loss = balance().storage.qualityLossPerMonth
+    const loss = monthlyLoss(0)
     expect(loss).toBeGreaterThanOrEqual(0.5)
     expect(monthlyUpkeep(testState()).storage.batches).toEqual([
-      { variety: 'robusta', units: 30, quality: 100 - loss },
-      { variety: 'arabicaStandard', units: 20, quality: 0 },
+      { variety: 'robusta', units: 30, quality: 100 - loss, storedDay: 0 },
+      { variety: 'arabicaStandard', units: 20, quality: 0, storedDay: 0 },
     ])
   })
 
@@ -97,7 +98,7 @@ describe('step', () => {
   })
 
   it('AC-3: changes nothing on days 1 to 29 and books the upkeep once on day 30', () => {
-    const loss = balance().storage.qualityLossPerMonth
+    const loss = monthlyLoss(0)
     const states = run(testState(), 60)
     for (let day = 1; day < 30; day++) expect(upkeep(states[day]!)).toEqual(upkeep(states[0]!))
     expect(upkeep(states[30]!)).toEqual(upkeep(monthlyUpkeep(states[0]!)))
@@ -105,11 +106,21 @@ describe('step', () => {
     expect(states[60]!.storage.batches[0]!.quality).toBe(100 - 2 * loss)
   })
 
+  it('#9: older batches lose more quality per month', () => {
+    const stages = balance().storage.qualityLossByAge
+    const old = stages[stages.length - 1]!
+    const state = testState()
+    const day = old.fromMonth * balance().time.daysPerMonth
+    const aged = { ...state, time: { ...state.time, day } }
+    expect(monthlyUpkeep(aged).storage.batches[0]!.quality).toBe(100 - old.loss)
+    expect(old.loss).toBeGreaterThan(monthlyLoss(0))
+  })
+
   it('AC-3: 50 units cost 1 CC per month, 51 units cost 2 CC', () => {
     const cost = (units: number) => {
       const state = {
         ...createState(1),
-        storage: { batches: [{ variety: 'robusta' as const, units, quality: 100 }] },
+        storage: { batches: [{ variety: 'robusta' as const, units, quality: 100, storedDay: 0 }] },
       }
       const states = run(state, 30)
       return state.money - states[30]!.money

@@ -129,7 +129,14 @@
       "src": "NEU"
     },
     "costPerUnitPerMonth": { "v": 0.02, "src": "NEU (GDD 6.5 nennt Lagerkosten ohne Wert)" },
-    "qualityLossPerMonth": { "v": 1, "src": "NEU (GDD 6.5: Rohkaffee verliert langsam)" },
+    "qualityLossByAge": {
+      "v": [
+        { "fromMonth": 0, "loss": 1 },
+        { "fromMonth": 6, "loss": 2 },
+        { "fromMonth": 12, "loss": 3 }
+      ],
+      "src": "NEU (GDD 6.5: Rohkaffee verliert langsam; Robert 2026-11-07 in #34: Verlust steigt mit dem Alter, nicht radikal)"
+    },
     "shelfLifeMinQuality": { "v": 70, "src": "NEU" }
   },
 

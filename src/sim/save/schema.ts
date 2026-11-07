@@ -66,6 +66,7 @@ export const gameStateSchema = z.object({
           variety,
           units: num,
           quality: num,
+          storedDay: int,
           washed: z.literal(true).optional(),
           readyDay: num.optional(),
         })

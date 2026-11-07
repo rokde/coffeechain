@@ -5,9 +5,9 @@ import { gameStateSchema } from './schema'
 // When a slice adds a state field: increase SAVE_VERSION by one and append one migration
 // to MIGRATIONS that fills the default value. Migration i turns version i + 1 into i + 2.
 // Never edit an old migration.
-export const SAVE_VERSION = 14
-// #21 adds pendingQuality without a migration, so older saves do not load.
-export const MIN_SAVE_VERSION = 14
+export const SAVE_VERSION = 15
+// #9 adds storedDay to each batch without a migration, so older saves do not load.
+export const MIN_SAVE_VERSION = 15
 
 export type Migration = (state: Record<string, unknown>) => Record<string, unknown>
 
@@ -99,6 +99,8 @@ export const MIGRATIONS: Migration[] = [
   // 12 -> 13: #3 adds savedAt to the envelope, not to the state. An older save has no savedAt.
   (state) => state,
   // 13 -> 14: #21 adds pendingQuality. MIN_SAVE_VERSION rejects the older saves.
+  (state) => state,
+  // 14 -> 15: #9 adds storedDay to each batch. MIN_SAVE_VERSION rejects the older saves.
   (state) => state,
 ]
 
