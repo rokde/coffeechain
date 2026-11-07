@@ -2,6 +2,7 @@ import type { Balance } from '../../../config/balance.schema'
 import { balance } from '../balance'
 import type { GameState } from '../state'
 import { overripeFactor } from './overripe'
+import { baseQuality, finalQuality } from './quality'
 import { computeYield } from './yield'
 
 // Units that a harvest of this parcel gives now, without the random roll. Null without a plant.
@@ -30,4 +31,30 @@ export function forecastYield(
     cfg,
   )
   return Math.floor(full * factor + 1e-9)
+}
+
+// Quality that a harvest of this parcel gives now, without the random roll. Null without a plant.
+export function forecastQuality(
+  state: GameState,
+  x: number,
+  y: number,
+  cfg: Balance = balance(),
+): number | null {
+  const index = y * state.world.size + x
+  const plant = state.farm.plants[index]
+  const parcel = state.world.parcels[index]
+  if (!plant || !parcel) return null
+  const base =
+    plant.pendingQuality ??
+    baseQuality(
+      {
+        soilClass: parcel.soilClass,
+        zoneMatches: parcel.zone === cfg.varieties[plant.variety].zone,
+        fertilized: plant.fertilized ?? false,
+        irrigated: plant.irrigated ?? false,
+      },
+      cfg,
+    )
+  const harvestPro = state.milestones.harvestProDay !== undefined
+  return finalQuality(base, overripeFactor(plant, state.time.day, cfg), harvestPro, cfg)
 }

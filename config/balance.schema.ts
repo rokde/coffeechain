@@ -72,13 +72,22 @@ export const balanceSchema = z.object({
       graceDays: val(num),
       lossPerDay: val(num),
     }),
+    quality: z.object({
+      base: val(num),
+      soilBonus: val(z.object({ karg: num, mittel: num, gut: num, sehrGut: num })),
+      offZonePenalty: val(num),
+      fertilizerBonus: val(num),
+      irrigationBonus: val(num),
+      randomRange: val(range),
+      overripePenalty: val(num),
+    }),
   }),
   storage: z.object({
     startCapacity: val(num),
-    harvestQuality: val(num),
     upgrades: val(z.array(z.object({ capacity: num, cost: num, requiresPhase: int }))),
-    costPerUnitPerDay: val(num),
-    qualityLossPerDayRaw: val(num),
+    costPerUnitPerMonth: val(num),
+    qualityLossByAge: val(z.array(z.object({ fromMonth: int, loss: num })).min(1)),
+    shelfLifeMinQuality: val(num),
   }),
   processing: z.object({
     washed: z.object({

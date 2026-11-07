@@ -101,12 +101,26 @@
       "enabled": { "v": true, "src": "NEU" },
       "graceDays": { "v": 60, "src": "Robert 2026-10-25 (#27, Faktor 30)" },
       "lossPerDay": { "v": 0.005, "src": "Robert 2026-10-25 (#27, Faktor 30)" }
+    },
+    "quality": {
+      "base": {
+        "v": 70,
+        "src": "NEU (Bastian 2026-11-01, #21: gleich für alle Sorten, der Sortenwert steckt im Preis)"
+      },
+      "soilBonus": {
+        "v": { "karg": -10, "mittel": -3, "gut": 2, "sehrGut": 5 },
+        "src": "NEU"
+      },
+      "offZonePenalty": { "v": 10, "src": "NEU" },
+      "fertilizerBonus": { "v": 3, "src": "NEU (GDD 5.4: Pflege)" },
+      "irrigationBonus": { "v": 5, "src": "NEU (GDD 5.4: Pflege)" },
+      "randomRange": { "v": [-5, 5], "src": "NEU (GDD 5.4 nennt Zufall ohne Wert)" },
+      "overripePenalty": { "v": 40, "src": "NEU" }
     }
   },
 
   "storage": {
     "startCapacity": { "v": 100, "src": "NEU" },
-    "harvestQuality": { "v": 100, "src": "NEU" },
     "upgrades": {
       "v": [
         { "capacity": 250, "cost": 150, "requiresPhase": 1 },
@@ -114,8 +128,16 @@
       ],
       "src": "NEU"
     },
-    "costPerUnitPerDay": { "v": 0.02, "src": "NEU (GDD 6.5 nennt Lagerkosten ohne Wert)" },
-    "qualityLossPerDayRaw": { "v": 1, "src": "NEU (GDD 6.5: Rohkaffee verliert langsam)" }
+    "costPerUnitPerMonth": { "v": 0.02, "src": "NEU (GDD 6.5 nennt Lagerkosten ohne Wert)" },
+    "qualityLossByAge": {
+      "v": [
+        { "fromMonth": 0, "loss": 1 },
+        { "fromMonth": 6, "loss": 2 },
+        { "fromMonth": 12, "loss": 3 }
+      ],
+      "src": "NEU (GDD 6.5: Rohkaffee verliert langsam; Robert 2026-11-07 in #34: Verlust steigt mit dem Alter, nicht radikal)"
+    },
+    "shelfLifeMinQuality": { "v": 70, "src": "NEU" }
   },
 
   "processing": {

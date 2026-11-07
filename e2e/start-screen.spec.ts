@@ -151,7 +151,7 @@ for (const [width, height] of sizes) {
   })
 }
 
-// #3 save list: a 3 minutes old autosave, a version 12 save in slot 1, invalid JSON in slot 2.
+// #3 save list: a 3 minutes old autosave, a save without savedAt in slot 1, invalid JSON in slot 2.
 async function writeSaves(page: Page) {
   await page.evaluate(async () => {
     const load = (path: string) => import(/* @vite-ignore */ path)
@@ -164,7 +164,8 @@ async function writeSaves(page: Page) {
     const set = (slot: string, text: string) =>
       localStorage.setItem(`coffeechain.save.${slot}`, text)
     set('autosave', serialize(at(48213, 70, 124000), Date.now() - 3 * 60_000))
-    set('slot-1', JSON.stringify({ version: 12, state: at(777, 431, 50000) }))
+    const { SAVE_VERSION } = await load('/src/sim/save/save.ts')
+    set('slot-1', JSON.stringify({ version: SAVE_VERSION, state: at(777, 431, 50000) }))
     set('slot-2', '{broken')
   })
 }
@@ -195,7 +196,7 @@ test('#3 save list AC-4, AC-5: the cards show the saves and a click starts slot 
   expect(errors).toEqual([])
 })
 
-test('#3 save list AC-4: no last played line for a version 12 autosave, no list without saves', async ({
+test('#3 save list AC-4: no last played line for an autosave without savedAt, no list without saves', async ({
   page,
 }) => {
   await page.goto('/')
@@ -204,8 +205,10 @@ test('#3 save list AC-4: no last played line for a version 12 autosave, no list 
   await page.evaluate(async () => {
     const load = (path: string) => import(/* @vite-ignore */ path)
     const { createState } = await load('/src/sim/state.ts')
+    const { SAVE_VERSION } = await load('/src/sim/save/save.ts')
     const state = createState(48213)
-    localStorage.setItem('coffeechain.save.autosave', JSON.stringify({ version: 12, state }))
+    const text = JSON.stringify({ version: SAVE_VERSION, state })
+    localStorage.setItem('coffeechain.save.autosave', text)
   })
   await page.reload()
   await expect(page.getByTestId('save-card-autosave')).toContainText('Welt #48213')

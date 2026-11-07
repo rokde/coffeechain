@@ -32,7 +32,7 @@ const varieties = computed(() =>
   ),
 )
 const price = (cc: number) => formatUnitPrice(Math.round(cc * 100))
-const hint = t.hint.replace('{units}', String(Math.round(1 / cfg.storage.costPerUnitPerDay)))
+const hint = t.hint.replace('{units}', String(Math.round(1 / cfg.storage.costPerUnitPerMonth)))
 const money = (cents: number) => formatMoney(cents).replace(' ', '\u00a0')
 // Label and zero-income reason of a sell button. A sale that pays 0 CC is blocked.
 const sale = (state: GameState, variety: Variety, units: number, washed: boolean) => {

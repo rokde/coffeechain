@@ -28,6 +28,7 @@ const plant = z.object({
   fertilized: z.boolean().optional(),
   irrigated: z.boolean().optional(),
   pendingUnits: num.optional(),
+  pendingQuality: num.optional(),
   overripeFactor: num.optional(),
 })
 
@@ -65,6 +66,7 @@ export const gameStateSchema = z.object({
           variety,
           units: num,
           quality: num,
+          storedDay: int,
           washed: z.literal(true).optional(),
           readyDay: num.optional(),
         })

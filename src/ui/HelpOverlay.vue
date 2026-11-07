@@ -46,8 +46,10 @@ const storage = [
   ),
   ...de.help.storageAfter.map((text) =>
     fill(text, {
-      units: Math.round(1 / st.costPerUnitPerDay),
-      loss: st.qualityLossPerDayRaw,
+      units: Math.round(1 / st.costPerUnitPerMonth),
+      loss: st.qualityLossByAge
+        .map((s) => fill(de.help.lossStage, { loss: s.loss, month: s.fromMonth + 1 }))
+        .join(', '),
     }),
   ),
 ]

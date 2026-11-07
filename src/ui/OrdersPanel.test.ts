@@ -26,7 +26,7 @@ function render(open: Order[], quality: number, units = 40) {
   const state = game.state as GameState
   game.replace({
     ...state,
-    storage: { batches: [{ variety: 'arabicaStandard', units, quality }] },
+    storage: { batches: [{ variety: 'arabicaStandard', units, quality, storedDay: 0 }] },
     orders: { open, nextId: 2 },
   })
   return renderToString(createSSRApp(OrdersPanel).use(pinia))

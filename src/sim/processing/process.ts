@@ -25,7 +25,7 @@ export const runningUntil = (state: GameState, variety: Variety) =>
 export const processCost = (units: number) =>
   roundCost(Math.round(units * balance().processing.washed.costPerUnit * 100))
 
-// Washes raw units of one variety. The washed batches keep the quality of the raw batches.
+// Washes raw units of one variety. The washed batches keep the quality and the age of the raw batches.
 export function process(state: GameState, command: Process): GameState {
   const cfg = balance()
   const { washed } = cfg.processing
@@ -53,7 +53,7 @@ export function process(state: GameState, command: Process): GameState {
       if (b.variety !== variety || b.washed || rest === 0) return b
       const take = Math.min(rest, b.units)
       rest -= take
-      made.push({ variety, units: take, quality: b.quality, washed: true, readyDay })
+      made.push({ ...b, units: take, washed: true, readyDay })
       return { ...b, units: b.units - take }
     })
     .filter((b) => b.units > 0)

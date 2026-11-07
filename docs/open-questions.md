@@ -19,18 +19,27 @@ Values in `config/balance.json` with `src: "NEU"` that the world generation (S3)
 | ~~`world.volcanoSize`~~ | – | Dropped by #17: the game has no volcano zone (Robert 2026-10-25). |
 | `parcels.maxSlope` | 0.15 | Which height difference (0–1) to one of the 4 neighbours makes a parcel too steep to buy? About 5 % of the land is steeper than 0.15. |
 | `soil.classMinQuality` | mittel 0.35, gut 0.5, sehrGut 0.7 | Which `soilQuality` (0–1) starts each soil class? Lower values are `karg`. |
-| `storage.harvestQuality` | 100 | Which quality does a new harvest batch get? v1 has no quality formula (PRD §12 point 4). |
+| ~~`storage.harvestQuality`~~ | – | Answered by #21: the quality formula in `farm.quality` replaces the constant. |
+| `farm.quality.base` | 70 for all varieties | Which quality points does a harvest start with? Deviates from GDD 5.2 (quality per variety): the quality is measured against the variety, like SCA for Arabica and Q Robusta for Robusta, and the variety's value is in its reference price. Derivation in #21. |
+| `farm.quality.soilBonus` | karg −10, mittel −3, gut +2, sehrGut +5 | How many quality points does each soil class add? |
+| `farm.quality.offZonePenalty` | 10 | How many quality points does a variety lose outside its zone? |
+| `farm.quality.fertilizerBonus` | 3 | How many quality points does fertilizing add? Fertilizer mainly raises the yield. |
+| `farm.quality.irrigationBonus` | 5 | How many quality points does irrigation add? Irrigation has no yield effect in v1, so this is its only effect. |
+| `farm.quality.randomRange` | −5 to +5 | How many quality points does chance add or take (seeded, GDD 5.4 "Zufall")? |
+| `farm.quality.overripePenalty` | 40 | How many quality points does a fully overripe harvest lose? The loss is this value × (1 − overripe factor), so one month past the grace period costs 6 points. |
 | `storage.upgrades` | 250 units / 150 CC / phase 1, 600 units / 400 CC / phase 2 | Are the capacity, the cost and the phase of each Lager-Ausbau stage correct? The capacity is the total after the stage. |
+| `storage.shelfLifeMinQuality` | 70 | Down to which quality does stored coffee count as keeping ("Haltbar bis" in the storage panel, #9)? Alternatives: the minimum quality of a matching order, or "quality in 3 months" instead of a date. |
+| `storage.qualityLossByAge` | 1 per month up to 6 months, 2 from 6 months, 3 from 12 months | How many quality points does stored coffee (raw and washed) lose per month, by the age of the batch? Robert 2026-11-07 in #34: the loss grows with the age, "not radical". Real green coffee loses about 0.5 points per month in jute and keeps its score for up to a year in airtight bags (research in #21). The higher value makes long storage a decision. |
 | `progression.harvestProMessageDays` | 30 | How many days does the Ernte-Profi message stay in the message panel? #27 changed it from 1 game day to 30 days. |
 | ~~`events.researchMaxCount`~~ | – | Dropped by #8: the game has no events (Robert 2026-10-25). |
-| `progression.harvestProQualityBonus` | 0.05 | The bonus has no visible effect: `storage.harvestQuality` is 100 and the cap is 100. It needs a quality formula (PRD §12 point 4). |
+| `progression.harvestProQualityBonus` | 0.05 | Raises the batch quality by 5 % from the harvest after the milestone, capped at 100. Since #21 it has a visible effect. |
 | `processing.washed.durationDays` | 30 | How many days does one washed batch take? The washed units are ready 30 days after `Process`. #27 changed it from 1 game day. |
 | `processing.washed.batchCapacity` | 50 | How many raw units can one washed batch take? The farm runs one batch at a time. |
 | `processing.washed.buildCost` | 150 | How many CC does the "Aufbereitung" building cost? The value is based on GDD 11.6. |
 | `orders.maxOpen` | 3 | How many buyer orders (S56) can be open at the same time? |
 | `orders.chancePerDay` | 0.01 | What is the chance that a buyer posts a new order on a day? #27 changed it from 0.3 per game day. |
 | `orders.units` | 20–60 | How many units does one order ask for? |
-| `orders.minQuality` | 70–95 | Which minimum quality does an order ask for? Now each harvest starts at quality 100. |
+| `orders.minQuality` | 70–95 | Which minimum quality does an order ask for? Since #21 every variety reaches 72 on Gut soil without care, 80 with both cares and at most 88 (92 with Ernte-Profi). Orders above 88 are rare luck until #22 revisits them. |
 | `orders.priceFactor` | 1.0–1.3 | Which factor on the reference price does an order pay? The bank pays 0.8. |
 | `orders.deadlineDays` | 150–300 | How many days after the post day can the player deliver? #27 changed it from 5–10 game days. |
 

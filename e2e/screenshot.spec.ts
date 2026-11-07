@@ -682,6 +682,7 @@ test('S18c: inspector yield forecast', async ({ page }) => {
   await page.getByTestId('tool-select').click()
   await canvas.click({ position })
   await expect(page.getByTestId('inspector-yield')).toHaveText(/^\d+ Einheiten$/)
+  await expect(page.getByTestId('inspector-quality')).toHaveText(/^\d+ von 100$/)
   await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
   await page.screenshot({ path: 'docs/progress/S18c.png' })
   expect(errors).toEqual([])
@@ -1340,7 +1341,9 @@ for (const [width, height, money] of [
       save.state.money = money
       // Two Lager-Ausbau stages give the largest capacity, 600.
       save.state.buildings = { 0: { kind: 'storage' }, 1: { kind: 'storage' } }
-      save.state.storage = { batches: [{ variety: 'robusta', units: 120, quality: 100 }] }
+      save.state.storage = {
+        batches: [{ variety: 'robusta', units: 120, quality: 100, storedDay: 0 }],
+      }
       localStorage.setItem(key, JSON.stringify(save))
     }, money)
     await page.getByTestId('save-panel-close').click()
@@ -1395,7 +1398,9 @@ test('S46: process raw coffee and sell washed coffee in the market panel', async
     save.state.time = { day: 10, speed: 0, stage: 'months' }
     save.state.farm.parcels = { [start.y * size + start.x]: 0 }
     save.state.buildings = { [start.y * size + start.x]: { kind: 'processing' } }
-    save.state.storage.batches = [{ variety: 'arabicaStandard', units: 60, quality: 100 }]
+    save.state.storage.batches = [
+      { variety: 'arabicaStandard', units: 60, quality: 100, storedDay: 0 },
+    ]
     localStorage.setItem(key, JSON.stringify(save))
   })
   await page.getByTestId('save-panel-close').click()
@@ -1515,8 +1520,8 @@ test('S56: deliver a buyer order in the market panel', async ({ page }) => {
     save.state.time = { ...save.state.time, day: 10, speed: 0 }
     save.state.storage = {
       batches: [
-        { variety: 'robusta', units: 20, quality: 75 },
-        { variety: 'robusta', units: 40, quality: 90 },
+        { variety: 'robusta', units: 20, quality: 75, storedDay: 0 },
+        { variety: 'robusta', units: 40, quality: 90, storedDay: 0 },
       ],
     }
     save.state.orders = {
@@ -1952,7 +1957,9 @@ test('S58b: a sale shows an income coin at the sell button', async ({ page }) =>
     const key = 'coffeechain.save.slot-1'
     const save = JSON.parse(localStorage.getItem(key)!)
     save.state.time = { day: 10, speed: 0, stage: 'months' }
-    save.state.storage.batches = [{ variety: 'arabicaStandard', units: 60, quality: 100 }]
+    save.state.storage.batches = [
+      { variety: 'arabicaStandard', units: 60, quality: 100, storedDay: 0 },
+    ]
     localStorage.setItem(key, JSON.stringify(save))
   })
   await page.getByTestId('save-panel-close').click()
@@ -2021,7 +2028,7 @@ for (const [width, height] of [
     await page.evaluate(() => {
       const key = 'coffeechain.save.slot-1'
       const save = JSON.parse(localStorage.getItem(key)!)
-      save.state.storage.batches = [{ variety: 'robusta', units: 2, quality: 1 }]
+      save.state.storage.batches = [{ variety: 'robusta', units: 2, quality: 1, storedDay: 0 }]
       localStorage.setItem(key, JSON.stringify(save))
     })
     await page.getByTestId('save-panel-close').click()
@@ -2069,5 +2076,80 @@ for (const [width, height] of [
     await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
     await page.screenshot({ path: `docs/progress/086-${width}.png` })
     expect(errors).toEqual([])
+  })
+}
+
+for (const [width, height] of [
+  [1440, 900],
+  [800, 900],
+  [390, 844],
+] as const) {
+  test(`#9: storage panel opens from the storage chip at ${width}x${height}`, async ({ page }) => {
+    await page.setViewportSize({ width, height })
+    await page.goto('/?seed=48213')
+    await page.getByTestId('save-button').click()
+    await page.getByTestId('save-slot-1').getByTestId('save-slot-save').click()
+    await page.evaluate(() => {
+      const key = 'coffeechain.save.slot-1'
+      const save = JSON.parse(localStorage.getItem(key)!)
+      // 12 March, year 2. One Lager-Ausbau gives 250 units.
+      save.state.time = { ...save.state.time, day: 431, speed: 0 }
+      save.state.buildings = { 0: { kind: 'storage' } }
+      save.state.storage = {
+        batches: [
+          { variety: 'robusta', units: 40, quality: 82, storedDay: 425 },
+          { variety: 'robusta', units: 32, quality: 74, storedDay: 300 },
+          { variety: 'robusta', units: 18, quality: 69, storedDay: 180 },
+          { variety: 'arabicaStandard', units: 24, quality: 85, storedDay: 0 },
+          {
+            variety: 'arabicaStandard',
+            units: 20,
+            quality: 81,
+            storedDay: 0,
+            washed: true,
+            readyDay: 424,
+          },
+          {
+            variety: 'arabicaStandard',
+            units: 30,
+            quality: 79,
+            storedDay: 0,
+            washed: true,
+            readyDay: 447,
+          },
+        ],
+      }
+      localStorage.setItem(key, JSON.stringify(save))
+    })
+    await page.getByTestId('save-panel-close').click()
+    await page.getByTestId('save-button').click()
+    await page.getByTestId('save-slot-1').getByTestId('save-slot-load').click()
+    await page.getByTestId('first-steps-close').click()
+
+    const chip = page.getByTestId('storage')
+    await chip.click()
+    await expect(chip).toHaveAttribute('aria-pressed', 'true')
+    const panel = page.getByTestId('storage-panel')
+    await expect(panel).toBeInViewport({ ratio: 1 })
+    await expect(page.getByTestId('storage-row')).toHaveCount(6)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      width,
+    )
+    await page.screenshot({ path: `docs/progress/storage-panel-${width}.png` })
+
+    // Selling one row removes only that row.
+    await page.getByTestId('storage-sell').first().click()
+    await expect(page.getByTestId('storage-row')).toHaveCount(5)
+
+    await page.getByTestId('storage-filter-washed').click()
+    await expect(page.getByTestId('storage-row')).toHaveCount(2)
+    await page.getByTestId('storage-to-market').click()
+    await expect(panel).toHaveCount(0)
+    await expect(page.getByTestId('tool-market')).toHaveAttribute('aria-pressed', 'true')
+    // The I key opens and closes the panel.
+    await page.keyboard.press('i')
+    await expect(panel).toBeVisible()
+    await page.keyboard.press('i')
+    await expect(panel).toHaveCount(0)
   })
 }

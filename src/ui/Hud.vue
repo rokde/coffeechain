@@ -28,6 +28,7 @@ import OverlayPanel from './OverlayPanel.vue'
 import ParcelTool from './ParcelTool.vue'
 import PlantTool from './PlantTool.vue'
 import SavePanel from './SavePanel.vue'
+import StoragePanel from './StoragePanel.vue'
 import { overlays, tools } from './toolbar'
 
 const store = useGameStore()
@@ -122,12 +123,17 @@ const phaseText = computed(() => {
               /></svg
             >{{ moneyText }}</span
           >
-          <span
+          <button
+            type="button"
+            class="storage-button"
             data-testid="storage"
             :title="storageText.full"
             :aria-label="storageText.full"
-            role="group"
-            ><svg viewBox="0 0 16 16" width="22" height="22" aria-hidden="true">
+            :aria-pressed="view.storageOpen"
+            aria-keyshortcuts="I"
+            @click="view.toggleStorage()"
+          >
+            <svg viewBox="0 0 16 16" width="22" height="22" aria-hidden="true">
               <path
                 d="M2 5h12v9H2z M2 5l1.5-3h9L14 5 M6 8h4"
                 fill="none"
@@ -138,8 +144,8 @@ const phaseText = computed(() => {
             ><span
               ><span class="storage-word">{{ storageText.word }}</span
               >{{ storageText.numbers }}</span
-            ></span
-          >
+            >
+          </button>
         </div>
         <span
           class="chip"
@@ -233,6 +239,7 @@ const phaseText = computed(() => {
       </div>
       <OverlayPanel />
     </nav>
+    <StoragePanel v-if="view.storageOpen" />
     <MoneyToasts />
     <FloatingCoins />
     <FpsMeter v-if="view.fpsVisible" />
@@ -306,11 +313,30 @@ const phaseText = computed(() => {
   font-size: 20px;
   font-weight: 700;
 }
-.money-group > span {
+.money-group > span,
+.storage-button {
   display: flex;
   align-items: center;
   gap: 6px;
   white-space: nowrap;
+}
+.storage-button {
+  height: 40px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 8%);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.storage-button[aria-pressed='true'] {
+  background: #f2c48d;
+  color: #2b2420;
+}
+.storage-button:focus-visible {
+  outline: 2px solid #f2c48d;
+  outline-offset: 2px;
 }
 .save-button {
   flex: none;
@@ -483,8 +509,13 @@ const phaseText = computed(() => {
   .money-group {
     gap: 6px;
   }
-  .money-group > span {
+  .money-group > span,
+  .storage-button {
     gap: 4px;
+  }
+  .storage-button {
+    height: 36px;
+    padding: 0 10px;
   }
   /* Values wider than 12 characters shrink, so the row stays on one line. */
   .money-long {

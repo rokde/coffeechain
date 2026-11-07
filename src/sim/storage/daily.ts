@@ -1,20 +1,16 @@
 import { balance } from '../balance'
-import { roundCost } from '../money'
 import type { GameState } from '../state'
 import { soilClassOf } from '../world/generate'
-import { storageUsed } from './storage'
+import { monthlyStorageCost } from './overview'
+import { ageMonths, monthlyLoss } from './storage'
 
 // Applies the storage cost, the quality loss and the fallow recovery for one month.
-// The "PerDay" config values apply per month since #27.
 export function monthlyUpkeep(state: GameState): GameState {
   const cfg = balance()
-  const cost = roundCost(
-    Math.round(storageUsed(state.storage) * cfg.storage.costPerUnitPerDay * 100),
-  )
-  const loss = cfg.storage.qualityLossPerDayRaw
+  const cost = monthlyStorageCost(state.storage, cfg)
   const batches = state.storage.batches.map((batch) => ({
     ...batch,
-    quality: Math.max(0, batch.quality - loss),
+    quality: Math.max(0, batch.quality - monthlyLoss(ageMonths(batch, state.time.day, cfg), cfg)),
   }))
   const parcels = [...state.world.parcels]
   for (const key of Object.keys(state.farm.parcels)) {

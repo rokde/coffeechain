@@ -85,7 +85,7 @@ describe('tool keys and tooltips (S53)', () => {
     const controls = html.split('data-testid="help-controls"')[1]!.split('</dl>')[0]!
     const rows = [...controls.matchAll(/<dt[^>]*>([^<]*)<\/dt><dd[^>]*>([^<]*)<\/dd>/g)]
     const old = rows.length - tools.length - overlays.length
-    expect(old).toBe(16)
+    expect(old).toBe(17)
     expect(rows.slice(old, old + tools.length).map((m) => [m[1], m[2]])).toEqual(
       tools.map((tool) => [tool.key, `Werkzeug ${tool.label}`]),
     )
@@ -160,8 +160,11 @@ describe('help: buildings and washing (S62)', () => {
       storage: {
         ...base.storage,
         startCapacity: 80,
-        costPerUnitPerDay: 0.1,
-        qualityLossPerDayRaw: 3,
+        costPerUnitPerMonth: 0.1,
+        qualityLossByAge: [
+          { fromMonth: 0, loss: 3 },
+          { fromMonth: 4, loss: 5 },
+        ],
         upgrades: [
           { capacity: 111, cost: 11, requiresPhase: 1 },
           { capacity: 222, cost: 22, requiresPhase: 2 },
@@ -194,7 +197,7 @@ describe('help: buildings and washing (S62)', () => {
     for (const text of [
       'Stufe 3: Gesamtplatz 333 Einheiten, Kosten 33 CC, ab Phase 4',
       'je angefangene 10 Einheiten',
-      'Qualitätspunkten: 3',
+      'Qualitätspunkten: 3 ab dem 1. Monat, 5 ab dem 5. Monat',
     ])
       expect(storage).toContain(text)
   })

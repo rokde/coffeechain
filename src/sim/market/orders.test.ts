@@ -33,8 +33,8 @@ function withOrder(): GameState {
     time: { ...base.time, day: 10 },
     storage: {
       batches: [
-        { variety: 'robusta', units: 20, quality: 75 },
-        { variety: 'robusta', units: 40, quality: 90 },
+        { variety: 'robusta', units: 20, quality: 75, storedDay: 0 },
+        { variety: 'robusta', units: 40, quality: 90, storedDay: 0 },
       ],
     },
     market: { volumes: [{ kind: 'coffee', variety: 'robusta', day: 10, units: 5 }], seeds: {} },
@@ -84,8 +84,8 @@ describe('orders (S56)', () => {
     const next = dispatch(state, { type: 'DeliverOrder', id: 4 })
     expect(next.money).toBe(state.money + 1800)
     expect(next.storage.batches).toEqual([
-      { variety: 'robusta', units: 20, quality: 75 },
-      { variety: 'robusta', units: 10, quality: 90 },
+      { variety: 'robusta', units: 20, quality: 75, storedDay: 0 },
+      { variety: 'robusta', units: 10, quality: 90, storedDay: 0 },
     ])
     expect(next.orders).toEqual({ open: [], nextId: 5 })
     expect(next.market).toEqual(state.market)
@@ -94,18 +94,35 @@ describe('orders (S56)', () => {
   it('AC-2: takes the oldest qualifying batch first', () => {
     const state = withOrder()
     const batches = [
-      { variety: 'robusta' as const, units: 25, quality: 85 },
-      { variety: 'arabicaStandard' as const, units: 50, quality: 99 },
-      { variety: 'robusta' as const, units: 25, quality: 95 },
+      { variety: 'robusta' as const, units: 25, quality: 85, storedDay: 0 },
+      { variety: 'arabicaStandard' as const, units: 50, quality: 99, storedDay: 0 },
+      { variety: 'robusta' as const, units: 25, quality: 95, storedDay: 0 },
     ]
     const next = dispatch({ ...state, storage: { batches } }, { type: 'DeliverOrder', id: 4 })
     expect(next.storage.batches).toEqual([batches[1], { ...batches[2], units: 20 }])
   })
 
+  it('#9: takes the lowest qualifying quality first, then the oldest batch', () => {
+    const state = withOrder()
+    const batches = [
+      { variety: 'robusta' as const, units: 25, quality: 95, storedDay: 0 },
+      { variety: 'robusta' as const, units: 10, quality: 85, storedDay: 5 },
+      { variety: 'robusta' as const, units: 10, quality: 85, storedDay: 1 },
+    ]
+    const next = dispatch({ ...state, storage: { batches } }, { type: 'DeliverOrder', id: 4 })
+    expect(next.storage.batches).toEqual([{ ...batches[0]!, units: 25 - 10 }])
+  })
+
   it('S46: never takes washed batches', () => {
     const state = withOrder()
-    const washed = { variety: 'robusta' as const, units: 25, quality: 95, washed: true as const }
-    const batches = [washed, { variety: 'robusta' as const, units: 30, quality: 95 }]
+    const washed = {
+      variety: 'robusta' as const,
+      units: 25,
+      quality: 95,
+      storedDay: 0,
+      washed: true as const,
+    }
+    const batches = [washed, { variety: 'robusta' as const, units: 30, quality: 95, storedDay: 0 }]
     const next = dispatch({ ...state, storage: { batches } }, { type: 'DeliverOrder', id: 4 })
     expect(deliverableUnits({ ...state, storage: { batches } }, order)).toBe(30)
     expect(next.storage.batches).toEqual([washed])
@@ -122,8 +139,8 @@ describe('orders (S56)', () => {
       ...state,
       storage: {
         batches: [
-          { variety: 'robusta' as const, units: 20, quality: 75 },
-          { variety: 'robusta' as const, units: 20, quality: 90 },
+          { variety: 'robusta' as const, units: 20, quality: 75, storedDay: 0 },
+          { variety: 'robusta' as const, units: 20, quality: 90, storedDay: 0 },
         ],
       },
     }

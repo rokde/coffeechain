@@ -29,7 +29,9 @@ function setup(stages: number, used = 0) {
   game.replace({
     ...next,
     money: state.money,
-    storage: { batches: used ? [{ variety: 'robusta', units: used, quality: 100 }] : [] },
+    storage: {
+      batches: used ? [{ variety: 'robusta', units: used, quality: 100, storedDay: 0 }] : [],
+    },
   })
   return pinia
 }

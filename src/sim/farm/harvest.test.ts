@@ -6,7 +6,8 @@ import { createState, type GameState } from '../state'
 import { storageUsed } from '../storage/storage'
 import { soilClassOf } from '../world/generate'
 import type { Parcel, World } from '../world/types'
-import { harvestQuality, harvestSeed } from './harvest'
+import { harvestSeed } from './harvest'
+import { baseQuality, finalQuality, qualityRandom } from './quality'
 import { computeYield, yieldRandom } from './yield'
 
 const size = 4
@@ -58,6 +59,23 @@ function expectedYield(state: GameState, index: number, fertilized: boolean): nu
   })
 }
 
+// Quality points before overripeness. The quality roll is the second draw after the yield roll.
+function expectedBase(state: GameState, index: number, care = {}): number {
+  const rng = mulberry32(harvestSeed(seed, state.time.day, index))
+  yieldRandom(rng)
+  return baseQuality({
+    soilClass: 'gut',
+    zoneMatches: true,
+    fertilized: false,
+    irrigated: false,
+    ...care,
+    random: qualityRandom(rng),
+  })
+}
+
+const expectedQuality = (state: GameState, index: number) =>
+  finalQuality(expectedBase(state, index), 1, false)
+
 describe('Harvest', () => {
   it('AC-1: stores the seeded yield as one batch and removes the plant', () => {
     const state = testState()
@@ -65,18 +83,53 @@ describe('Harvest', () => {
     const next = harvest(state, [0, 0])
     const units = expectedYield(state, 0, false)
     expect(next.storage.batches).toEqual([
-      { variety: 'robusta', units, quality: balance().storage.harvestQuality },
+      { variety: 'robusta', units, quality: expectedQuality(state, 0), storedDay: state.time.day },
     ])
     expect(next.farm.plants[0]).toBeUndefined()
     expect(harvest(state, [0, 0]).storage).toEqual(next.storage)
     expect(state).toEqual(before)
   })
 
-  it('AC-1: puts all units of one variety into one batch', () => {
+  it('#21: puts the units of one variety and quality into one batch', () => {
+    const { quality } = balance().farm
+    const range = quality.randomRange
+    quality.randomRange = [0, 0]
+    try {
+      const state = testState()
+      const units = expectedYield(state, 0, false) + expectedYield(state, 1, false)
+      expect(harvest(state, [0, 0], [1, 0]).storage.batches).toEqual([
+        { variety: 'robusta', units, quality: 72, storedDay: state.time.day },
+      ])
+
+      state.farm.plants[1] = { ...state.farm.plants[1]!, irrigated: true }
+      expect(harvest(state, [0, 0], [1, 0]).storage.batches).toEqual([
+        {
+          variety: 'robusta',
+          units: expectedYield(state, 0, false),
+          quality: 72,
+          storedDay: state.time.day,
+        },
+        {
+          variety: 'robusta',
+          units: expectedYield(state, 1, false),
+          quality: 77,
+          storedDay: state.time.day,
+        },
+      ])
+    } finally {
+      quality.randomRange = range
+    }
+  })
+
+  it('#21: care raises the quality, the seed fixes the random part', () => {
     const state = testState()
-    const next = harvest(state, [0, 0], [1, 0])
-    const units = expectedYield(state, 0, false) + expectedYield(state, 1, false)
-    expect(next.storage.batches).toEqual([{ variety: 'robusta', units, quality: 100 }])
+    state.farm.plants[0] = { ...state.farm.plants[0]!, fertilized: true, irrigated: true }
+    const quality = harvest(state, [0, 0]).storage.batches[0]!.quality
+    expect(quality).toBe(
+      finalQuality(expectedBase(state, 0, { fertilized: true, irrigated: true }), 1, false),
+    )
+    expect(quality).toBeGreaterThan(harvest(testState(), [0, 0]).storage.batches[0]!.quality)
+    expect(Number.isInteger(quality)).toBe(true)
   })
 
   it('AC-2: a fertilized plant gives the fertilized yield, which is higher', () => {
@@ -108,7 +161,9 @@ describe('capacity limit', () => {
     const state = testState()
     return {
       ...state,
-      storage: { batches: [{ variety: 'robusta' as const, units: used, quality: 100 }] },
+      storage: {
+        batches: [{ variety: 'robusta' as const, units: used, quality: 100, storedDay: 0 }],
+      },
     }
   }
 
@@ -118,18 +173,27 @@ describe('capacity limit', () => {
     const units = expectedYield(state, 0, false)
     expect(units).toBeGreaterThan(10)
     const next = harvest(state, [0, 0])
-    expect(next.storage.batches[1]).toEqual({ variety: 'robusta', units: 10, quality: 100 })
+    const quality = expectedQuality(state, 0)
+    expect(next.storage.batches[1]).toEqual({
+      variety: 'robusta',
+      units: 10,
+      quality,
+      storedDay: state.time.day,
+    })
     expect(storageUsed(next.storage)).toBe(100)
     expect(next.farm.plants[0]).toEqual({
       variety: 'robusta',
       plantedDay: 5,
       pendingUnits: units - 10,
+      pendingQuality: expectedBase(state, 0),
     })
 
     const emptied = { ...next, storage: { batches: [] } }
     const later = { ...emptied, time: { ...emptied.time, day: emptied.time.day + 3 } }
     const last = harvest(later, [0, 0])
-    expect(last.storage.batches).toEqual([{ variety: 'robusta', units: units - 10, quality: 100 }])
+    expect(last.storage.batches).toEqual([
+      { variety: 'robusta', units: units - 10, quality, storedDay: later.time.day },
+    ])
     expect(last.farm.plants[0]).toBeUndefined()
     const loss = balance().soil.fertilityLossPerHarvest
     expect(last.world.parcels[0]!.fertility).toBe(50 - loss)
@@ -148,7 +212,12 @@ describe('capacity limit', () => {
     const units = expectedYield(upgraded, 0, false)
     expect(units).toBeGreaterThan(10)
     const next = harvest(upgraded, [0, 0])
-    expect(next.storage.batches[1]).toEqual({ variety: 'robusta', units: 10, quality: 100 })
+    expect(next.storage.batches[1]).toEqual({
+      variety: 'robusta',
+      units: 10,
+      quality: expectedQuality(upgraded, 0),
+      storedDay: upgraded.time.day,
+    })
     expect(storageUsed(next.storage)).toBe(250)
     expect(next.farm.plants[0]!.pendingUnits).toBe(units - 10)
   })
@@ -222,6 +291,13 @@ describe('overripe', () => {
     expect(harvest(grace, [0, 0]).storage.batches[0]!.units).toBe(expectedYield(grace, 0, false))
   })
 
+  it('#21: overripeness lowers the quality', () => {
+    const state = late(1)
+    const quality = harvest(state, [0, 0]).storage.batches[0]!.quality
+    expect(quality).toBe(finalQuality(expectedBase(state, 0), 0.85, false))
+    expect(quality).toBeLessThan(expectedQuality(state, 0))
+  })
+
   it('AC-4: disabled, a harvest 150 days after ripeness gives the full yield', () => {
     cfg.farm.overripe.enabled = false
     const state = at(testState(), testState().time.day + 150)
@@ -232,7 +308,9 @@ describe('overripe', () => {
     const state = late(1)
     const almostFull = {
       ...state,
-      storage: { batches: [{ variety: 'robusta' as const, units: 95, quality: 100 }] },
+      storage: {
+        batches: [{ variety: 'robusta' as const, units: 95, quality: 100, storedDay: 0 }],
+      },
     }
     const next = harvest(almostFull, [0, 0])
     const first = Math.floor(expectedYield(state, 0, false) * 0.85 + 1e-9)
@@ -244,7 +322,12 @@ describe('overripe', () => {
     const emptied = at({ ...next, storage: { batches: [] } }, next.time.day + month)
     const last = harvest(emptied, [0, 0])
     expect(last.storage.batches).toEqual([
-      { variety: 'robusta', units: Math.floor((pending * 0.7) / 0.85 + 1e-9), quality: 100 },
+      {
+        variety: 'robusta',
+        units: Math.floor((pending * 0.7) / 0.85 + 1e-9),
+        quality: finalQuality(expectedBase(state, 0), 0.7, false),
+        storedDay: emptied.time.day,
+      },
     ])
     expect(last.farm.plants[0]).toBeUndefined()
 
@@ -275,7 +358,7 @@ describe('Harvest milestone (S49)', () => {
     expect(next.milestones.harvested).toBe(stored(next))
     const full = {
       ...state,
-      storage: { batches: [{ variety: 'robusta' as const, units: 100, quality: 1 }] },
+      storage: { batches: [{ variety: 'robusta' as const, units: 100, quality: 1, storedDay: 0 }] },
     }
     expect(harvest(full, [0, 0]).milestones.harvested).toBe(0)
   })
@@ -290,30 +373,12 @@ describe('Harvest milestone (S49)', () => {
     expect(harvest(testState(), [0, 0]).milestones.harvestProDay).toBeUndefined()
   })
 
-  it('AC-3: applies the bonus from the next harvest, capped at 100', () => {
-    const state = testState()
-    const cfg = (q: number) => ({
-      ...balance(),
-      storage: { ...balance().storage, harvestQuality: q },
-    })
-    const pro = withMilestones(state, { harvested: 5000, harvestProDay: 1 })
-    expect(harvestQuality(state, cfg(80))).toBe(80)
-    expect(harvestQuality(pro, cfg(80))).toBeCloseTo(84)
-    expect(harvestQuality(pro, cfg(100))).toBe(100)
-  })
-
-  it('AC-3: harvest() stores 80 at the milestone and 84 after it', () => {
-    const { storage } = balance()
-    const original = storage.harvestQuality
-    storage.harvestQuality = 80
-    try {
-      const reach = harvest(withMilestones(testState(), { harvested: 999 }), [0, 0])
-      expect(reach.milestones.harvestProDay).toBeDefined()
-      expect(reach.storage.batches[0]!.quality).toBe(80)
-      const next = harvest(reach, [1, 0])
-      expect(next.storage.batches[1]!.quality).toBeCloseTo(84)
-    } finally {
-      storage.harvestQuality = original
-    }
+  it('AC-3: the bonus applies from the harvest after the milestone', () => {
+    const state = withMilestones(testState(), { harvested: 999 })
+    const reach = harvest(state, [0, 0])
+    expect(reach.milestones.harvestProDay).toBeDefined()
+    expect(reach.storage.batches[0]!.quality).toBe(expectedQuality(state, 0))
+    const next = harvest(reach, [1, 0])
+    expect(next.storage.batches[1]!.quality).toBe(finalQuality(expectedBase(reach, 1), 1, true))
   })
 })

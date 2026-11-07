@@ -71,9 +71,9 @@ describe('Hud money group (S58c)', () => {
     const html = await renderToString(createSSRApp(Hud).use(pinia))
     const group = html.match(/<div[^>]*data-testid="money-group"[^>]*>(.*?)<\/div>/)![1]!
     // Money is the first item and storage the second one.
-    const [money, storage] = group.split(/(?=<span[^>]*data-testid="storage")/)
+    const [money, storage] = group.split(/(?=<button[^>]*data-testid="storage")/)
     const item = (html: string) => {
-      const inner = html.replace(/^<span[^>]*>/, '')
+      const inner = html.replace(/^<(span|button)[^>]*>/, '')
       const svgs = inner.match(/<svg[^>]*>/g) ?? []
       return {
         icons: svgs.length,
@@ -85,9 +85,9 @@ describe('Hud money group (S58c)', () => {
       }
     }
     expect(item(storage!)).toEqual({ icons: 1, hidden: true, text: 'Lager 0 / 100' })
-    // At 480 px or less the word "Lager" is hidden. The label keeps it, and the role makes screen readers speak it.
+    // At 480 px or less the word "Lager" is hidden. The label keeps it. The button opens the storage panel.
     expect(storage).toMatch(
-      /^<span[^>]*title="Lager 0 \/ 100" aria-label="Lager 0 \/ 100" role="group"/,
+      /^<button[^>]*title="Lager 0 \/ 100" aria-label="Lager 0 \/ 100" aria-pressed="false"/,
     )
     expect(item(money!)).toMatchObject({ icons: 1, hidden: true })
     expect(item(money!).text).toBe('500 CC')

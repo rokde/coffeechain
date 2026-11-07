@@ -4,7 +4,7 @@ import { createSSRApp } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import { useSaveListStore } from '../app/saveList'
 import { useStartScreenStore } from '../app/startScreen'
-import { deserialize, serialize } from '../sim/save/save'
+import { deserialize, SAVE_VERSION, serialize } from '../sim/save/save'
 import { createState, type GameState } from '../sim/state'
 import StartScreen from './StartScreen.vue'
 
@@ -24,7 +24,8 @@ const at = (seed: number, day: number, money: number): GameState => {
   const state = createState(seed)
   return { ...state, time: { ...state.time, day }, money }
 }
-const v12 = (state: GameState) => JSON.stringify({ version: 12, state })
+// A save without savedAt.
+const untimed = (state: GameState) => JSON.stringify({ version: SAVE_VERSION, state })
 
 async function render(slots: Record<string, string>) {
   for (const [slot, text] of Object.entries(slots)) local.set(`coffeechain.save.${slot}`, text)
@@ -51,7 +52,7 @@ describe('SaveList (#3)', () => {
   it('AC-4: shows four cards in order with date, world, CC and time', async () => {
     const html = await render({
       autosave: serialize(at(48213, 70, 124000), NOW - 3 * 60_000),
-      'slot-1': v12(at(777, 431, 50000)),
+      'slot-1': untimed(at(777, 431, 50000)),
       'slot-2': '{broken',
     })
     expect(html).toContain('data-testid="save-list"')
@@ -72,7 +73,7 @@ describe('SaveList (#3)', () => {
   it('AC-5: only the readable cards are buttons', async () => {
     const html = await render({
       autosave: serialize(at(48213, 70, 124000), NOW),
-      'slot-1': v12(at(777, 431, 50000)),
+      'slot-1': untimed(at(777, 431, 50000)),
       'slot-2': '{broken',
     })
     expect(opening(html, 'autosave')).toBe('button')
@@ -81,8 +82,8 @@ describe('SaveList (#3)', () => {
     expect(opening(html, 'slot-3')).toBe('div')
   })
 
-  it('AC-4: a version 12 autosave shows no last played line', async () => {
-    const html = await render({ autosave: v12(at(48213, 70, 124000)) })
+  it('AC-4: an autosave without savedAt shows no last played line', async () => {
+    const html = await render({ autosave: untimed(at(48213, 70, 124000)) })
     expect(html).toContain('Willkommen zurück')
     expect(html).not.toContain('start-last-played')
     expect(card(html, 'autosave')).toBe('Automatisch 11. März, Jahr 1 Welt #48213 · 1.240 CC')

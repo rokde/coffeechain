@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useSelectionStore } from '../app/selection'
 import { useGameStore } from '../app/store'
 import { quoteCare } from '../sim/farm/care'
-import { forecastYield } from '../sim/farm/forecast'
+import { forecastQuality, forecastYield } from '../sim/farm/forecast'
 import { isFree, quoteParcels } from '../sim/farm/parcels'
 import { fieldStatus } from '../sim/farm/status'
 import type { GameState } from '../sim/state'
@@ -25,6 +25,10 @@ const info = computed(() => {
 const forecast = computed(() => {
   const p = selection.parcel
   return p ? forecastYield(game.state as GameState, p.x, p.y) : null
+})
+const quality = computed(() => {
+  const p = selection.parcel
+  return p ? forecastQuality(game.state as GameState, p.x, p.y) : null
 })
 
 // S21e field status: growth, ripe days and open cares of a planted parcel.
@@ -108,6 +112,12 @@ const price = computed(() => {
       <template v-if="forecast !== null">
         <dt :title="t.tips.yield">{{ t.yield }}</dt>
         <dd data-testid="inspector-yield">{{ t.yieldUnits.replace('{n}', String(forecast)) }}</dd>
+      </template>
+      <template v-if="quality !== null">
+        <dt :title="t.tips.quality">{{ t.quality }}</dt>
+        <dd data-testid="inspector-quality">
+          {{ t.qualityPoints.replace('{n}', String(quality)) }}
+        </dd>
       </template>
       <!-- S21e field status -->
       <template v-if="status">
