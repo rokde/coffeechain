@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { balance } from '../sim/balance'
-import { speedForKey } from './speedKeys'
+import { cycleSpeed, speedForKey } from './speedKeys'
 
 const speeds = balance().time.speeds
 
@@ -23,5 +23,16 @@ describe('speedForKey', () => {
 
   it.each(['w', 'q', 'h', '6', '7', 'Enter', ''])('ignores key %j', (key) => {
     expect(speedForKey(key, 1, 1, speeds)).toBeUndefined()
+  })
+})
+
+describe('cycleSpeed (#42)', () => {
+  const speeds = [0, 1, 2, 4, 8, 16]
+  it('steps 1 → 2 → 4 → 8 → 16 → 1', () => {
+    expect([1, 2, 4, 8, 16].map((s) => cycleSpeed(s, s, speeds))).toEqual([2, 4, 8, 16, 1])
+  })
+  it('goes on from the last running speed when paused', () => {
+    expect(cycleSpeed(0, 4, speeds)).toBe(8)
+    expect(cycleSpeed(0, undefined, speeds)).toBe(2)
   })
 })

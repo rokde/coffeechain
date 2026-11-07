@@ -1,4 +1,3 @@
-import { isBrushTool } from './selection'
 import { isTyping } from './speedKeys'
 import type { useViewStore } from './view'
 
@@ -19,17 +18,39 @@ export function disarmKey(key: string, helpOpen: boolean, typing: boolean): bool
   return key === 'Escape' && !helpOpen && !typing
 }
 
+// What Esc closes: the top layer first. The help, the save panel, the storage panel, then the tool sheet.
+export function escapeTarget(open: {
+  help: boolean
+  save: boolean
+  storage: boolean
+}): 'help' | 'save' | 'storage' | 'tool' {
+  if (open.help) return 'help'
+  if (open.save) return 'save'
+  return open.storage ? 'storage' : 'tool'
+}
+
 export function installHelpKeys(
   view: ReturnType<typeof useViewStore>,
   selection: { tool: string; parcels: unknown[] },
+  savePanel: { open: boolean },
 ) {
   window.addEventListener('keydown', (event) => {
     if (event.repeat || event.metaKey || event.ctrlKey || event.altKey) return
     const typing = isTyping(event.target)
     // Read helpOpen before the help closes, so that one Esc does not also put down the tool.
     if (disarmKey(event.key, view.helpOpen, typing)) {
-      if (isBrushTool(selection.tool)) selection.tool = 'select'
-      selection.parcels = []
+      const target = escapeTarget({
+        help: false,
+        save: savePanel.open,
+        storage: view.storageOpen,
+      })
+      if (target === 'save') savePanel.open = false
+      else if (target === 'storage') view.toggleStorage()
+      else {
+        // The sheet of the build tool and the market closes like the brush tools.
+        selection.tool = 'select'
+        selection.parcels = []
+      }
     } else if (helpKeyAction(event.key, view.helpOpen, typing)) view.toggleHelp()
   })
 }

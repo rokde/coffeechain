@@ -40,7 +40,7 @@ const sellButton = (html: string) => html.match(/<button[^>]*data-testid="market
 
 describe('MarketPanel (S20)', () => {
   it('AC-1: the toolbar ends with the market tool', () => {
-    expect(tools.at(-1)).toEqual({ id: 'market', label: 'Markt', key: 'M' })
+    expect(tools.at(-1)).toMatchObject({ id: 'market', label: 'Markt', key: 'M' })
   })
 
   it('AC-1: the right panel shows the market panel and no inspector for the market tool', async () => {

@@ -12,11 +12,13 @@ import {
   islandView,
   isTrackpadScroll,
   nextZoom,
+  oneFinger,
   rotateYaw,
   START_FRAME,
   START_REACH,
   START_YAW,
   startView,
+  TOUCH,
   twistSteps,
   wheelZoomDelta,
 } from './camera'
@@ -333,5 +335,21 @@ describe('islandView (#3)', () => {
         }
       }
     }
+  })
+})
+
+describe('oneFinger', () => {
+  it('stays a tap while the finger moves little and lifts early', () => {
+    expect(oneFinger('pending', 3, 4, 100)).toBe('pending')
+  })
+  it('pans once the finger moves the slop', () => {
+    expect(oneFinger('pending', TOUCH.tapSlop, 0, 50)).toBe('pan')
+  })
+  it('holds after the long press without a move', () => {
+    expect(oneFinger('pending', 2, 2, TOUCH.longPressMs)).toBe('hold')
+  })
+  it('keeps pan and hold for the rest of the touch', () => {
+    expect(oneFinger('pan', 0, 0, 1000)).toBe('pan')
+    expect(oneFinger('hold', 50, 50, 1000)).toBe('hold')
   })
 })
