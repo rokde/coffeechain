@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.5.0](https://github.com/rokde/coffeechain/compare/v0.4.0...v0.5.0) (2026-11-07)
+
+
+### Features
+
+* compute the harvest quality per parcel ([#21](https://github.com/rokde/coffeechain/issues/21)), add the storage panel ([#9](https://github.com/rokde/coffeechain/issues/9)) ([8bc2739](https://github.com/rokde/coffeechain/commit/8bc27394b9210b8ee0c4c3833f87721e05896ec3))
+* make the app installable as a PWA on iOS, Android and desktop ([#41](https://github.com/rokde/coffeechain/issues/41)) ([1208fd9](https://github.com/rokde/coffeechain/commit/1208fd9ec563cfec7ad96cecd9df8a9db1b9d7ee))
+* quieter HUD and a flush one-column portrait layout ([#40](https://github.com/rokde/coffeechain/issues/40)) ([ffc7b19](https://github.com/rokde/coffeechain/commit/ffc7b192eb4a068f8912ab209dfba7e8ef8a803c))
+* store the batch age, sell single storage rows, lose more quality with age ([#9](https://github.com/rokde/coffeechain/issues/9)) ([298f8b4](https://github.com/rokde/coffeechain/commit/298f8b41145a71b1079a7cf4d9b2deb34f892739))
+* store the batch age, sell single storage rows, lose more quality with age ([#9](https://github.com/rokde/coffeechain/issues/9)) ([2051c24](https://github.com/rokde/coffeechain/commit/2051c246f95246762b1e0f73031b54fa7372db14))
+* **ui:** add the storage panel ([#9](https://github.com/rokde/coffeechain/issues/9)) ([ce6adef](https://github.com/rokde/coffeechain/commit/ce6adef364fadfba246a2de27b3c84962cb798cc))
+* **ui:** open the storage panel with the I key ([a455a06](https://github.com/rokde/coffeechain/commit/a455a06726f7c2ce5bec1b86f8f87592dc5bacb1))
+
 ## [0.4.0](https://github.com/rokde/coffeechain/compare/v0.3.0...v0.4.0) (2026-11-04)
 
 ### Features
