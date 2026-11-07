@@ -87,6 +87,7 @@ export const balanceSchema = z.object({
     upgrades: val(z.array(z.object({ capacity: num, cost: num, requiresPhase: int }))),
     costPerUnitPerDay: val(num),
     qualityLossPerDayRaw: val(num),
+    shelfLifeMinQuality: val(num),
   }),
   processing: z.object({
     washed: z.object({

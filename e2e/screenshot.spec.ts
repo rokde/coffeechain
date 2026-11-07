@@ -2072,3 +2072,55 @@ for (const [width, height] of [
     expect(errors).toEqual([])
   })
 }
+
+for (const [width, height] of [
+  [1440, 900],
+  [800, 900],
+  [390, 844],
+] as const) {
+  test(`#9: storage panel opens from the storage chip at ${width}x${height}`, async ({ page }) => {
+    await page.setViewportSize({ width, height })
+    await page.goto('/?seed=48213')
+    await page.getByTestId('save-button').click()
+    await page.getByTestId('save-slot-1').getByTestId('save-slot-save').click()
+    await page.evaluate(() => {
+      const key = 'coffeechain.save.slot-1'
+      const save = JSON.parse(localStorage.getItem(key)!)
+      // 12 March, year 2. One Lager-Ausbau gives 250 units.
+      save.state.time = { ...save.state.time, day: 431, speed: 0 }
+      save.state.buildings = { 0: { kind: 'storage' } }
+      save.state.storage = {
+        batches: [
+          { variety: 'robusta', units: 40, quality: 82 },
+          { variety: 'robusta', units: 32, quality: 74 },
+          { variety: 'robusta', units: 18, quality: 69 },
+          { variety: 'arabicaStandard', units: 24, quality: 85 },
+          { variety: 'arabicaStandard', units: 20, quality: 81, washed: true, readyDay: 424 },
+          { variety: 'arabicaStandard', units: 30, quality: 79, washed: true, readyDay: 447 },
+        ],
+      }
+      localStorage.setItem(key, JSON.stringify(save))
+    })
+    await page.getByTestId('save-panel-close').click()
+    await page.getByTestId('save-button').click()
+    await page.getByTestId('save-slot-1').getByTestId('save-slot-load').click()
+    await page.getByTestId('first-steps-close').click()
+
+    const chip = page.getByTestId('storage')
+    await chip.click()
+    await expect(chip).toHaveAttribute('aria-pressed', 'true')
+    const panel = page.getByTestId('storage-panel')
+    await expect(panel).toBeInViewport({ ratio: 1 })
+    await expect(page.getByTestId('storage-row')).toHaveCount(6)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      width,
+    )
+    await page.screenshot({ path: `docs/progress/storage-panel-${width}.png` })
+
+    await page.getByTestId('storage-filter-washed').click()
+    await expect(page.getByTestId('storage-row')).toHaveCount(2)
+    await page.getByTestId('storage-to-market').click()
+    await expect(panel).toHaveCount(0)
+    await expect(page.getByTestId('tool-market')).toHaveAttribute('aria-pressed', 'true')
+  })
+}

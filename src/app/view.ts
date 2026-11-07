@@ -16,6 +16,11 @@ export const useViewStore = defineStore('view', () => {
     helpOpen.value = !helpOpen.value
   }
 
+  const storageOpen = ref(false)
+  function toggleStorage() {
+    storageOpen.value = !storageOpen.value
+  }
+
   const fpsVisible = ref(false)
   const fps = ref(0)
   function toggleFps() {
@@ -25,5 +30,16 @@ export const useViewStore = defineStore('view', () => {
   // The point that the camera must center on. Each request is a new object.
   const focus = ref<{ x: number; y: number; z: number } | null>(null)
 
-  return { overlay, toggle, helpOpen, toggleHelp, fpsVisible, fps, toggleFps, focus }
+  return {
+    overlay,
+    toggle,
+    helpOpen,
+    toggleHelp,
+    storageOpen,
+    toggleStorage,
+    fpsVisible,
+    fps,
+    toggleFps,
+    focus,
+  }
 })

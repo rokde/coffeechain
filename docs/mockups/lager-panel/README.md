@@ -1,6 +1,6 @@
 # Lager-Panel (Issue #9)
 
-Entwurf, nichts gebaut. Keine Änderungen in `src/`. Basis: Branch `claude/harvest-quality-21` (PR #34), damit die Chargen echte Qualitäten haben.
+Gebaut in `src/ui/StoragePanel.vue` (Berechnung in `src/sim/storage/overview.ts`), ohne die Platzhalter für #22 und #26. Basis: Branch `claude/harvest-quality-21` (PR #34), damit die Chargen echte Qualitäten haben.
 
 | Datei | Inhalt |
 |---|---|
