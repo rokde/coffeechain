@@ -143,7 +143,7 @@ h2 {
 h3 {
   margin: 16px 0 8px;
   font-size: 15px;
-  color: #f2c48d;
+  color: var(--accent);
 }
 button {
   width: 44px;
@@ -157,7 +157,7 @@ button {
   cursor: pointer;
 }
 button:focus-visible {
-  outline: 2px solid #f2c48d;
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 ol {

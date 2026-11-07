@@ -51,7 +51,8 @@ for (const [width, height] of [
     await expect(page.getByTestId('money')).toHaveText('9.999.999.999 CC')
 
     const bar = (await page.getByTestId('hud-top-bar').boundingBox())!
-    expect(Math.abs(bar.height - 94)).toBeLessThanOrEqual(1)
+    // The portrait bar has three rows: time, stats, seed and time unit.
+    expect(Math.abs(bar.height - 129)).toBeLessThanOrEqual(1)
     // The chips differ in height, so one row means the same vertical centre.
     const centres = await Promise.all(
       ['money', 'storage', 'phase'].map(async (id) => {

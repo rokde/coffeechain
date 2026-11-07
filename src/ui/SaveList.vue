@@ -73,10 +73,9 @@ async function pick(state: GameState) {
 }
 h2 {
   margin: 0 0 12px;
-  color: #f2c48d;
-  font-size: 12px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  color: var(--fg-2);
+  font-weight: 600;
+  font-size: 13px;
 }
 ul {
   display: grid;
@@ -104,23 +103,23 @@ button.card {
   cursor: pointer;
 }
 button.card:hover {
-  border-color: #f2c48d;
+  border-color: var(--accent);
 }
 button.card:focus-visible {
-  outline: 2px solid #f2c48d;
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 .off {
   opacity: 0.6;
 }
 .name {
-  color: #f2c48d;
+  color: var(--accent);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
 }
 .date {
   font-size: 17px;
-  font-weight: 700;
+  font-weight: 600;
 }
 .facts,
 .ago {

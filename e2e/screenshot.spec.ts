@@ -1466,8 +1466,11 @@ for (const [width, height] of [
       const s = getComputedStyle(el)
       return { maxHeight: s.maxHeight, overflowY: s.overflowY }
     })
-    expect(style).toEqual({ maxHeight: '438px', overflowY: 'auto' })
-    expect((await panel.boundingBox())!.height).toBeLessThanOrEqual(438)
+    // In the portrait layout the panel is a sheet on the toolbar and scrolls instead of growing past it.
+    expect(style).toEqual({ maxHeight: 'none', overflowY: 'auto' })
+    const sheet = (await panel.boundingBox())!
+    const toolbar = (await page.getByTestId('hud-toolbar').boundingBox())!
+    expect(sheet.y + sheet.height).toBeLessThanOrEqual(toolbar.y)
   })
 }
 
@@ -1874,13 +1877,20 @@ for (const [width, height] of [
     await page.getByTestId('overlay-soil').click()
     const legend = page.getByTestId('hud-overlay-panel')
     await expect(legend).toBeInViewport({ ratio: 1 })
-    const toolbar = (await page.getByTestId('hud-toolbar').boundingBox())!
-    expect(apart((await legend.boundingBox())!, toolbar)).toBe(true)
+    // In the portrait layout the legend is a row of the toolbar above the buttons, so it only has to clear them.
+    const legendClear = async () => {
+      const box = (await legend.boundingBox())!
+      if (width > 760) return apart(box, (await page.getByTestId('hud-toolbar').boundingBox())!)
+      for (const id of ids)
+        if (!apart(box, (await page.getByTestId(id).boundingBox())!)) return false
+      return true
+    }
+    expect(await legendClear()).toBe(true)
     await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
     await page.screenshot({ path: `docs/progress/S60-${width}.png`, animations: 'disabled' })
     await page.getByTestId('overlay-zone').click()
     await expect(page.getByTestId('overlay-soil')).toHaveAttribute('aria-pressed', 'false')
-    expect(apart((await legend.boundingBox())!, toolbar)).toBe(true)
+    expect(await legendClear()).toBe(true)
     await page.keyboard.press('z')
     await expect(page.getByTestId('overlay-legend')).toHaveCount(0)
     await page.keyboard.press('o')

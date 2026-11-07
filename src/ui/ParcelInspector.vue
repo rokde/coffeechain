@@ -186,15 +186,14 @@ header {
 }
 h2 {
   margin: 0;
-  font-size: 12px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #f2c48d;
+  font-size: 13px;
+  color: var(--fg-2);
+  font-weight: 600;
 }
 .title {
   margin: 4px 0 0;
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 600;
 }
 .position {
   margin: 2px 0 0;
@@ -212,7 +211,7 @@ button {
   cursor: pointer;
 }
 button:focus-visible {
-  outline: 2px solid #f2c48d;
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 dl {

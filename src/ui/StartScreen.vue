@@ -246,10 +246,9 @@ h1 {
 }
 h2 {
   margin: 0 0 12px;
-  color: #f2c48d;
-  font-size: 12px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  color: var(--fg-2);
+  font-weight: 600;
+  font-size: 13px;
 }
 .new {
   display: contents;
@@ -260,7 +259,7 @@ h2 {
 .date {
   margin: 0;
   font-size: 36px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.2;
 }
 .facts {
@@ -290,11 +289,11 @@ input {
   color: inherit;
   font: inherit;
   font-size: 22px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.05em;
 }
 input[aria-invalid='true'] {
-  border-color: #f2c48d;
+  border-color: var(--accent);
 }
 .hint {
   margin: 8px 0 0;
@@ -302,7 +301,7 @@ input[aria-invalid='true'] {
   opacity: 0.8;
 }
 .hint.invalid {
-  color: #f2c48d;
+  color: var(--accent);
   opacity: 1;
 }
 .zones {
@@ -335,7 +334,7 @@ button {
   color: inherit;
   font: inherit;
   font-size: 17px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
 }
 .primary {
@@ -344,16 +343,16 @@ button {
   justify-content: center;
   gap: 8px;
   border: 0;
-  background: #f2c48d;
-  color: #2b2420;
+  background: var(--accent);
+  color: var(--on-accent);
 }
 .primary:disabled {
   opacity: 0.4;
   cursor: default;
 }
 .danger {
-  color: #f2c48d;
-  border-color: #f2c48d;
+  color: var(--accent);
+  border-color: var(--accent);
 }
 .reroll {
   flex: none;
@@ -363,7 +362,7 @@ button {
 }
 button:focus-visible,
 input:focus-visible {
-  outline: 2px solid #f2c48d;
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 /* The panel leaves more room for the island preview on a medium window. */

@@ -225,10 +225,9 @@ const blocks = computed(() => {
 }
 h2 {
   margin: 0;
-  font-size: 12px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #f2c48d;
+  font-size: 13px;
+  color: var(--fg-2);
+  font-weight: 600;
 }
 .hint {
   margin: 8px 0 8px;
@@ -299,10 +298,10 @@ button {
   padding: 6px 10px;
   border: 0;
   border-radius: 8px;
-  background: #f2c48d;
-  color: #2b2420;
+  background: var(--accent);
+  color: var(--on-accent);
   font: inherit;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
 }
 button:disabled {
@@ -312,7 +311,7 @@ button:disabled {
   cursor: not-allowed;
 }
 button:focus-visible {
-  outline: 2px solid #f2c48d;
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 @media (max-width: 480px) {
