@@ -320,15 +320,15 @@ button:active {
 }
 .money-group {
   display: flex;
-  gap: 16px;
+  gap: 12px;
   font-size: 20px;
-  font-weight: 600;
+  font-weight: 700;
 }
 .money-group > span,
 .storage-button {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   white-space: nowrap;
 }
 .storage-button {
@@ -439,7 +439,7 @@ button:active {
     height: 94px;
     flex-wrap: wrap;
     align-content: space-between;
-    padding: 8px 16px;
+    padding: 8px 16px 6px;
   }
   .stats {
     order: 1;
@@ -575,6 +575,26 @@ button:active {
   .hud > .right-panel {
     flex: 0 1 auto;
     min-height: 0;
+  }
+  /* Reading order: bar, left panel, money toasts over the island, sheet, toolbar. */
+  .hud > .left-panel {
+    order: 1;
+  }
+  .hud > .money-toasts {
+    order: 2;
+    position: static;
+    align-self: flex-end;
+    margin: 8px 12px 0;
+  }
+  .hud > .right-panel {
+    order: 3;
+  }
+  .hud > .toolbar {
+    order: 4;
+  }
+  /* Order also changes the paint order of the panels, so overlays like the save panel need a layer above them. */
+  .hud > :not(.frame, .money-toasts) {
+    z-index: 1;
   }
   /* Row 1: clock, speeds, save, help. Row 2: money, storage, phase. Row 3: seed and time unit. */
   .top-bar {
