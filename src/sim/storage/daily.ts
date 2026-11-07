@@ -4,11 +4,10 @@ import { soilClassOf } from '../world/generate'
 import { monthlyStorageCost } from './overview'
 
 // Applies the storage cost, the quality loss and the fallow recovery for one month.
-// The "PerDay" config values apply per month since #27.
 export function monthlyUpkeep(state: GameState): GameState {
   const cfg = balance()
   const cost = monthlyStorageCost(state.storage, cfg)
-  const loss = cfg.storage.qualityLossPerDayRaw
+  const loss = cfg.storage.qualityLossPerMonth
   const batches = state.storage.batches.map((batch) => ({
     ...batch,
     quality: Math.max(0, batch.quality - loss),

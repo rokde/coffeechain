@@ -128,8 +128,8 @@
       ],
       "src": "NEU"
     },
-    "costPerUnitPerDay": { "v": 0.02, "src": "NEU (GDD 6.5 nennt Lagerkosten ohne Wert)" },
-    "qualityLossPerDayRaw": { "v": 1, "src": "NEU (GDD 6.5: Rohkaffee verliert langsam)" },
+    "costPerUnitPerMonth": { "v": 0.02, "src": "NEU (GDD 6.5 nennt Lagerkosten ohne Wert)" },
+    "qualityLossPerMonth": { "v": 1, "src": "NEU (GDD 6.5: Rohkaffee verliert langsam)" },
     "shelfLifeMinQuality": { "v": 70, "src": "NEU" }
   },
 

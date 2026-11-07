@@ -57,7 +57,7 @@ describe('storageOverview', () => {
   ])('AC-3: quality %i keeps for %i month turns', (quality, months) => {
     const row = storageOverview(withBatches([{ variety: 'robusta', units: 1, quality }])).groups[0]!
       .rows[0]!
-    expect(row.shelfMonths).toBe(months / cfg.storage.qualityLossPerDayRaw)
+    expect(row.shelfMonths).toBe(months / cfg.storage.qualityLossPerMonth)
     // Today is in month 2 (March). It holds until the end of month 2 + months.
     expect(row.shelfUntilDay).toBe(months < 0 ? null : (3 + months) * month - 1)
   })
@@ -70,11 +70,11 @@ describe('storageOverview', () => {
       ]),
     )
     expect(o).toMatchObject({ raw: 60, washed: 40, capacity: 100, free: 0, nextMonthDay: 90 })
-    expect(o.costExact).toBeCloseTo(100 * cfg.storage.costPerUnitPerDay * 100)
+    expect(o.costExact).toBeCloseTo(100 * cfg.storage.costPerUnitPerMonth * 100)
     expect(o.cost).toBe(
       monthlyStorageCost({ batches: [{ variety: 'robusta', units: 100, quality: 1 }] }),
     )
-    expect(o.groups[0]!.rows[0]!.cost).toBeCloseTo(60 * cfg.storage.costPerUnitPerDay * 100)
+    expect(o.groups[0]!.rows[0]!.cost).toBeCloseTo(60 * cfg.storage.costPerUnitPerMonth * 100)
   })
 
   it('AC-5: an empty storage has no groups', () => {

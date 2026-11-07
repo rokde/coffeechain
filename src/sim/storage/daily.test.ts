@@ -41,7 +41,8 @@ function testState(): GameState {
   }
 }
 
-const monthlyCost = (units: number) => Math.round(units * balance().storage.costPerUnitPerDay * 100)
+const monthlyCost = (units: number) =>
+  Math.round(units * balance().storage.costPerUnitPerMonth * 100)
 
 describe('monthlyUpkeep', () => {
   it('AC-1: charges the storage cost per stored unit', () => {
@@ -52,7 +53,7 @@ describe('monthlyUpkeep', () => {
   })
 
   it('AC-2: lowers batch quality and stops at 0', () => {
-    const loss = balance().storage.qualityLossPerDayRaw
+    const loss = balance().storage.qualityLossPerMonth
     expect(loss).toBeGreaterThanOrEqual(0.5)
     expect(monthlyUpkeep(testState()).storage.batches).toEqual([
       { variety: 'robusta', units: 30, quality: 100 - loss },
@@ -96,7 +97,7 @@ describe('step', () => {
   })
 
   it('AC-3: changes nothing on days 1 to 29 and books the upkeep once on day 30', () => {
-    const loss = balance().storage.qualityLossPerDayRaw
+    const loss = balance().storage.qualityLossPerMonth
     const states = run(testState(), 60)
     for (let day = 1; day < 30; day++) expect(upkeep(states[day]!)).toEqual(upkeep(states[0]!))
     expect(upkeep(states[30]!)).toEqual(upkeep(monthlyUpkeep(states[0]!)))

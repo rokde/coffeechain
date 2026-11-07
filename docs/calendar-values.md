@@ -46,8 +46,8 @@ schneller).
 
 | Wert | Alt | Neu | Lesart | Sim | Spiel | Notiz |
 |---|---|---|---|---|---|---|
-| `storage.costPerUnitPerDay` | 0,02 pro Tag | 0,02 pro Monat, am Monatswechsel | 1 CC je angefangene 50 Einheiten pro Monat (Regel „nur ganze CC“) | – | offen | Bot verkauft vor jedem Monatswechsel das ganze Lager. Er zahlt keine Lagerkosten. |
-| `storage.qualityLossPerDayRaw` | 1 pro Tag | 1 pro Monat, am Monatswechsel | | – | offen | Wie Lagerkosten: Das Lager des Bots ist am Monatswechsel leer. |
+| `storage.costPerUnitPerMonth` | 0,02 pro Tag | 0,02 pro Monat, am Monatswechsel | 1 CC je angefangene 50 Einheiten pro Monat (Regel „nur ganze CC“) | – | offen | Bot verkauft vor jedem Monatswechsel das ganze Lager. Er zahlt keine Lagerkosten. |
+| `storage.qualityLossPerMonth` | 1 pro Tag | 1 pro Monat, am Monatswechsel | | – | offen | Wie Lagerkosten: Das Lager des Bots ist am Monatswechsel leer. |
 
 ## Markt und Aufträge
 

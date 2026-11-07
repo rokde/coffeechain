@@ -160,8 +160,8 @@ describe('help: buildings and washing (S62)', () => {
       storage: {
         ...base.storage,
         startCapacity: 80,
-        costPerUnitPerDay: 0.1,
-        qualityLossPerDayRaw: 3,
+        costPerUnitPerMonth: 0.1,
+        qualityLossPerMonth: 3,
         upgrades: [
           { capacity: 111, cost: 11, requiresPhase: 1 },
           { capacity: 222, cost: 22, requiresPhase: 2 },

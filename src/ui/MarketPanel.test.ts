@@ -81,7 +81,7 @@ describe('MarketPanel (S20)', () => {
   it('S63 AC-1..3: the hint states the real storage cost rule', async () => {
     const { pinia } = setup()
     const html = await renderToString(createSSRApp(MarketPanel).use(pinia))
-    const n = Math.round(1 / balance().storage.costPerUnitPerDay)
+    const n = Math.round(1 / balance().storage.costPerUnitPerMonth)
     const hint = field(html, 'hint')!
     expect(hint).toContain(`Das Lager kostet jeden Monat 1 CC je angefangene ${n} Einheiten.`)
     expect(hint).toContain('Ein leeres Lager kostet nichts.')

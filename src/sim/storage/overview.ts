@@ -7,7 +7,7 @@ import { storageUsed, type StorageState } from './storage'
 
 // The storage cost of one month in hundredths of CC, before the booking rounds it up.
 export const monthlyStorageCostExact = (storage: StorageState, cfg = balance()) =>
-  storageUsed(storage) * cfg.storage.costPerUnitPerDay * 100
+  storageUsed(storage) * cfg.storage.costPerUnitPerMonth * 100
 
 // The storage cost that the next month turn books, in whole CC (as hundredths).
 export const monthlyStorageCost = (storage: StorageState, cfg = balance()) =>
@@ -50,7 +50,7 @@ export interface StorageOverview {
 // Groups follow the variety order of the config. Raw rows come first, then the higher quality.
 export function storageOverview(state: GameState, cfg = balance()): StorageOverview {
   const { daysPerMonth } = cfg.time
-  const { costPerUnitPerDay, qualityLossPerDayRaw: loss, shelfLifeMinQuality: min } = cfg.storage
+  const { costPerUnitPerMonth, qualityLossPerMonth: loss, shelfLifeMinQuality: min } = cfg.storage
   const today = state.time.day
   const month = Math.floor(today / daysPerMonth)
   const rows = new Map<string, OverviewRow>()
@@ -77,7 +77,7 @@ export function storageOverview(state: GameState, cfg = balance()): StorageOverv
           : (month + shelfMonths + 1) * daysPerMonth - 1,
     })
   }
-  for (const row of rows.values()) row.cost = row.units * costPerUnitPerDay * 100
+  for (const row of rows.values()) row.cost = row.units * costPerUnitPerMonth * 100
   const groups = (Object.keys(cfg.varieties) as Variety[])
     .map((variety) => {
       const list = [...rows.values()]
