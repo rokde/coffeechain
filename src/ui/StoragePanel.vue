@@ -249,14 +249,14 @@ function toMarket() {
   top: 92px;
   right: 16px;
   width: 760px;
-  max-height: calc(100vh - 92px - 16px - 82px - 12px);
+  max-height: calc(100vh - 92px - 16px - 80px - 12px);
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   padding: 16px 20px 14px;
   border-radius: 12px;
   /* Opaque: the panel covers the inspector, and the toolbar at 480 px or less. */
-  background: #2b2420;
+  background: var(--on-accent);
   pointer-events: auto;
   font-size: 14px;
   line-height: 1.35;
@@ -268,15 +268,14 @@ header {
 }
 h2 {
   margin: 0;
-  font-size: 12px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #f2c48d;
+  font-size: 13px;
+  color: var(--fg-2);
+  font-weight: 600;
 }
 .title {
   margin: 2px 0 0;
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 600;
 }
 .title small {
   font-size: 14px;
@@ -293,7 +292,7 @@ button {
   cursor: pointer;
 }
 button:focus-visible {
-  outline: 2px solid #f2c48d;
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 .close {
@@ -323,7 +322,7 @@ button:focus-visible {
   height: 100%;
 }
 .meter .raw {
-  background: #f2c48d;
+  background: var(--accent);
 }
 .meter .washed {
   background: var(--green);
@@ -345,7 +344,7 @@ button:focus-visible {
   background: rgb(255 255 255 / 25%);
 }
 .keys .k-raw::before {
-  background: #f2c48d;
+  background: var(--accent);
 }
 .keys .k-washed::before {
   background: var(--green);
@@ -378,13 +377,13 @@ button:focus-visible {
 .filters button {
   height: 36px;
   padding: 0 14px;
-  border-radius: 999px;
+  border-radius: 6px;
   font-size: 13px;
 }
 button[aria-pressed='true'],
 button.primary {
-  background: #f2c48d;
-  color: #2b2420;
+  background: var(--accent);
+  color: var(--on-accent);
 }
 .thr {
   margin-left: auto;
@@ -423,11 +422,9 @@ button.primary {
   z-index: 1;
   padding: 6px 0;
   border-bottom: 1px solid var(--line);
-  background: #2b2420;
+  background: var(--on-accent);
   font-size: 11px;
   line-height: 1.2;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
   opacity: 0.75;
 }
 .r {
@@ -461,9 +458,9 @@ button.primary {
   display: inline-block;
   padding: 2px 9px;
   border: 1px solid rgb(255 255 255 / 35%);
-  border-radius: 999px;
+  border-radius: 6px;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
 }
 .tag.washed {
   border-color: var(--green);
@@ -488,7 +485,7 @@ button.primary {
   position: absolute;
   inset: 0 auto 0 0;
   border-radius: 3px;
-  background: #f2c48d;
+  background: var(--accent);
 }
 .bar s {
   position: absolute;
@@ -507,14 +504,14 @@ button.primary {
 }
 .soon .hold,
 .wait {
-  color: #f2c48d;
+  color: var(--accent);
 }
 .ok {
   color: var(--green);
 }
 .ok,
 .wait {
-  font-weight: 700;
+  font-weight: 600;
 }
 .lab,
 .u {
@@ -576,9 +573,9 @@ footer button {
 /* Below 1280 px the table does not fit: the panel sits beside the left column and each row is a card. */
 @media (max-width: 1279px) {
   .storage-panel {
-    top: 134px;
+    top: 126px;
     width: calc(100vw - 348px);
-    max-height: calc(100vh - 134px - 16px - 82px - 12px);
+    max-height: calc(100vh - 126px - 16px - 80px - 12px);
   }
   .thead {
     display: none;
@@ -629,14 +626,16 @@ footer button {
     display: none;
   }
 }
-/* Up to 480 px the panel is a sheet over the full width and covers the toolbar. */
-@media (max-width: 480px) {
+/* In the portrait layout the panel is a sheet below the top bar over the full width and covers the toolbar. */
+@media (max-width: 760px) {
   .storage-panel {
-    inset: 134px 16px 16px;
+    inset: 148px 12px max(12px, env(safe-area-inset-bottom));
     width: auto;
     max-height: none;
     padding: 14px 16px;
   }
+}
+@media (max-width: 480px) {
   .title {
     font-size: 18px;
   }

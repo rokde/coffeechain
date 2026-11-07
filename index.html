@@ -5,12 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CoffeeChain</title>
     <style>
+      /* Warm graphite ramp, one latte accent. Shared by the HUD and the start screen. */
+      :root {
+        --hud-bg: rgb(28 26 24 / 94%);
+        --hud-fg: #efe9de;
+        --fg-2: #c2baae;
+        --fg-3: #9a9388;
+        --raised: rgb(239 233 222 / 7%);
+        --raised-hover: rgb(239 233 222 / 12%);
+        --line: rgb(239 233 222 / 9%);
+        --accent: #f2c48d;
+        --on-accent: #1f1b16;
+        --negative: #d9534a;
+        --ease: cubic-bezier(0.22, 1, 0.36, 1);
+      }
       html,
       body {
         margin: 0;
         height: 100%;
         overflow: hidden;
-        font-family: system-ui, sans-serif;
+        font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+        -webkit-font-smoothing: antialiased;
       }
       #scene {
         display: block;

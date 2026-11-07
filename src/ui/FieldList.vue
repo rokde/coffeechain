@@ -74,10 +74,9 @@ const parcelsText = (n: number) => (n === 1 ? t.parcelsOne : t.parcels.replace('
 }
 h2 {
   margin: 0 0 4px;
-  font-size: 12px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #f2c48d;
+  font-size: 13px;
+  color: var(--fg-2);
+  font-weight: 600;
 }
 .empty {
   margin: 0;
@@ -103,7 +102,7 @@ button[aria-current='true'] {
   background: rgb(255 255 255 / 8%);
 }
 button:focus-visible {
-  outline: 2px solid #f2c48d;
+  outline: 2px solid var(--accent);
   outline-offset: -2px;
 }
 .line {
@@ -116,15 +115,15 @@ button:focus-visible {
 }
 .badge {
   padding: 1px 8px;
-  border-radius: 999px;
+  border-radius: 6px;
   font-size: 11px;
-  font-weight: 700;
-  background: #c0392b;
+  font-weight: 600;
+  background: var(--negative);
   color: #fff;
 }
 .badge[data-state='care'] {
-  background: #f2c48d;
-  color: #2b2420;
+  background: var(--accent);
+  color: var(--on-accent);
 }
 .progress {
   font-size: 12px;
@@ -147,7 +146,7 @@ small {
   background: #8bc34a;
 }
 .bar[data-ripe='true'] span {
-  background: #c0392b;
+  background: var(--negative);
 }
 @media (max-width: 480px) {
   .fields {
@@ -155,7 +154,6 @@ small {
   }
   h2 {
     font-size: 11px;
-    letter-spacing: 0.04em;
   }
 }
 </style>

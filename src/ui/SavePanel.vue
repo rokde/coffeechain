@@ -178,7 +178,7 @@ h2 {
   padding: 8px 12px;
   border-radius: 8px;
   background: rgb(242 196 141 / 15%);
-  color: #f2c48d;
+  color: var(--accent);
   overflow-wrap: anywhere;
 }
 ul {
@@ -206,8 +206,8 @@ li {
   margin: 0;
 }
 .danger {
-  color: #f2c48d;
-  box-shadow: inset 0 0 0 1px #f2c48d;
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
 }
 .name {
   font-weight: 600;
@@ -239,7 +239,7 @@ button:disabled {
   font-weight: normal;
 }
 button:focus-visible {
-  outline: 2px solid #f2c48d;
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 </style>

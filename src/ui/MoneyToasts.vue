@@ -44,7 +44,7 @@ const text = (t: Toast) =>
   border-radius: 8px;
   background: var(--hud-bg);
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   white-space: nowrap;
   transition: opacity 400ms;
   animation: toast-in 200ms ease-out;

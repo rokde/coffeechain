@@ -46,10 +46,9 @@ const messages = computed(() => {
 }
 h2 {
   margin: 0 0 8px;
-  font-size: 12px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #f2c48d;
+  font-size: 13px;
+  color: var(--fg-2);
+  font-weight: 600;
 }
 ul {
   margin: 0;

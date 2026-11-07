@@ -253,16 +253,25 @@ const phaseText = computed(() => {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  --hud-bg: rgb(43 36 32 / 92%);
-  --hud-fg: #f5ece0;
   color: var(--hud-fg);
+  font-variant-numeric: tabular-nums;
 }
+/* Quiet chrome: one warm surface with a hairline, the island carries the colour. */
 .frame {
   position: absolute;
   box-sizing: border-box;
   pointer-events: auto;
   background: var(--hud-bg);
+  box-shadow: inset 0 0 0 1px var(--line);
   border-radius: 12px;
+}
+button {
+  transition:
+    background-color 140ms var(--ease),
+    color 140ms var(--ease);
+}
+button:active {
+  transform: scale(0.98);
 }
 .top-bar {
   top: 16px;
@@ -277,13 +286,15 @@ const phaseText = computed(() => {
 .name {
   display: flex;
   flex-direction: column;
+  gap: 2px;
 }
 .name strong {
-  font-size: 18px;
+  font-size: 17px;
+  font-weight: 600;
 }
 .name small {
   font-size: 12px;
-  opacity: 0.8;
+  color: var(--fg-3);
 }
 .time {
   display: flex;
@@ -292,12 +303,12 @@ const phaseText = computed(() => {
   margin: 0 auto;
   padding: 0 8px;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 500;
 }
 .chip {
   padding: 8px 12px;
-  border-radius: 999px;
-  background: rgb(255 255 255 / 8%);
+  border-radius: 8px;
+  background: var(--raised);
   white-space: nowrap;
 }
 .stats {
@@ -305,88 +316,24 @@ const phaseText = computed(() => {
   align-items: center;
   gap: 12px;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 500;
 }
 .money-group {
   display: flex;
-  gap: 12px;
+  gap: 16px;
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 600;
 }
 .money-group > span,
 .storage-button {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   white-space: nowrap;
 }
 .storage-button {
   height: 40px;
   padding: 0 12px;
-  border: 0;
-  border-radius: 999px;
-  background: rgb(255 255 255 / 8%);
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-}
-.storage-button[aria-pressed='true'] {
-  background: #f2c48d;
-  color: #2b2420;
-}
-.storage-button:focus-visible {
-  outline: 2px solid #f2c48d;
-  outline-offset: 2px;
-}
-.save-button {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 44px;
-  margin-left: 8px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: 8px;
-  background: rgb(255 255 255 / 8%);
-  color: inherit;
-  font: inherit;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-}
-.save-button:focus-visible {
-  outline: 2px solid #f2c48d;
-  outline-offset: 2px;
-}
-.help-button {
-  flex: none;
-  width: 44px;
-  height: 44px;
-  margin-left: 8px;
-  border: 0;
-  border-radius: 8px;
-  background: rgb(255 255 255 / 8%);
-  color: inherit;
-  font: inherit;
-  font-size: 20px;
-  font-weight: 600;
-  cursor: pointer;
-}
-.help-button:focus-visible {
-  outline: 2px solid #f2c48d;
-  outline-offset: 2px;
-}
-.speeds {
-  display: flex;
-  gap: 4px;
-  padding: 2px;
-  border-radius: 10px;
-  background: rgb(255 255 255 / 8%);
-}
-.speeds button {
-  min-width: 44px;
-  height: 44px;
   border: 0;
   border-radius: 8px;
   background: none;
@@ -394,18 +341,83 @@ const phaseText = computed(() => {
   font: inherit;
   cursor: pointer;
 }
-.speeds button[aria-pressed='true'] {
-  background: #f2c48d;
-  color: #2b2420;
+.storage-button:hover {
+  background: var(--raised);
 }
-.speeds button:focus-visible {
-  outline: 2px solid #f2c48d;
+.storage-button[aria-pressed='true'] {
+  background: var(--raised-hover);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+.money-group svg {
+  color: var(--fg-3);
+}
+.phase-progress {
+  color: var(--fg-2);
+}
+.save-button,
+.help-button {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  margin-left: 8px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--raised);
+  color: inherit;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.help-button {
+  width: 44px;
+  padding: 0;
+  font-size: 18px;
+}
+.save-button:hover,
+.help-button:hover {
+  background: var(--raised-hover);
+}
+.save-button:focus-visible,
+.help-button:focus-visible,
+.storage-button:focus-visible,
+.speeds button:focus-visible,
+.toolbar button:focus-visible {
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+.speeds {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 10px;
+  background: var(--raised);
+}
+.speeds button {
+  min-width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--fg-2);
+  font: inherit;
+  cursor: pointer;
+}
+.speeds button:hover {
+  color: var(--hud-fg);
+}
+.speeds button[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--on-accent);
 }
 .time-unit {
   font-size: 12px;
   font-weight: 400;
-  opacity: 0.8;
+  color: var(--fg-3);
 }
 /* Below 1440 px a long date does not fit in one line, so date and year get two lines. */
 @media (max-width: 1439px) {
@@ -413,9 +425,9 @@ const phaseText = computed(() => {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 4px 6px;
+    padding: 4px 8px;
     font-size: 12px;
-    line-height: 15px;
+    line-height: 16px;
   }
   .clock-separator {
     display: none;
@@ -427,7 +439,7 @@ const phaseText = computed(() => {
     height: 94px;
     flex-wrap: wrap;
     align-content: space-between;
-    padding: 8px 16px 6px;
+    padding: 8px 16px;
   }
   .stats {
     order: 1;
@@ -441,95 +453,14 @@ const phaseText = computed(() => {
   }
   /* Only the icon fits, the aria-label keeps the name. */
   .save-button {
-    width: 36px;
-    margin-left: 2px;
+    width: 44px;
     padding: 0;
-    justify-content: center;
   }
   .save-button span {
     display: none;
   }
 }
-@media (max-width: 760px) {
-  .top-bar {
-    padding: 8px 4px 6px;
-  }
-  .name strong {
-    display: none;
-  }
-  /* The bar has no room for the seed and the time unit, so they hang below the bar as tabs. */
-  .name small,
-  .time-unit {
-    position: absolute;
-    top: calc(100% + 4px);
-    left: 12px;
-    padding: 1px 8px;
-    border-radius: 6px;
-    background: var(--hud-bg);
-    font-size: 11px;
-    line-height: 13px;
-    white-space: nowrap;
-  }
-  .time-unit {
-    left: auto;
-    right: 12px;
-    opacity: 1;
-  }
-  .time {
-    gap: 4px;
-  }
-  .chip {
-    padding: 8px 4px;
-    font-size: 14px;
-  }
-  .speeds {
-    gap: 0;
-  }
-  /* Six speed buttons, the save and the help button must fit beside the clock. */
-  .speeds button {
-    min-width: 22px;
-    padding: 0 1px;
-  }
-  .help-button {
-    width: 36px;
-    margin-left: 2px;
-  }
-}
-/* The second row must fit the money group, so the phase drops the progress and the storage its word. */
-@media (max-width: 480px) {
-  .top-bar {
-    height: auto;
-    min-height: 94px;
-  }
-  .phase-progress,
-  .storage-word {
-    display: none;
-  }
-  .stats,
-  .money-group {
-    gap: 6px;
-  }
-  .money-group > span,
-  .storage-button {
-    gap: 4px;
-  }
-  .storage-button {
-    height: 36px;
-    padding: 0 10px;
-  }
-  /* Values wider than 12 characters shrink, so the row stays on one line. */
-  .money-long {
-    font-size: 14px;
-  }
-  .money-long svg {
-    width: 16px;
-    height: 16px;
-  }
-  .stats .chip {
-    padding: 4px;
-  }
-}
-/* The height limit keeps the first steps short. Narrow screens set their own limit below. */
+/* The left panel holds the first steps or the fields, the right panel the active tool. */
 .left-panel {
   --left-max: 220px;
   top: 92px;
@@ -547,21 +478,14 @@ const phaseText = computed(() => {
   max-height: 480px;
   overflow-y: auto;
 }
-/* Below 1280 px the panels start at 134 px, 4 px below the seed tab of narrow screens. The right panel keeps its bottom edge, so its height limit shrinks. */
 @media (max-width: 1279px) {
   .left-panel {
     --left-max: 204px;
-    top: 134px;
+    top: 126px;
   }
   .right-panel {
-    top: 134px;
-    max-height: 438px;
-  }
-}
-@media (max-width: 480px) {
-  /* The toolbar is 161 px high here, so the panel ends 8 px above it. The steps scroll only if they do not fit. */
-  .left-panel {
-    max-height: calc(100vh - 319px);
+    top: 126px;
+    max-height: 446px;
   }
 }
 .toolbar {
@@ -569,9 +493,9 @@ const phaseText = computed(() => {
   left: 50%;
   transform: translateX(-50%);
   width: min(1000px, calc(100vw - 32px));
-  height: 82px;
+  height: 80px;
   display: flex;
-  gap: 8px;
+  gap: 4px;
   padding: 8px;
 }
 .toolbar button {
@@ -579,31 +503,33 @@ const phaseText = computed(() => {
   padding: 0 4px;
   border: 0;
   border-radius: 8px;
-  background: rgb(255 255 255 / 8%);
-  color: inherit;
+  background: none;
+  color: var(--fg-2);
   font: inherit;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
 }
+.toolbar button:hover {
+  background: var(--raised);
+  color: var(--hud-fg);
+}
 .toolbar button[aria-pressed='true'] {
-  background: #f2c48d;
-  color: #2b2420;
+  background: var(--accent);
+  color: var(--on-accent);
 }
 .toolbar button[data-guide='next'] {
-  outline: 2px solid #f2c48d;
-  outline-offset: 2px;
-}
-.toolbar button:focus-visible {
-  outline: 2px solid #f2c48d;
-  outline-offset: 2px;
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  color: var(--hud-fg);
 }
 .overlays {
   flex: 2 0 0;
   display: flex;
-  gap: 8px;
+  gap: 4px;
+  margin-left: 4px;
   padding-left: 8px;
-  border-left: 1px solid rgb(255 255 255 / 25%);
+  border-left: 1px solid var(--line);
 }
 .overlays button {
   display: flex;
@@ -612,46 +538,185 @@ const phaseText = computed(() => {
   justify-content: center;
   gap: 4px;
 }
-/* Eleven buttons in one row need a smaller font. "Auswählen" keeps its full width. */
 @media (max-width: 900px) {
   .toolbar button {
     padding: 0;
     font-size: 12px;
   }
 }
-@media (max-width: 640px) {
-  /* Nine tools do not fit in one row, so they use two rows of five and four. */
+
+/*
+ * Portrait phones and narrow windows. The HUD becomes one column in reading order:
+ * top bar, first steps or fields, the island, the active tool as a sheet, the toolbar.
+ * Everything sits in the flow, so panels never overlap and the island stays visible between them.
+ */
+@media (max-width: 760px) {
+  .hud {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+    box-sizing: border-box;
+  }
+  .hud > .frame {
+    position: relative;
+    inset: auto;
+    transform: none;
+    width: auto;
+    flex: 0 0 auto;
+  }
+  /* The left panel keeps its content up to a third of the screen, the sheet takes what is left. */
+  .hud > .right-panel {
+    flex: 0 1 auto;
+    min-height: 0;
+  }
+  /* Row 1: clock, speeds, save, help. Row 2: money, storage, phase. Row 3: seed and time unit. */
+  .top-bar {
+    height: auto;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      'clock speeds save help'
+      'stats stats stats stats'
+      'seed seed unit unit';
+    align-items: center;
+    gap: 4px;
+    padding: 8px;
+  }
+  .time,
+  .name {
+    display: contents;
+  }
+  .name strong {
+    display: none;
+  }
+  .clock {
+    grid-area: clock;
+  }
+  .speeds {
+    grid-area: speeds;
+    gap: 0;
+  }
+  .speeds button {
+    flex: 1 0 0;
+    min-width: 0;
+    padding: 0;
+  }
+  .save-button {
+    grid-area: save;
+    margin: 0;
+  }
+  .help-button {
+    grid-area: help;
+    margin: 0;
+  }
+  .stats {
+    grid-area: stats;
+    order: 0;
+    height: 36px;
+    border-top: 1px solid var(--line);
+    padding-top: 4px;
+  }
+  .name small {
+    grid-area: seed;
+    font-size: 11px;
+    line-height: 16px;
+  }
+  .time-unit {
+    grid-area: unit;
+    justify-self: end;
+    font-size: 11px;
+    line-height: 16px;
+  }
+  .left-panel {
+    --left-max: 32%;
+  }
+  /* The sheet sits on the toolbar. The island shows above it. */
+  .right-panel {
+    max-height: none;
+    margin-top: auto;
+  }
   .toolbar {
     height: auto;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(10, minmax(0, 1fr));
     gap: 4px;
+    padding: 6px;
   }
-  /* "Auswählen" is the longest label. It fits at 390 px only with a smaller font and no padding. */
   .toolbar button {
-    flex-basis: calc(20% - 4px);
+    height: 56px;
+  }
+  /* The legend joins the flow above the buttons, so it never covers the sheet. */
+  .toolbar :deep(.overlay-panel) {
+    position: static;
+    order: -1;
+    grid-column: 1 / -1;
+    max-width: none;
+    padding: 4px 6px 8px;
+    background: none;
+    border-bottom: 1px solid var(--line);
+    border-radius: 0;
+  }
+}
+/* Ten buttons in a 5 × 2 grid: eight tools, then the two overlay toggles. */
+@media (max-width: 640px) {
+  .toolbar {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  .toolbar button {
     height: 44px;
     padding: 0;
     font-size: 12px;
   }
-  /* The overlay toggles take their own row below the tools. */
   .overlays {
-    flex-basis: 100%;
-    gap: 4px;
-    padding: 4px 0 0;
-    border-left: 0;
-    border-top: 1px solid rgb(255 255 255 / 25%);
+    grid-column: span 2;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin: 0;
+    padding: 0;
+    border: 0;
   }
   .overlays button {
-    flex: 1 0 0;
     flex-direction: row;
-    gap: 6px;
+    gap: 4px;
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .overlays svg {
+    width: 16px;
+    height: 16px;
   }
 }
-/* The first row must fit "30. September" beside the speed, save and help buttons. */
-@media (max-width: 380px) {
-  .time {
-    padding: 0;
+/* The second row must fit the money group, so the phase drops the progress and the storage its word. */
+@media (max-width: 480px) {
+  .phase-progress,
+  .storage-word {
+    display: none;
   }
+  .stats,
+  .money-group {
+    gap: 8px;
+  }
+  .money-group > span,
+  .storage-button {
+    gap: 4px;
+  }
+  .storage-button {
+    height: 36px;
+    padding: 0 8px;
+  }
+  /* Values wider than 12 characters shrink, so the row stays on one line. */
+  .money-long {
+    font-size: 14px;
+  }
+  .money-long svg {
+    width: 16px;
+    height: 16px;
+  }
+  .stats .chip {
+    padding: 4px 8px;
+  }
+}
+@media (max-width: 380px) {
   .clock {
     padding: 4px;
     font-size: 11px;

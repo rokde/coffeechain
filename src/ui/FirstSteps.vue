@@ -50,10 +50,9 @@ header {
 }
 h2 {
   margin: 0;
-  font-size: 12px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #f2c48d;
+  font-size: 13px;
+  color: var(--fg-2);
+  font-weight: 600;
 }
 header button {
   width: 44px;
@@ -67,7 +66,7 @@ header button {
   cursor: pointer;
 }
 header button:focus-visible {
-  outline: 2px solid #f2c48d;
+  outline: 2px solid var(--accent);
   outline-offset: -2px;
   border-radius: 8px;
 }
@@ -97,7 +96,7 @@ li {
 li[data-done='true'] .check {
   background: #8bc34a;
   border-color: #8bc34a;
-  color: #2b2420;
+  color: var(--on-accent);
 }
 li[data-done='true'] .text {
   text-decoration: line-through;
@@ -107,12 +106,11 @@ li[data-done='true'] .text {
   margin: 4px 0 8px;
   font-size: 12px;
   line-height: 1.4;
-  color: #f2c48d;
+  color: var(--accent);
 }
 @media (max-width: 480px) {
   h2 {
     font-size: 11px;
-    letter-spacing: 0.04em;
     white-space: nowrap;
   }
 }
