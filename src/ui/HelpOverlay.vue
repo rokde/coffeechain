@@ -90,7 +90,13 @@ const storage = [
         <li v-for="text in storage" :key="text">{{ text }}</li>
       </ol>
       <h3>{{ de.help.controlsHeading }}</h3>
-      <dl data-testid="help-controls">
+      <dl class="touch-controls" data-testid="help-touch">
+        <template v-for="row in de.help.touchControls" :key="row.keys">
+          <dt>{{ row.keys }}</dt>
+          <dd>{{ row.text }}</dd>
+        </template>
+      </dl>
+      <dl class="key-controls" data-testid="help-controls">
         <template v-for="row in de.help.controls" :key="row.keys">
           <dt>{{ row.keys }}</dt>
           <dd>{{ row.text }}</dd>
@@ -109,6 +115,17 @@ const storage = [
 </template>
 
 <style scoped>
+/* Touch-only devices get the touch gestures, the others the mouse and the keys. */
+@media (hover: hover) {
+  .touch-controls {
+    display: none;
+  }
+}
+@media (hover: none) {
+  .key-controls {
+    display: none;
+  }
+}
 .backdrop {
   position: absolute;
   inset: 0;

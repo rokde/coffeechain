@@ -15,6 +15,17 @@ export function speedForKey(
   return speeds.filter((speed) => speed > 0)[Number(key) - 1]
 }
 
+// The running speed after the current one, round the list. A paused game goes on from the last running speed.
+export function cycleSpeed(
+  current: number,
+  lastRunning: number | undefined,
+  speeds: readonly number[],
+): number {
+  const running = speeds.filter((speed) => speed > 0)
+  const from = current > 0 ? current : (lastRunning ?? running[0]!)
+  return running[(running.indexOf(from) + 1) % running.length]!
+}
+
 // True when the key goes to a text field and not to the game.
 export function isTyping(target: EventTarget | null): boolean {
   return (

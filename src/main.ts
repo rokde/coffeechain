@@ -17,6 +17,7 @@ import { skipResume, startState } from './app/resume'
 import { setStartState, useGameStore } from './app/store'
 import { useStartScreenStore } from './app/startScreen'
 import { useSaveListStore } from './app/saveList'
+import { useSavePanelStore } from './app/savePanel'
 import { useViewStore } from './app/view'
 import {
   CAMERA,
@@ -24,7 +25,10 @@ import {
   gestureZoomDelta,
   islandView,
   isTrackpadScroll,
+  oneFinger,
+  type OneFinger,
   startView,
+  TOUCH,
   twistSteps,
   wheelZoomDelta,
 } from './render/camera'
@@ -323,9 +327,30 @@ function start({ canvas, renderer, scene, view }: Stage) {
   canvas.addEventListener('pointercancel', endDrag)
 
   // Touch: two fingers pinch to zoom, move to pan and twist to rotate in 90° steps.
-  // One finger acts like the left mouse button.
-  // True from the second finger until the next press, so the gesture does not click, mark or paint.
+  // One finger pans with a drag, acts with a tap, and marks or paints after a long press.
+  // True from the second finger or a one-finger pan until the next press, so the gesture does not
+  // click, mark or paint.
   let touchGesture = false
+  // The one finger on the canvas, while it is the only one.
+  let finger: {
+    id: number
+    down: PointerEvent
+    state: OneFinger
+    timer: ReturnType<typeof setTimeout>
+  } | null = null
+  // Acts for the finger like a left press: hold true after the long press, false for a tap.
+  // The game part below sets it, once the terrain exists.
+  let touchPress: (event: PointerEvent, hold: boolean) => void = () => {}
+  const dropFinger = () => {
+    if (finger) clearTimeout(finger.timer)
+    finger = null
+  }
+  const holdFinger = () => {
+    if (!finger || finger.state === 'pan') return
+    finger.state = 'hold'
+    navigator.vibrate?.(15)
+    touchPress(finger.down, true)
+  }
   const twoFingers = () => {
     const [a, b] = [...touches.values()] as [{ x: number; y: number }, { x: number; y: number }]
     return {
@@ -339,15 +364,43 @@ function start({ canvas, renderer, scene, view }: Stage) {
     if (touches.size === 0) touchGesture = false
     if (event.pointerType !== 'touch') return
     touches.set(event.pointerId, { x: event.clientX, y: event.clientY })
+    if (touches.size === 1) {
+      const id = event.pointerId
+      finger = {
+        id,
+        down: event,
+        state: 'pending',
+        timer: setTimeout(holdFinger, TOUCH.longPressMs),
+      }
+    }
     if (touches.size === 2) {
+      dropFinger()
       touchGesture = true
       twist = 0
     }
   })
   canvas.addEventListener('pointermove', (event) => {
-    if (!touches.has(event.pointerId)) return
+    const last = touches.get(event.pointerId)
+    if (!last) return
     if (touches.size !== 2) {
       touches.set(event.pointerId, { x: event.clientX, y: event.clientY })
+      if (finger?.id !== event.pointerId) return
+      const { down } = finger
+      const before = finger.state
+      const state = oneFinger(
+        before,
+        event.clientX - down.clientX,
+        event.clientY - down.clientY,
+        event.timeStamp - down.timeStamp,
+      )
+      if (state === 'hold' && before === 'pending') holdFinger()
+      if (state !== 'pan') return
+      if (before === 'pending') {
+        clearTimeout(finger.timer)
+        finger.state = 'pan'
+        touchGesture = true
+      }
+      view.pan(event.clientX - last.x, event.clientY - last.y, canvas.clientHeight)
       return
     }
     const before = twoFingers()
@@ -359,7 +412,13 @@ function start({ canvas, renderer, scene, view }: Stage) {
     // The angle change in (-π, π].
     addTwist(Math.atan2(Math.sin(after.angle - before.angle), Math.cos(after.angle - before.angle)))
   })
-  const endTouch = (event: PointerEvent) => touches.delete(event.pointerId)
+  const endTouch = (event: PointerEvent) => {
+    touches.delete(event.pointerId)
+    if (finger?.id !== event.pointerId) return
+    // A tap acts like a click. The click event does that for the select tool.
+    if (event.type === 'pointerup' && finger.state === 'pending') touchPress(event, false)
+    dropFinger()
+  }
   canvas.addEventListener('pointerup', endTouch)
   canvas.addEventListener('pointercancel', endTouch)
 
@@ -378,7 +437,7 @@ function start({ canvas, renderer, scene, view }: Stage) {
   installSpeedKeys(store)
   installAutosave(store)
   const viewStore = useViewStore(pinia)
-  installHelpKeys(viewStore, useSelectionStore(pinia))
+  installHelpKeys(viewStore, useSelectionStore(pinia), useSavePanelStore(pinia))
   installToolKeys(viewStore, useSelectionStore(pinia), store)
   installDebugKeys(viewStore)
   // The model row lies at the origin, so the debug view has no terrain.
@@ -554,9 +613,9 @@ function start({ canvas, renderer, scene, view }: Stage) {
         selection.note = null
       }
     }
-    canvas.addEventListener('pointerdown', (event) => {
-      if (event.button === 2) rightDown = { x: event.clientX, y: event.clientY }
-      if (event.button === 0 && selection.tool === 'select') {
+    // A left press: the select tool starts a marking, a brush tool a stroke.
+    const press = (event: PointerEvent) => {
+      if (selection.tool === 'select') {
         dragged = false
         marking = {
           x: event.clientX,
@@ -566,12 +625,24 @@ function start({ canvas, renderer, scene, view }: Stage) {
         }
         canvas.setPointerCapture(event.pointerId)
       }
-      if (event.button !== 0 || !isBrushTool(selection.tool)) return
+      if (!isBrushTool(selection.tool)) return
       stroke = new Set()
       // The capture sends the release to the canvas, also over the HUD, so no old stroke stays.
       canvas.setPointerCapture(event.pointerId)
       brush(event)
+    }
+    canvas.addEventListener('pointerdown', (event) => {
+      if (event.button === 2) rightDown = { x: event.clientX, y: event.clientY }
+      // A finger waits for the tap or the long press, see the touch part above.
+      if (event.button === 0 && event.pointerType !== 'touch') press(event)
     })
+    touchPress = (event, hold) => {
+      if (hold) return press(event)
+      if (!isBrushTool(selection.tool)) return
+      stroke = new Set()
+      brush(event)
+      stroke = null
+    }
     canvas.addEventListener('pointermove', (event) => {
       // A two-finger gesture ends the stroke and the marking of its first finger.
       if (touchGesture) {

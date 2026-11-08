@@ -44,6 +44,8 @@
     "weeksStarted": "Ab jetzt läuft die Zeit in Wochen",
     "speeds": "Spielgeschwindigkeit",
     "pause": "Pause",
+    "play": "Weiter",
+    "cycle": "Tempo {speed}, tippen zum Wechseln",
     "speed": "{speed}×"
   },
   "debug": {
@@ -145,7 +147,10 @@
     "irrigate": "Wässern",
     "harvest": "Ernten",
     "build": "Bauen",
-    "market": "Markt"
+    "market": "Markt",
+    "field": "Feld",
+    "view": "Ansicht",
+    "closeSheet": "Werkzeug ablegen"
   },
   "parcelTool": {
     "heading": "Parzellen anlegen",
@@ -374,6 +379,17 @@
       "Kaffee im Lager verliert Qualität, ältere Chargen mehr. Verlust je Monat in Qualitätspunkten: {loss}."
     ],
     "controlsHeading": "Steuerung",
+    "touchControls": [
+      { "keys": "Ein Finger ziehen", "text": "Karte verschieben" },
+      { "keys": "Tippen", "text": "Parzelle wählen oder Werkzeug anwenden" },
+      {
+        "keys": "Lange drücken, dann ziehen",
+        "text": "Rechteck markieren oder Werkzeug auf mehrere Parzellen anwenden"
+      },
+      { "keys": "Zwei Finger auseinander / zusammen", "text": "Zoom" },
+      { "keys": "Zwei Finger drehen", "text": "Kamera in 90°-Schritten drehen" },
+      { "keys": "Griff über dem Werkzeug nach unten wischen", "text": "Werkzeug ablegen" }
+    ],
     "toolKey": "Werkzeug {label}",
     "overlayKey": "Overlay {label} ein / aus",
     "controls": [

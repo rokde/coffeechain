@@ -94,3 +94,48 @@ test('079: Hud.vue comments no longer name the removed overlay panel', () => {
   expect(text).not.toContain('the overlay panel moves down')
   expect(text).not.toContain('above the overlay panel')
 })
+
+test.describe('#42: one finger on a phone', () => {
+  test.use({ hasTouch: true, viewport: { width: 390, height: 844 } })
+
+  test('a one-finger drag pans and buys nothing, a long press and drag paints', async ({
+    page,
+  }) => {
+    await page.goto('/?seed=48213')
+    await page.getByTestId('first-steps-close').click()
+    await page.getByTestId('speed-toggle').click()
+    await expect(page.getByTestId('speed-toggle')).toHaveAttribute('aria-pressed', 'true')
+    await page.getByTestId('group-field').click()
+    await page.getByTestId('tool-parcel').click()
+    await expect(page.getByTestId('tool-parcel')).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
+    const canvas = page.locator('canvas#scene')
+    const money = page.getByTestId('money')
+    const before = await canvas.screenshot()
+
+    const cdp = await page.context().newCDPSession(page)
+    const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', x = 0, y = 0) =>
+      cdp.send('Input.dispatchTouchEvent', {
+        type,
+        touchPoints: type === 'touchEnd' ? [] : [{ x, y }],
+      })
+    await touch('touchStart', 200, 400)
+    for (let i = 1; i <= 10; i++) await touch('touchMove', 200 - i * 8, 400 - i * 5)
+    await touch('touchEnd')
+    await expect(money).toHaveText('500 CC')
+    await expect.poll(async () => (await canvas.screenshot()).equals(before)).toBe(false)
+
+    // A long press starts the brush, so the drag acts on the parcels under the finger.
+    await touch('touchStart', 195, 420)
+    await page.waitForTimeout(600)
+    for (let i = 1; i <= 6; i++) await touch('touchMove', 195 + i * 6, 420 + i * 4)
+    await touch('touchEnd')
+    await expect
+      .poll(
+        async () =>
+          (await money.textContent()) !== '500 CC' ||
+          (await page.getByTestId('tool-note').count()) > 0,
+      )
+      .toBe(true)
+  })
+})

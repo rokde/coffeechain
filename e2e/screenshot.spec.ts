@@ -2,6 +2,20 @@ import { expect, test, type Page } from '@playwright/test'
 
 const speeds = [0, 1, 2, 4, 8, 16]
 const tools = ['select', 'parcel', 'plant', 'fertilize', 'irrigate', 'harvest', 'build', 'market']
+const fieldTools = ['parcel', 'plant', 'fertilize', 'irrigate', 'harvest']
+// At 640 px or less the toolbar has five entries. The field tools and the overlays open from a group (#42).
+const entries = ['tool-select', 'group-field', 'tool-build', 'tool-market', 'group-view']
+const barIds = (page: Page) =>
+  page.viewportSize()!.width <= 640
+    ? entries
+    : [...tools.map((tool) => `tool-${tool}`), 'overlay-soil', 'overlay-zone']
+// Clicks a tool or overlay button, and opens its toolbar group first when the button is hidden.
+async function press(page: Page, id: string) {
+  const button = page.getByTestId(id)
+  if (!(await button.isVisible()))
+    await page.getByTestId(id.startsWith('overlay-') ? 'group-view' : 'group-field').click()
+  await button.click()
+}
 
 test('M0: scene and empty HUD frame', async ({ page }) => {
   const errors: string[] = []
@@ -49,7 +63,22 @@ test('S9: top bar fits a narrow window', async ({ page }) => {
   await page.goto('/?seed=4294967295')
   const bar = page.getByTestId('hud-top-bar')
   expect(await bar.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
-  for (const s of speeds) await expect(page.getByTestId(`speed-${s}`)).toBeInViewport({ ratio: 1 })
+  // #42: one pause / play button and one cycling speed button, both at least 44 × 44.
+  for (const id of ['speed-toggle', 'speed-cycle']) {
+    await expect(page.getByTestId(id)).toBeInViewport({ ratio: 1 })
+    const box = (await page.getByTestId(id).boundingBox())!
+    expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(44)
+  }
+  for (const s of speeds) await expect(page.getByTestId(`speed-${s}`)).toBeHidden()
+  const cycle = page.getByTestId('speed-cycle')
+  await expect(cycle).toHaveText('1×')
+  await cycle.click()
+  await expect(cycle).toHaveText('2×')
+  await page.getByTestId('speed-toggle').click()
+  await expect(page.getByTestId('speed-toggle')).toHaveAttribute('aria-pressed', 'true')
+  await expect(cycle).toHaveText('2×')
+  await page.getByTestId('speed-toggle').click()
+  await expect(cycle).toHaveAttribute('aria-pressed', 'true')
   await expect(page.getByTestId('world-seed')).toBeInViewport({ ratio: 1 })
   await expect(page.getByTestId('money')).toBeInViewport({ ratio: 1 })
   await expect(page.getByTestId('storage')).toBeInViewport({ ratio: 1 })
@@ -184,7 +213,7 @@ test('S7: soil and zone overlay toggles', async ({ page }) => {
   const zone = page.getByTestId('overlay-zone')
   await expect(soil).toHaveAttribute('aria-pressed', 'false')
   await expect(zone).toHaveAttribute('aria-pressed', 'false')
-  await page.getByTestId('tool-plant').click()
+  await press(page, 'tool-plant')
 
   // S60 AC-2: one overlay at a time, and the picked tool stays.
   await soil.click()
@@ -215,7 +244,7 @@ test('S7: overlay legend fits a narrow window', async ({ page }) => {
   await page.goto('/?seed=48213')
   const panel = page.getByTestId('hud-overlay-panel')
   for (const mode of ['soil', 'zone']) {
-    await page.getByTestId(`overlay-${mode}`).click()
+    await press(page, `overlay-${mode}`)
     const box = (await panel.boundingBox())!
     for (const item of await page.getByTestId('overlay-legend').locator('li').all()) {
       const fits = await item.evaluate((el) => el.scrollWidth <= el.clientWidth)
@@ -232,7 +261,7 @@ for (const [width, height] of [
   test(`S7: overlay panel and inspector do not overlap at ${width}x${height}`, async ({ page }) => {
     await page.setViewportSize({ width, height })
     await page.goto('/?seed=48213')
-    await page.getByTestId('overlay-soil').click()
+    await press(page, 'overlay-soil')
     // The screen centre shows parcel (35, 38) at the start view, which is land.
     await page.locator('canvas#scene').click({ position: { x: width / 2, y: height / 2 } })
     await expect(page.getByTestId('parcel-inspector')).toBeVisible()
@@ -261,7 +290,7 @@ test('S12: parcel tool and money', async ({ page }) => {
   await expect(money).toHaveText('500 CC')
   await expect(page.getByTestId('tool-select')).toHaveAttribute('aria-pressed', 'true')
 
-  await page.getByTestId('tool-parcel').click()
+  await press(page, 'tool-parcel')
   await expect(page.getByTestId('tool-parcel')).toHaveAttribute('aria-pressed', 'true')
   await expect(page.getByTestId('tool-select')).toHaveAttribute('aria-pressed', 'false')
   await expect(page.getByTestId('parcel-tool')).toBeVisible()
@@ -296,8 +325,8 @@ for (const [width, height] of [
   }) => {
     await page.setViewportSize({ width, height })
     await page.goto('/?seed=48213')
-    await page.getByTestId('overlay-soil').click()
-    await page.getByTestId('tool-parcel').click()
+    await press(page, 'overlay-soil')
+    await press(page, 'tool-parcel')
     await expect(page.getByTestId('parcel-tool')).toBeVisible()
     const box = async (id: string) => (await page.getByTestId(id).boundingBox())!
     const pairs = [
@@ -338,11 +367,11 @@ test('S13: plant tool', async ({ page }) => {
     { x: 607, y: 357 },
     { x: 758, y: 417 },
   ]
-  await page.getByTestId('tool-parcel').click()
+  await press(page, 'tool-parcel')
   for (const position of clicks) await canvas.click({ position })
   await expect(money).toHaveText('457 CC')
 
-  await page.getByTestId('tool-plant').click()
+  await press(page, 'tool-plant')
   await expect(page.getByTestId('plant-tool')).toBeVisible()
   await expect(page.getByTestId('parcel-inspector')).toHaveCount(0)
   await expect(page.getByTestId('plant-tool-plant')).toHaveCount(0)
@@ -380,7 +409,7 @@ test('S44: build tool', async ({ page }) => {
   const canvas = page.locator('canvas#scene')
   // Buildable lowland parcel (32, 38) of seed 48213 at the start view.
   const position = { x: 607, y: 357 }
-  await page.getByTestId('tool-parcel').click()
+  await press(page, 'tool-parcel')
   await canvas.click({ position })
   await expect(money).toHaveText('485 CC')
 
@@ -413,7 +442,7 @@ test('S44b: building meshes', async ({ page }) => {
     { position: { x: 607, y: 357 }, kind: 'processing' },
     { position: { x: 758, y: 417 }, kind: 'storage' },
   ]
-  await page.getByTestId('tool-parcel').click()
+  await press(page, 'tool-parcel')
   for (const { position } of sites) await canvas.click({ position })
   for (const { position, kind } of sites) {
     await page.getByTestId('tool-select').click()
@@ -451,7 +480,7 @@ test('S12b: owned parcel marks and field labels', async ({ page }) => {
   await expect(labels).toHaveCount(0)
 
   // Buildable lowland parcels (32, 38) and (35, 37) of seed 48213 at the start view.
-  await page.getByTestId('tool-parcel').click()
+  await press(page, 'tool-parcel')
   const canvas = page.locator('canvas#scene')
   await canvas.click({ position: { x: 607, y: 357 } })
   await canvas.click({ position: { x: 758, y: 417 } })
@@ -473,7 +502,7 @@ test('S12b: owned parcel marks and field labels', async ({ page }) => {
   await page.getByTestId('tool-select').click()
   await page.screenshot({ path: 'docs/progress/S12b.png' })
   // #11: the field borders keep the owned parcels visible in the soil view.
-  await page.getByTestId('overlay-soil').click()
+  await press(page, 'overlay-soil')
   await page.screenshot({ path: 'docs/progress/S12b-soil.png' })
   expect(errors).toEqual([])
 })
@@ -531,9 +560,9 @@ test('S40b: start view frames the hut, the market stand and the path', async ({ 
   await expect(page.getByTestId('market-panel')).toBeVisible()
   await page.getByTestId('tool-select').click()
 
-  await page.getByTestId('overlay-soil').click()
+  await press(page, 'overlay-soil')
   await page.screenshot({ path: 'docs/progress/S40b-soil.png', animations: 'disabled' })
-  await page.getByTestId('overlay-soil').click()
+  await press(page, 'overlay-soil')
 
   // One large wheel step clamps the zoom to CAMERA.minZoom. The cursor stays on the hut.
   await page.mouse.move(606, 465)
@@ -545,7 +574,7 @@ test('S40b: start view frames the hut, the market stand and the path', async ({ 
   await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
   await page.getByTestId('speed-0').click()
   await page.screenshot({ path: 'docs/progress/S40b-slope.png' })
-  await page.getByTestId('overlay-soil').click()
+  await press(page, 'overlay-soil')
   await page.screenshot({ path: 'docs/progress/S40b-slope-soil.png', animations: 'disabled' })
   expect(errors).toEqual([])
 })
@@ -553,8 +582,7 @@ test('S40b: start view frames the hut, the market stand and the path', async ({ 
 test('S20: market panel fits a narrow window', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/?seed=48213')
-  for (const tool of tools)
-    await expect(page.getByTestId(`tool-${tool}`)).toBeInViewport({ ratio: 1 })
+  for (const id of barIds(page)) await expect(page.getByTestId(id)).toBeInViewport({ ratio: 1 })
   await page.getByTestId('tool-market').click()
   const panel = page.getByTestId('market-panel')
   await expect(panel).toBeVisible()
@@ -577,9 +605,9 @@ test('S13b: plant meshes', async ({ page }) => {
     { x: 607, y: 357 },
     { x: 758, y: 417 },
   ]
-  await page.getByTestId('tool-parcel').click()
+  await press(page, 'tool-parcel')
   for (const position of clicks) await canvas.click({ position })
-  await page.getByTestId('tool-plant').click()
+  await press(page, 'tool-plant')
   for (const position of clicks) await canvas.click({ position })
   await expect(page.getByTestId('money')).toHaveText('453 CC')
   await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
@@ -606,9 +634,9 @@ test('S18a: care and harvest tools, storage chip', async ({ page }) => {
     { x: 607, y: 357 },
     { x: 758, y: 417 },
   ]
-  await page.getByTestId('tool-parcel').click()
+  await press(page, 'tool-parcel')
   for (const position of clicks) await canvas.click({ position })
-  await page.getByTestId('tool-plant').click()
+  await press(page, 'tool-plant')
   for (const position of clicks) await canvas.click({ position })
   await expect(money).toHaveText('453 CC')
 
@@ -627,7 +655,7 @@ test('S18a: care and harvest tools, storage chip', async ({ page }) => {
     'Markt',
   ])
 
-  await page.getByTestId('tool-fertilize').click()
+  await press(page, 'tool-fertilize')
   await expect(page.getByTestId('farm-tool')).toBeVisible()
   await expect(page.getByTestId('parcel-inspector')).toHaveCount(0)
   await expect(page.getByTestId('farm-tool-apply')).toHaveCount(0)
@@ -640,7 +668,7 @@ test('S18a: care and harvest tools, storage chip', async ({ page }) => {
   await page.getByTestId('speed-4').click()
   for (let i = 0; i < 4; i++) await page.clock.fastForward(60_000)
   await page.getByTestId('speed-0').click()
-  await page.getByTestId('tool-harvest').click()
+  await press(page, 'tool-harvest')
   for (const position of clicks) await canvas.click({ position })
   await expect(storage).not.toHaveText('Lager 0 / 100')
   await expect(storage).toHaveText(/^Lager \d+ \/ 100$/)
@@ -653,12 +681,27 @@ for (const width of [1280, 390, 360]) {
     await page.goto('/?seed=48213')
     const toolbar = page.getByTestId('hud-toolbar')
     expect(await toolbar.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
-    for (const tool of tools) {
-      const button = page.getByTestId(`tool-${tool}`)
-      await expect(button).toBeInViewport({ ratio: 1 })
-      // The label is not cut off.
-      expect(await button.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+    const fits = async (ids: string[]) => {
+      for (const id of ids) {
+        const button = page.getByTestId(id)
+        await expect(button).toBeInViewport({ ratio: 1 })
+        // The label is not cut off, and the button is a 44 × 44 touch target.
+        expect(await button.evaluate((el) => el.scrollWidth <= el.clientWidth), id).toBe(true)
+        const box = (await button.boundingBox())!
+        expect(Math.min(box.width, box.height), id).toBeGreaterThanOrEqual(44)
+      }
     }
+    await fits(barIds(page))
+    if (width > 640) return
+    // #42: at most five entries, the field tools open above them.
+    expect(await toolbar.locator('button:visible').count()).toBe(5)
+    await page.getByTestId('group-field').click()
+    await fits(fieldTools.map((tool) => `tool-${tool}`))
+    await page.getByTestId('tool-plant').click()
+    await expect(page.getByTestId('tool-plant')).toBeHidden()
+    await expect(page.getByTestId('group-field')).toHaveAttribute('aria-pressed', 'true')
+    await page.getByTestId('group-view').click()
+    await fits(['overlay-soil', 'overlay-zone'])
   })
 }
 
@@ -670,14 +713,14 @@ test('S18c: inspector yield forecast', async ({ page }) => {
   const canvas = page.locator('canvas#scene')
   // Buildable lowland parcel (32, 38) of seed 48213 at the start view.
   const position = { x: 607, y: 357 }
-  await page.getByTestId('tool-parcel').click()
+  await press(page, 'tool-parcel')
   await canvas.click({ position })
   await page.getByTestId('tool-select').click()
   await canvas.click({ position })
   await expect(page.getByTestId('parcel-inspector')).toBeVisible()
   await expect(page.getByTestId('inspector-yield')).toHaveCount(0)
 
-  await page.getByTestId('tool-plant').click()
+  await press(page, 'tool-plant')
   await canvas.click({ position })
   await page.getByTestId('tool-select').click()
   await canvas.click({ position })
@@ -697,9 +740,9 @@ test('S21e: field status and care buttons in the inspector', async ({ page }) =>
   const canvas = page.locator('canvas#scene')
   // Buildable lowland parcel (32, 38) of seed 48213 at the start view.
   const position = { x: 607, y: 357 }
-  await page.getByTestId('tool-parcel').click()
+  await press(page, 'tool-parcel')
   await canvas.click({ position })
-  await page.getByTestId('tool-plant').click()
+  await press(page, 'tool-plant')
   await canvas.click({ position })
   await page.getByTestId('tool-select').click()
   await canvas.click({ position })
@@ -747,7 +790,7 @@ test('S23: field labels fade on hover', async ({ page }) => {
   // A day takes 0.67 s at 1x. The pause keeps the labels from a rebuild during the test.
   await page.getByTestId('speed-0').click()
   // Buildable lowland parcels (32, 38) and (35, 37) of seed 48213 at the start view.
-  await page.getByTestId('tool-parcel').click()
+  await press(page, 'tool-parcel')
   const canvas = page.locator('canvas#scene')
   await canvas.click({ position: { x: 607, y: 357 } })
   await canvas.click({ position: { x: 758, y: 417 } })
@@ -766,7 +809,7 @@ test('S23: field labels fade on hover', async ({ page }) => {
 
   // A new field under the still mouse rebuilds the labels. Label A stays faded.
   // A synthetic press buys parcel (36, 40) at (682, 515) while the mouse stays still on field A.
-  await page.getByTestId('tool-parcel').click()
+  await press(page, 'tool-parcel')
   await canvas.hover({ position: { x: 607, y: 357 } })
   await expect.poll(() => opacity(labelA)).toBe('0')
   // pointerId 1 is the mouse in Chromium. The stroke captures it, so the test releases it.
@@ -840,9 +883,10 @@ test('S22: wheel zoom, right-drag pan and picking after zoom', async ({ page }) 
 test('S25: first steps tick, highlight and close', async ({ page }) => {
   await page.goto('/?seed=48213')
   await expect(page.getByTestId('first-steps')).toBeVisible()
-  await expect(page.locator('[data-guide="next"]')).toHaveCount(1)
+  // The hidden group entry of the narrow toolbar also carries the mark (#42).
+  await expect(page.locator('[data-guide="next"]:visible')).toHaveCount(1)
   await expect(page.getByTestId('overlay-soil')).toHaveAttribute('data-guide', 'next')
-  await page.getByTestId('overlay-soil').click()
+  await press(page, 'overlay-soil')
   await expect(page.getByTestId('first-step-overlay')).toHaveAttribute('data-done', 'true')
   await expect(page.getByTestId('tool-parcel')).toHaveAttribute('data-guide', 'next')
   await page.getByTestId('first-steps-close').click()
@@ -978,7 +1022,7 @@ test('S42b: save panel saves and loads a slot', async ({ page }) => {
   await expect(panel).toHaveCount(0)
 
   // Buildable lowland parcel (18, 23) of seed 48213 at the start camera.
-  await page.getByTestId('tool-parcel').click()
+  await press(page, 'tool-parcel')
   await page.locator('canvas#scene').click({ position: { x: 640, y: 370 } })
   await expect(money).not.toHaveText('500 CC')
 
@@ -1027,7 +1071,7 @@ test('S42b: top bar fits a narrow window at a long date', async ({ page }) => {
   await expect(page.getByTestId('clock')).toHaveText('30. September, Jahr 100')
   const bar = page.getByTestId('hud-top-bar')
   expect(await bar.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
-  for (const id of ['clock', 'speed-0', 'speed-16', 'save-button', 'help-button'])
+  for (const id of ['clock', 'speed-toggle', 'speed-cycle', 'save-button', 'help-button'])
     await expect(page.getByTestId(id)).toBeInViewport({ ratio: 1 })
   await page.screenshot({ path: 'docs/progress/save-panel-day-9999.png' })
 })
@@ -1131,7 +1175,7 @@ test('S40: tool brush paints, notes and disarms', async ({ page }) => {
   await expect(canvas).toHaveCSS('cursor', 'auto')
 
   // A left drag over lowland buys each parcel under the pointer once and does not pan the camera.
-  await page.getByTestId('tool-parcel').click()
+  await press(page, 'tool-parcel')
   expect(await canvas.evaluate((el) => el.style.cursor)).toMatch(/^url\("data:image\/svg\+xml,/)
   await page.mouse.move(607, 357)
   await page.mouse.down()
@@ -1155,7 +1199,7 @@ test('S40: tool brush paints, notes and disarms', async ({ page }) => {
   await expect(canvas).toHaveCSS('cursor', 'auto')
 
   // Esc with the help open only closes the help. A second Esc puts down the tool.
-  await page.getByTestId('tool-plant').click()
+  await press(page, 'tool-plant')
   await page.keyboard.press('h')
   await expect(page.getByTestId('help-overlay')).toBeVisible()
   await page.keyboard.press('Escape')
@@ -1164,7 +1208,7 @@ test('S40: tool brush paints, notes and disarms', async ({ page }) => {
   await page.keyboard.press('Escape')
   await armed('select')
 
-  await page.getByTestId('tool-harvest').click()
+  await press(page, 'tool-harvest')
   await page.getByTestId('tool-select').click()
   await armed('select')
   expect(errors).toEqual([])
@@ -1174,7 +1218,7 @@ test('S40: a release over the HUD ends the stroke', async ({ page }) => {
   await page.goto('/?seed=48213')
   await page.getByTestId('first-steps-close').click()
   const money = page.getByTestId('money')
-  await page.getByTestId('tool-parcel').click()
+  await press(page, 'tool-parcel')
   // The first stroke ends with a release over the right panel.
   const panel = (await page.getByTestId('hud-right-panel').boundingBox())!
   const inPanel = { x: panel.x + panel.width / 2, y: panel.y + panel.height / 2 }
@@ -1199,7 +1243,7 @@ for (const [width, height] of [
   test(`S40: armed plant tool with a note at ${width}x${height}`, async ({ page }) => {
     await page.setViewportSize({ width, height })
     await page.goto('/?seed=48213')
-    await page.getByTestId('tool-plant').click()
+    await press(page, 'tool-plant')
     await page.getByTestId('plant-tool-variety-arabicaStandard').click()
     // The screen centre shows parcel (35, 38), which is land that the farm does not own.
     await page.locator('canvas#scene').click({ position: { x: width / 2, y: height / 2 } })
@@ -1241,7 +1285,7 @@ for (const [width, height] of [
 
     await page.getByTestId('save-panel-close').click()
     await page.getByTestId('first-steps-close').click()
-    await page.getByTestId('tool-plant').click()
+    await press(page, 'tool-plant')
     await expect(page.getByTestId('plant-tool-zone-specialty')).toHaveText(
       'passt zu kühlem Hochland',
     )
@@ -1488,7 +1532,7 @@ test('S45: storage upgrade', async ({ page }) => {
   // Buildable lowland parcel (32, 38) of seed 48213 at the start view.
   const position = { x: 607, y: 357 }
   await expect(page.getByTestId('storage')).toHaveText('Lager 0 / 100')
-  await page.getByTestId('tool-parcel').click()
+  await press(page, 'tool-parcel')
   await canvas.click({ position })
   await expect(money).toHaveText('485 CC')
 
@@ -1710,7 +1754,7 @@ test('S59: a row click marks the field and centers the camera on it', async ({ p
   await expect(page.getByTestId('tool-select')).toHaveAttribute('aria-pressed', 'true')
   await expect(page.getByTestId('parcel-inspector')).toBeVisible()
   // The fertilize tool keeps the marks it can act on: all 4 parcels of field B.
-  await page.getByTestId('tool-fertilize').click()
+  await press(page, 'tool-fertilize')
   await expect(page.getByTestId('farm-tool-count')).toHaveText('4')
   await page.getByTestId('tool-select').click()
   await row.click()
@@ -1751,7 +1795,7 @@ test('S58: a brush stroke shows one money toast', async ({ page }) => {
   await page.getByTestId('speed-0').click()
   const money = page.getByTestId('money')
   const before = cents((await money.textContent())!)
-  await page.getByTestId('tool-parcel').click()
+  await press(page, 'tool-parcel')
   // A stopped clock keeps the stroke inside one hold time, also on a slow machine.
   await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 1000)
   await page.mouse.move(607, 357)
@@ -1802,7 +1846,7 @@ for (const [width, height] of [
     await page.getByTestId('save-slot-1').getByTestId('save-slot-load').click()
     await page.getByTestId('first-steps-close').click()
     await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
-    await page.getByTestId('tool-parcel').click()
+    await press(page, 'tool-parcel')
     // Stop the fake clock, so the toast stays for the checks and the screenshot.
     await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 1000)
     await page.locator('canvas#scene').click({ position: { x: width / 2, y: height / 2 } })
@@ -1829,7 +1873,7 @@ for (const [width, height] of [
     }
     // S60: the toast does not cover the legend. Zone has the widest legend, soil the highest.
     for (const mode of ['zone', 'soil']) {
-      await page.getByTestId(`overlay-${mode}`).click()
+      await press(page, `overlay-${mode}`)
       expect(apart(t, await box('hud-overlay-panel')), mode).toBe(true)
     }
     await page.screenshot({ path: `docs/progress/S58-${width}.png` })
@@ -1842,7 +1886,7 @@ test('S58: the money toast does not move with reduced motion', async ({ page }) 
   await page.goto('/?seed=48213')
   await page.getByTestId('first-steps-close').click()
   await page.getByTestId('speed-0').click()
-  await page.getByTestId('tool-parcel').click()
+  await press(page, 'tool-parcel')
   // Stop the fake clock, so the toast stays for the check.
   await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 1000)
   await page.locator('canvas#scene').click({ position: { x: 607, y: 357 } })
@@ -1865,7 +1909,7 @@ for (const [width, height] of [
     page.on('pageerror', (error) => errors.push(error.message))
     await page.setViewportSize({ width, height })
     await page.goto('/?seed=48213')
-    const ids = [...tools.map((tool) => `tool-${tool}`), 'overlay-soil', 'overlay-zone']
+    const ids = barIds(page)
     for (const id of ids) {
       const button = page.getByTestId(id)
       await expect(button).toBeInViewport({ ratio: 1 })
@@ -1874,7 +1918,7 @@ for (const [width, height] of [
     }
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
     await expect(page.getByTestId('overlay-legend')).toHaveCount(0)
-    await page.getByTestId('overlay-soil').click()
+    await press(page, 'overlay-soil')
     const legend = page.getByTestId('hud-overlay-panel')
     await expect(legend).toBeInViewport({ ratio: 1 })
     // In the portrait layout the legend is a row of the toolbar above the buttons, so it only has to clear them.
@@ -1888,7 +1932,7 @@ for (const [width, height] of [
     expect(await legendClear()).toBe(true)
     await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
     await page.screenshot({ path: `docs/progress/S60-${width}.png`, animations: 'disabled' })
-    await page.getByTestId('overlay-zone').click()
+    await press(page, 'overlay-zone')
     await expect(page.getByTestId('overlay-soil')).toHaveAttribute('aria-pressed', 'false')
     expect(await legendClear()).toBe(true)
     await page.keyboard.press('z')
@@ -1916,7 +1960,7 @@ async function startParcels(page: Page) {
   await page.goto('/?seed=48213')
   await page.getByTestId('first-steps-close').click()
   await page.getByTestId('speed-0').click()
-  await page.getByTestId('tool-parcel').click()
+  await press(page, 'tool-parcel')
   // A stopped clock keeps the coin on screen for the checks.
   await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 1000)
 }

@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useFirstStepsStore } from '../app/firstSteps'
 import { isFarmTool, pickTool, useSelectionStore } from '../app/selection'
 import { useSavePanelStore } from '../app/savePanel'
+import { cycleSpeed, speedForKey } from '../app/speedKeys'
 import { useGameStore } from '../app/store'
 import { useViewStore } from '../app/view'
+import { TOUCH } from '../render/camera'
 import { balance } from '../sim/balance'
 import { capital, phase, phaseProgress } from '../sim/progression/capital'
 import type { GameState } from '../sim/state'
@@ -29,7 +31,8 @@ import ParcelTool from './ParcelTool.vue'
 import PlantTool from './PlantTool.vue'
 import SavePanel from './SavePanel.vue'
 import StoragePanel from './StoragePanel.vue'
-import { overlays, tools } from './toolbar'
+import ToolIcon from './ToolIcon.vue'
+import { fieldTools, overlays, tools, viewIcon } from './toolbar'
 
 const store = useGameStore()
 const selection = useSelectionStore()
@@ -37,6 +40,81 @@ const steps = useFirstStepsStore()
 const view = useViewStore()
 const savePanel = useSavePanelStore()
 const speeds = balance().time.speeds
+const setSpeed = (speed: number) => store.dispatch({ type: 'SetSpeed', speed })
+// Narrow screens show one pause / play button and one button that cycles the running speeds.
+const lastRunning = ref<number>()
+watch(
+  () => store.state.time.speed,
+  (speed) => {
+    if (speed > 0) lastRunning.value = speed
+  },
+  { immediate: true },
+)
+const shownSpeed = computed(() => store.state.time.speed || lastRunning.value || 1)
+const togglePause = () =>
+  setSpeed(speedForKey(' ', store.state.time.speed, lastRunning.value, speeds)!)
+const nextSpeed = () => setSpeed(cycleSpeed(store.state.time.speed, lastRunning.value, speeds))
+
+// Narrow screens: the field tools share one toolbar entry, the overlays another. A tap on the entry
+// opens its tools above the bar. The entry shows the icon of the last field tool.
+type Group = 'field' | 'view'
+const openGroup = ref<Group | null>(null)
+const lastField = ref('parcel')
+watch(
+  () => selection.tool,
+  (tool) => {
+    if (fieldTools.includes(tool)) lastField.value = tool
+  },
+)
+const fieldIcon = computed(() => tools.find((tool) => tool.id === lastField.value)!.icon)
+const groupGuides: Record<Group, string[]> = {
+  field: fieldTools.map((id) => `tool-${id}`),
+  view: overlays.map((overlay) => `overlay-${overlay.id}`),
+}
+// The first steps mark the closed entry whose group holds the next tool.
+const groupGuide = (group: Group) =>
+  openGroup.value !== group && groupGuides[group].includes(steps.guide ?? '') ? 'next' : undefined
+const toggleGroup = (group: Group) => (openGroup.value = openGroup.value === group ? null : group)
+const pick = (id: string) => {
+  openGroup.value = null
+  pickTool(selection, store.state as GameState, id)
+}
+const toggleOverlay = (id: (typeof overlays)[number]['id']) => {
+  openGroup.value = null
+  view.toggle(id)
+}
+// Touch-only devices have no keyboard, so the tooltips leave out the key.
+const touchOnly = typeof matchMedia === 'function' && matchMedia('(hover: none)').matches
+const withKey = (label: string, key: string) => (touchOnly ? label : `${label} (${key})`)
+
+// The handle of the tool sheet: a tap, or a swipe down by a third of the sheet, puts down the tool.
+const sheet = ref<HTMLElement>()
+let swipe: { y: number; dy: number } | null = null
+let swiped = false
+const closeSheet = () => pick('select')
+function swipeStart(event: PointerEvent) {
+  swipe = { y: event.clientY, dy: 0 }
+  ;(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
+}
+function swipeMove(event: PointerEvent) {
+  if (!swipe || !sheet.value) return
+  swipe.dy = Math.max(0, event.clientY - swipe.y)
+  sheet.value.style.transform = swipe.dy ? `translateY(${swipe.dy}px)` : ''
+}
+function swipeEnd() {
+  if (!swipe || !sheet.value) return
+  const { dy } = swipe
+  swipe = null
+  const height = sheet.value.offsetHeight
+  sheet.value.style.transform = ''
+  // The click after a swipe does not close the sheet again.
+  swiped = dy >= TOUCH.tapSlop
+  if (dy > height / 3) closeSheet()
+}
+function handleClick() {
+  if (!swiped) closeSheet()
+  swiped = false
+}
 const dateText = computed(() => dateParts(store.state.time.day))
 const moneyText = computed(() => formatMoney(store.state.money))
 // The helpers only read the state, so the cast of the readonly snapshot is safe.
@@ -96,6 +174,34 @@ const phaseText = computed(() => {
               <rect x="6.5" y="1" width="2.5" height="8" fill="currentColor" />
             </svg>
             <template v-else>{{ de.time.speed.replace('{speed}', String(speed)) }}</template>
+          </button>
+          <button
+            type="button"
+            class="compact"
+            data-testid="speed-toggle"
+            :aria-label="store.state.time.speed === 0 ? de.time.play : de.time.pause"
+            :aria-pressed="store.state.time.speed === 0"
+            @click="togglePause"
+          >
+            <svg viewBox="0 0 10 10" width="10" height="10" aria-hidden="true">
+              <path v-if="store.state.time.speed === 0" d="M2 1l7 4-7 4z" fill="currentColor" />
+              <template v-else>
+                <rect x="1" y="1" width="2.5" height="8" fill="currentColor" />
+                <rect x="6.5" y="1" width="2.5" height="8" fill="currentColor" />
+              </template>
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="compact"
+            data-testid="speed-cycle"
+            :aria-label="
+              de.time.cycle.replace('{speed}', de.time.speed.replace('{speed}', String(shownSpeed)))
+            "
+            :aria-pressed="store.state.time.speed > 0"
+            @click="nextSpeed"
+          >
+            {{ de.time.speed.replace('{speed}', String(shownSpeed)) }}
           </button>
         </div>
         <span class="time-unit" data-testid="time-unit">{{
@@ -191,7 +297,20 @@ const phaseText = computed(() => {
       <FirstSteps v-if="steps.open && steps.current.next !== null" />
       <template v-else><FieldList /><MessagePanel /></template>
     </aside>
-    <aside class="frame right-panel" data-testid="hud-right-panel">
+    <aside ref="sheet" class="frame right-panel" data-testid="hud-right-panel">
+      <button
+        v-if="selection.tool !== 'select'"
+        type="button"
+        class="sheet-handle"
+        data-testid="sheet-handle"
+        :aria-label="de.tools.closeSheet"
+        :title="de.tools.closeSheet"
+        @pointerdown="swipeStart"
+        @pointermove="swipeMove"
+        @pointerup="swipeEnd"
+        @pointercancel="swipeEnd"
+        @click="handleClick"
+      />
       <ParcelTool v-if="selection.tool === 'parcel'" />
       <PlantTool v-else-if="selection.tool === 'plant'" />
       <FarmTool v-else-if="isFarmTool(selection.tool)" />
@@ -199,41 +318,66 @@ const phaseText = computed(() => {
       <MarketPanel v-else-if="selection.tool === 'market'" />
       <ParcelInspector v-else />
     </aside>
-    <nav class="frame toolbar" data-testid="hud-toolbar" :aria-label="de.tools.label">
-      <button
-        v-for="tool in tools"
-        :key="tool.id"
-        type="button"
-        :data-testid="`tool-${tool.id}`"
-        :aria-pressed="selection.tool === tool.id"
-        :title="`${tool.label} (${tool.key})`"
-        :aria-keyshortcuts="tool.key"
-        :data-guide="steps.guide === `tool-${tool.id}` ? 'next' : undefined"
-        @click="pickTool(selection, store.state as GameState, tool.id)"
-      >
-        {{ tool.label }}
-      </button>
+    <nav
+      class="frame toolbar"
+      data-testid="hud-toolbar"
+      :aria-label="de.tools.label"
+      :data-open="openGroup ?? undefined"
+    >
+      <template v-for="tool in tools" :key="tool.id">
+        <button
+          v-if="tool.id === fieldTools[0]"
+          type="button"
+          class="group-entry"
+          data-testid="group-field"
+          :aria-expanded="openGroup === 'field'"
+          :aria-pressed="fieldTools.includes(selection.tool)"
+          :data-guide="groupGuide('field')"
+          @click="toggleGroup('field')"
+        >
+          <ToolIcon :d="fieldIcon" />
+          <span>{{ de.tools.field }}</span>
+        </button>
+        <button
+          type="button"
+          :class="{ sub: fieldTools.includes(tool.id) }"
+          :data-testid="`tool-${tool.id}`"
+          :aria-pressed="selection.tool === tool.id"
+          :title="withKey(tool.label, tool.key)"
+          :aria-keyshortcuts="tool.key"
+          :data-guide="steps.guide === `tool-${tool.id}` ? 'next' : undefined"
+          @click="pick(tool.id)"
+        >
+          <ToolIcon :d="tool.icon" />
+          <span>{{ tool.label }}</span>
+        </button>
+      </template>
       <div class="overlays" role="group" :aria-label="de.overlay.label">
+        <button
+          type="button"
+          class="group-entry"
+          data-testid="group-view"
+          :aria-expanded="openGroup === 'view'"
+          :aria-pressed="view.overlay !== 'none'"
+          :data-guide="groupGuide('view')"
+          @click="toggleGroup('view')"
+        >
+          <ToolIcon :d="viewIcon" />
+          <span>{{ de.tools.view }}</span>
+        </button>
         <button
           v-for="overlay in overlays"
           :key="overlay.id"
           type="button"
+          class="sub"
           :data-testid="`overlay-${overlay.id}`"
           :aria-pressed="view.overlay === overlay.id"
-          :title="`${overlay.title} (${overlay.key})`"
+          :title="withKey(overlay.title, overlay.key)"
           :aria-keyshortcuts="overlay.key"
           :data-guide="steps.guide === `overlay-${overlay.id}` ? 'next' : undefined"
-          @click="view.toggle(overlay.id)"
+          @click="toggleOverlay(overlay.id)"
         >
-          <svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true">
-            <path
-              :d="overlay.icon"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linejoin="round"
-            />
-          </svg>
+          <ToolIcon :d="overlay.icon" />
           <span>{{ overlay.label }}</span>
         </button>
       </div>
@@ -414,6 +558,12 @@ button:active {
   background: var(--accent);
   color: var(--on-accent);
 }
+/* The pause / play and the cycling speed button replace the six buttons on narrow screens. */
+.speeds .compact,
+.toolbar .group-entry,
+.sheet-handle {
+  display: none;
+}
 .time-unit {
   font-size: 12px;
   font-weight: 400;
@@ -500,6 +650,11 @@ button:active {
 }
 .toolbar button {
   flex: 1 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   padding: 0 4px;
   border: 0;
   border-radius: 8px;
@@ -530,13 +685,6 @@ button:active {
   margin-left: 4px;
   padding-left: 8px;
   border-left: 1px solid var(--line);
-}
-.overlays button {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
 }
 @media (max-width: 900px) {
   .toolbar button {
@@ -623,9 +771,12 @@ button:active {
     grid-area: speeds;
     gap: 0;
   }
-  .speeds button {
-    flex: 1 0 0;
-    min-width: 0;
+  .speeds button:not(.compact) {
+    display: none;
+  }
+  .speeds .compact {
+    display: block;
+    flex: 1 0 44px;
     padding: 0;
   }
   .save-button {
@@ -662,6 +813,35 @@ button:active {
     max-height: none;
     margin-top: auto;
   }
+  /* A 44 px tall grab handle over the top of the sheet. Its pill is 32 × 4 px. */
+  .sheet-handle {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: block;
+    width: 96px;
+    height: 44px;
+    margin: 0 auto -32px;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: grab;
+    touch-action: none;
+  }
+  .sheet-handle::before {
+    content: '';
+    position: absolute;
+    top: 6px;
+    left: 32px;
+    width: 32px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--fg-3);
+  }
+  .sheet-handle:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+  }
   .toolbar {
     height: auto;
     display: grid;
@@ -675,7 +855,7 @@ button:active {
   /* The legend joins the flow above the buttons, so it never covers the sheet. */
   .toolbar :deep(.overlay-panel) {
     position: static;
-    order: -1;
+    order: -2;
     grid-column: 1 / -1;
     max-width: none;
     padding: 4px 6px 8px;
@@ -684,32 +864,46 @@ button:active {
     border-radius: 0;
   }
 }
-/* Ten buttons in a 5 × 2 grid: eight tools, then the two overlay toggles. */
+/*
+ * Five entries with icon and label: Auswählen, Feld, Bauen, Markt, Ansicht.
+ * Feld holds the five field tools, Ansicht the two overlays. An open group shows its tools in a row
+ * above the entries, under the legend.
+ */
 @media (max-width: 640px) {
   .toolbar {
     grid-template-columns: repeat(5, minmax(0, 1fr));
   }
   .toolbar button {
-    height: 44px;
+    height: 52px;
+    gap: 2px;
     padding: 0;
     font-size: 12px;
   }
-  .overlays {
-    grid-column: span 2;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    margin: 0;
-    padding: 0;
-    border: 0;
-  }
-  .overlays button {
-    flex-direction: row;
-    gap: 4px;
-    box-shadow: inset 0 0 0 1px var(--line);
-  }
-  .overlays svg {
+  .toolbar svg {
     width: 16px;
     height: 16px;
+  }
+  .overlays {
+    display: contents;
+  }
+  .toolbar .group-entry {
+    display: flex;
+  }
+  .toolbar .sub {
+    display: none;
+  }
+  .toolbar[data-open='field'] > .sub,
+  .toolbar[data-open='view'] .overlays > .sub {
+    display: flex;
+    order: -1;
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+  /* The overlays sit above the Ansicht entry. */
+  .toolbar[data-open='view'] .group-entry + .sub {
+    grid-column-start: 4;
+  }
+  .toolbar > [data-testid='tool-select'] {
+    grid-column-start: 1;
   }
 }
 /* The second row must fit the money group, so the phase drops the progress and the storage its word. */

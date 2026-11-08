@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { disarmKey, helpKeyAction } from './helpKeys'
+import { disarmKey, escapeTarget, helpKeyAction } from './helpKeys'
 
 describe('helpKeyAction (S35a)', () => {
   it('AC-1: h and H open, h, H and Escape close', () => {
@@ -24,5 +24,14 @@ describe('disarmKey (S40)', () => {
     expect(helpKeyAction('Escape', true, false)).toBe('close')
     expect(disarmKey('Escape', false, true)).toBe(false)
     for (const key of ['h', 'q', ' ', '1']) expect(disarmKey(key, false, false)).toBe(false)
+  })
+})
+
+describe('escapeTarget (#42)', () => {
+  it('closes the top layer first: help, save panel, storage panel, then the tool sheet', () => {
+    expect(escapeTarget({ help: true, save: true, storage: true })).toBe('help')
+    expect(escapeTarget({ help: false, save: true, storage: true })).toBe('save')
+    expect(escapeTarget({ help: false, save: false, storage: true })).toBe('storage')
+    expect(escapeTarget({ help: false, save: false, storage: false })).toBe('tool')
   })
 })

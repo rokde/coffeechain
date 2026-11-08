@@ -20,6 +20,21 @@ export const CAMERA = {
   keySpeed: 20,
 }
 
+// One-finger touch, not game balancing. A finger that moves less than tapSlop px is still a tap.
+// A finger that holds still for longPressMs starts a marking or a brush stroke.
+export const TOUCH = { tapSlop: 8, longPressMs: 400 }
+
+// pending: a tap so far. pan: the finger moves the map. hold: the long press marks or paints.
+export type OneFinger = 'pending' | 'pan' | 'hold'
+
+// The next state of a one-finger touch after it moved dx, dy px in ms since the press.
+// Once pan or hold, it stays.
+export function oneFinger(state: OneFinger, dx: number, dy: number, ms: number): OneFinger {
+  if (state !== 'pending') return state
+  if (Math.hypot(dx, dy) >= TOUCH.tapSlop) return 'pan'
+  return ms >= TOUCH.longPressMs ? 'hold' : 'pending'
+}
+
 // The start view keeps the start area inside this part of the screen (NDC), away from the HUD.
 // At 1280 x 900 the HUD covers x 16–316 (left panels) and 934–1264 (right panel),
 // y 16–76 (top bar) and 802–884 (toolbar). That leaves NDC x [-0.51, 0.46], y [-0.78, 0.83].

@@ -88,6 +88,7 @@ describe('FirstSteps (S25)', () => {
     expect(done).toEqual<StepId[]>(['overlay', 'parcel', 'plant', 'fertilize'])
   })
 
+  // A field tool or an overlay also marks its closed group entry of the narrow toolbar (#42).
   it('AC-4: only the next target is highlighted, with its hint', async () => {
     const s = states()
     const pinia = fresh()
@@ -95,18 +96,18 @@ describe('FirstSteps (S25)', () => {
     const view = useViewStore(pinia)
     useFirstStepsStore(pinia) // created outside SSR, so its watcher runs
     let h = await html(pinia)
-    expect(guides(h)).toEqual(['overlay-soil'])
+    expect(guides(h)).toEqual(['group-view', 'overlay-soil'])
     expect(h).toContain('Schalte unten „Boden“ ein (Taste O).')
     expect(left(h)).not.toContain('links')
     view.toggle('soil')
-    expect(guides(await html(pinia))).toEqual(['tool-parcel'])
+    expect(guides(await html(pinia))).toEqual(['group-field', 'tool-parcel'])
     game.replace(s.owned)
-    expect(guides(await html(pinia))).toEqual(['tool-plant'])
+    expect(guides(await html(pinia))).toEqual(['group-field', 'tool-plant'])
     game.replace(s.fertilized)
     expect(guides(await html(pinia))).toEqual([])
     game.replace({ ...s.fertilized, time: { ...s.fertilized.time, day: s.harvested.time.day } })
     h = await html(pinia)
-    expect(guides(h)).toEqual(['tool-harvest'])
+    expect(guides(h)).toEqual(['group-field', 'tool-harvest'])
     expect(h).toContain('Ernten')
     game.replace(s.harvested)
     expect(guides(await html(pinia))).toEqual(['tool-market'])
