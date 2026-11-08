@@ -173,7 +173,7 @@ test('S8: parcel inspector', async ({ page }) => {
   await expect(page.getByTestId('inspector-variety')).toHaveText(
     /^(Robusta|Arabica Standard|Arabica Premium|Specialty)$/,
   )
-  await expect(page.getByTestId('inspector-buildable')).toHaveText(/^(nicht )?bebaubar$/)
+  await expect(page.getByTestId('inspector-buildable')).toHaveText(/bebaubar|belegt|zu steil/)
   await page.screenshot({ path: 'docs/progress/S8.png' })
 
   await page.getByRole('button', { name: 'Auswahl schließen' }).click()

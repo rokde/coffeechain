@@ -8,7 +8,6 @@ import { isFree, quoteParcels } from '../sim/farm/parcels'
 import { fieldStatus } from '../sim/farm/status'
 import type { GameState } from '../sim/state'
 import { inspectParcel } from '../sim/world/inspect'
-import type { World } from '../sim/world/types'
 import { formatMonth } from './date'
 import { careParcel } from './farmAction'
 import de from './i18n/de.json'
@@ -19,8 +18,8 @@ const game = useGameStore()
 const selection = useSelectionStore()
 const info = computed(() => {
   const p = selection.parcel
-  // inspectParcel only reads the world, so the cast of the readonly snapshot is safe.
-  return p && inspectParcel(game.state.world as World, p.x, p.y)
+  // inspectParcel only reads the state, so the cast of the readonly snapshot is safe.
+  return p && inspectParcel(game.state as GameState, p.x, p.y)
 })
 const forecast = computed(() => {
   const p = selection.parcel
@@ -106,8 +105,14 @@ const price = computed(() => {
         {{ info.variety ? t.varieties[info.variety] : t.noVariety }}
       </dd>
       <dt :title="t.tips.terrain">{{ t.terrain }}</dt>
-      <dd data-testid="inspector-buildable">
-        {{ info.buildable ? t.buildable : t.notBuildable }}
+      <dd data-testid="inspector-buildable">{{ t.states[info.state] }}</dd>
+      <template v-if="info.occupant">
+        <dt :title="t.tips.occupant">{{ t.occupant }}</dt>
+        <dd data-testid="inspector-occupant">{{ t.occupants[info.occupant] }}</dd>
+      </template>
+      <dt :title="t.tips.height">{{ t.height }}</dt>
+      <dd data-testid="inspector-height">
+        {{ t.heightValue.replace('{h}', info.height.toFixed(2)).replace('{s}', info.slope.toFixed(2)) }}
       </dd>
       <template v-if="forecast !== null">
         <dt :title="t.tips.yield">{{ t.yield }}</dt>

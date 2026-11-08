@@ -62,8 +62,22 @@
     "variety": "Passende Sorte",
     "terrain": "Gelände",
     "noVariety": "keine",
-    "buildable": "bebaubar",
-    "notBuildable": "nicht bebaubar",
+    "states": {
+      "buildable": "bebaubar",
+      "occupied": "belegt",
+      "tooSteep": "zu steil",
+      "water": "Wasser, nicht bebaubar"
+    },
+    "occupant": "Darauf",
+    "occupants": {
+      "hut": "Deine Hütte",
+      "market": "Markt",
+      "path": "Weg",
+      "tree": "Baum (wird beim Kauf gerodet)",
+      "plant": "Kaffeepflanze"
+    },
+    "height": "Höhe",
+    "heightValue": "{h}, Gefälle {s}",
     "yield": "Ertragsprognose",
     "yieldUnits": "{n} Einheiten",
     "quality": "Qualitätsprognose",
@@ -103,6 +117,8 @@
       "soilClass": "Die Bodenklasse ändert den Ertrag der Pflanze.",
       "variety": "Die Kaffeesorte, die auf dieser Parzelle am besten wächst.",
       "terrain": "Nur auf bebaubarem Gelände kannst du eine Parzelle anlegen.",
+      "occupant": "Was auf der Parzelle steht.",
+      "height": "Höhe der Parzelle und größter Höhenunterschied zu den Nachbarn.",
       "yield": "Die erwartete Erntemenge, wenn du rechtzeitig erntest.",
       "quality": "Die erwartete Qualität der Ernte. Sie hängt von Sorte, Boden, Lage und Pflege ab, dazu kommt etwas Zufall. Überreife senkt sie.",
       "stage": "Die aktuelle Wachstumsphase der Pflanze.",
