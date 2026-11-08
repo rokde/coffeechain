@@ -232,7 +232,7 @@ h2 {
 .hint {
   margin: 8px 0 8px;
   font-size: 13px;
-  opacity: 0.8;
+  color: var(--fg-2);
 }
 .good {
   margin-top: 10px;
@@ -252,7 +252,7 @@ dl {
   font-size: 13px;
 }
 dt {
-  opacity: 0.8;
+  color: var(--fg-2);
 }
 dd {
   margin: 0;
@@ -274,8 +274,8 @@ figure {
   margin: 0;
 }
 figcaption {
-  font-size: 11px;
-  opacity: 0.8;
+  font-size: 12px;
+  color: var(--fg-2);
 }
 svg {
   display: block;
@@ -286,8 +286,8 @@ svg {
 .axis {
   display: flex;
   justify-content: space-between;
-  font-size: 10px;
-  opacity: 0.7;
+  font-size: 12px;
+  color: var(--fg-3);
 }
 button + button {
   margin-top: 8px;

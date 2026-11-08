@@ -80,7 +80,7 @@ h2 {
 .hint {
   margin: 8px 0 16px;
   font-size: 13px;
-  opacity: 0.8;
+  color: var(--fg-2);
 }
 ul {
   display: grid;
@@ -107,7 +107,7 @@ ul {
 .info {
   margin: 0 0 8px;
   font-size: 13px;
-  opacity: 0.8;
+  color: var(--fg-2);
 }
 .short {
   margin: 0 0 8px;

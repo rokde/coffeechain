@@ -81,7 +81,7 @@ h2 {
 .empty {
   margin: 0;
   font-size: 13px;
-  opacity: 0.8;
+  color: var(--fg-2);
 }
 button {
   display: flex;
@@ -116,7 +116,7 @@ button:focus-visible {
 .badge {
   padding: 1px 8px;
   border-radius: 6px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   background: var(--negative);
   color: #fff;
@@ -127,11 +127,11 @@ button:focus-visible {
 }
 .progress {
   font-size: 12px;
-  opacity: 0.8;
+  color: var(--fg-2);
 }
 small {
   font-size: 12px;
-  opacity: 0.8;
+  color: var(--fg-2);
 }
 .bar {
   display: block;
@@ -153,7 +153,7 @@ small {
     padding: 10px 12px;
   }
   h2 {
-    font-size: 11px;
+    font-size: 12px;
   }
 }
 </style>

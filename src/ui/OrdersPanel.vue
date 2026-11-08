@@ -91,7 +91,7 @@ h3 {
 .none {
   margin: 4px 0 0;
   font-size: 13px;
-  opacity: 0.8;
+  color: var(--fg-2);
 }
 .order {
   margin-top: 6px;
@@ -115,7 +115,7 @@ dl {
   font-size: 12px;
 }
 dt {
-  opacity: 0.8;
+  color: var(--fg-2);
 }
 dd {
   margin: 0;

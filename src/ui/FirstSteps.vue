@@ -110,7 +110,7 @@ li[data-done='true'] .text {
 }
 @media (max-width: 480px) {
   h2 {
-    font-size: 11px;
+    font-size: 12px;
     white-space: nowrap;
   }
 }
