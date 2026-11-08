@@ -2,17 +2,15 @@
 
 ## [0.6.0](https://github.com/rokde/coffeechain/compare/v0.5.0...v0.6.0) (2026-11-08)
 
-
 ### Features
 
-* map-app touch controls and a five-entry mobile toolbar ([#42](https://github.com/rokde/coffeechain/issues/42)) ([#43](https://github.com/rokde/coffeechain/issues/43)) ([ec2ceb9](https://github.com/rokde/coffeechain/commit/ec2ceb97c7bf2fffb790dcadc8d44ed575ad7726))
-* rotate the map with middle drag, Alt + drag and trackpad, snapped to 45° ([#15](https://github.com/rokde/coffeechain/issues/15)) ([#47](https://github.com/rokde/coffeechain/issues/47)) ([ef9bee7](https://github.com/rokde/coffeechain/commit/ef9bee7916eb377c57664b5765a0eedab62c1c04))
-
+- map-app touch controls and a five-entry mobile toolbar ([#42](https://github.com/rokde/coffeechain/issues/42)) ([#43](https://github.com/rokde/coffeechain/issues/43)) ([ec2ceb9](https://github.com/rokde/coffeechain/commit/ec2ceb97c7bf2fffb790dcadc8d44ed575ad7726))
+- rotate the map with middle drag, Alt + drag and trackpad, snapped to 45° ([#15](https://github.com/rokde/coffeechain/issues/15)) ([#47](https://github.com/rokde/coffeechain/issues/47)) ([ef9bee7](https://github.com/rokde/coffeechain/commit/ef9bee7916eb377c57664b5765a0eedab62c1c04))
 
 ### Bug Fixes
 
-* show parcel contents, terrain reason and height; keep first steps after reload ([#45](https://github.com/rokde/coffeechain/issues/45)) ([5d015e6](https://github.com/rokde/coffeechain/commit/5d015e6bcf097a917783892afb21ae6070044636))
-* **ui:** visible scrollbars and higher contrast for secondary text ([#14](https://github.com/rokde/coffeechain/issues/14)) ([#46](https://github.com/rokde/coffeechain/issues/46)) ([59c98a2](https://github.com/rokde/coffeechain/commit/59c98a229cf571de6c5202b041e73a4236bc177f))
+- show parcel contents, terrain reason and height; keep first steps after reload ([#45](https://github.com/rokde/coffeechain/issues/45)) ([5d015e6](https://github.com/rokde/coffeechain/commit/5d015e6bcf097a917783892afb21ae6070044636))
+- **ui:** visible scrollbars and higher contrast for secondary text ([#14](https://github.com/rokde/coffeechain/issues/14)) ([#46](https://github.com/rokde/coffeechain/issues/46)) ([59c98a2](https://github.com/rokde/coffeechain/commit/59c98a229cf571de6c5202b041e73a4236bc177f))
 
 ## [0.5.0](https://github.com/rokde/coffeechain/compare/v0.4.0...v0.5.0) (2026-11-07)
 
