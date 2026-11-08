@@ -24,12 +24,12 @@ import {
   createCamera,
   gestureZoomDelta,
   islandView,
+  isRotatePress,
   isTrackpadScroll,
   oneFinger,
   type OneFinger,
   startView,
   TOUCH,
-  twistSteps,
   wheelZoomDelta,
 } from './render/camera'
 import {
@@ -259,13 +259,6 @@ function start({ canvas, renderer, scene, view }: Stage) {
       1 - ((y - rect.top) / rect.height) * 2,
     )
   }
-  // Adds a twist (radians, clockwise) and rotates once it reaches a 90° step.
-  let twist = 0
-  const addTwist = (angle: number) => {
-    const { steps, rest } = twistSteps(twist + angle)
-    twist = rest
-    if (steps) view.rotate(steps)
-  }
   // Touch pointers on the canvas by pointerId.
   const touches = new Map<number, { x: number; y: number }>()
   // A mouse wheel zooms. A trackpad pinch (Chromium: wheel with ctrlKey) zooms, a two-finger
@@ -294,18 +287,20 @@ function start({ canvas, renderer, scene, view }: Stage) {
     event.preventDefault()
     lastScale = 1
     lastRotation = 0
-    twist = 0
   })
   canvas.addEventListener('gesturechange', (event) => {
     event.preventDefault()
     if (touches.size > 0) return
     const { scale, rotation, clientX, clientY } = event as GestureEvent
     view.zoomAt(ndcAt(clientX, clientY), gestureZoomDelta(scale, lastScale))
-    addTwist(((rotation - lastRotation) * Math.PI) / 180)
+    view.turnBy(rotation - lastRotation)
     lastScale = scale
     lastRotation = rotation
   })
-  canvas.addEventListener('gestureend', (event) => event.preventDefault())
+  canvas.addEventListener('gestureend', (event) => {
+    event.preventDefault()
+    view.snap()
+  })
   canvas.addEventListener('contextmenu', (event) => event.preventDefault())
   let drag: { x: number; y: number } | null = null
   canvas.addEventListener('pointerdown', (event) => {
@@ -326,7 +321,37 @@ function start({ canvas, renderer, scene, view }: Stage) {
   canvas.addEventListener('pointerup', endDrag)
   canvas.addEventListener('pointercancel', endDrag)
 
-  // Touch: two fingers pinch to zoom, move to pan and twist to rotate in 90° steps.
+  // Middle drag or Alt + left drag turns the map around the view centre, the release snaps it.
+  // Registered before the game part, so the press neither marks nor paints and the click does not
+  // select.
+  let rotateX: number | null = null
+  let rotated = false
+  // The middle button would else start the autoscroll.
+  canvas.addEventListener('mousedown', (event) => event.button === 1 && event.preventDefault())
+  canvas.addEventListener('pointerdown', (event) => {
+    rotated = false
+    if (event.pointerType === 'touch' || !isRotatePress(event)) return
+    event.stopImmediatePropagation()
+    rotateX = event.clientX
+    rotated = true
+    canvas.setPointerCapture(event.pointerId)
+  })
+  canvas.addEventListener('pointermove', (event) => {
+    if (rotateX === null) return
+    view.turnBy((event.clientX - rotateX) * CAMERA.dragYawPerPx)
+    rotateX = event.clientX
+  })
+  const endRotate = () => {
+    if (rotateX === null) return
+    rotateX = null
+    view.snap()
+  }
+  canvas.addEventListener('pointerup', endRotate)
+  canvas.addEventListener('pointercancel', endRotate)
+  canvas.addEventListener('lostpointercapture', endRotate)
+  canvas.addEventListener('click', (event) => rotated && event.stopImmediatePropagation())
+
+  // Touch: two fingers pinch to zoom, move to pan and twist to rotate; the end snaps the rotation.
   // One finger pans with a drag, acts with a tap, and marks or paints after a long press.
   // True from the second finger or a one-finger pan until the next press, so the gesture does not
   // click, mark or paint.
@@ -376,7 +401,6 @@ function start({ canvas, renderer, scene, view }: Stage) {
     if (touches.size === 2) {
       dropFinger()
       touchGesture = true
-      twist = 0
     }
   })
   canvas.addEventListener('pointermove', (event) => {
@@ -409,10 +433,16 @@ function start({ canvas, renderer, scene, view }: Stage) {
     view.pan(after.x - before.x, after.y - before.y, canvas.clientHeight)
     if (before.distance > 0)
       view.zoomAt(ndcAt(after.x, after.y), gestureZoomDelta(after.distance, before.distance))
-    // The angle change in (-π, π].
-    addTwist(Math.atan2(Math.sin(after.angle - before.angle), Math.cos(after.angle - before.angle)))
+    // The angle change in (-π, π], clockwise, in degrees.
+    const twist = Math.atan2(
+      Math.sin(after.angle - before.angle),
+      Math.cos(after.angle - before.angle),
+    )
+    view.turnBy((twist * 180) / Math.PI)
   })
   const endTouch = (event: PointerEvent) => {
+    // The end of a two-finger gesture snaps its rotation.
+    if (touches.size === 2 && touches.has(event.pointerId)) view.snap()
     touches.delete(event.pointerId)
     if (finger?.id !== event.pointerId) return
     // A tap acts like a click. The click event does that for the select tool.
@@ -689,6 +719,7 @@ function start({ canvas, renderer, scene, view }: Stage) {
     frameTimes.push(frameMs)
     if (frameTimes.length > 60) frameTimes.shift()
     if (viewStore.fpsVisible) viewStore.fps = fpsFromFrames(frameTimes)
+    view.update(frameMs)
     const right = Number(held.has('d')) - Number(held.has('a'))
     const up = Number(held.has('w')) - Number(held.has('s'))
     if (right || up) {
