@@ -13,34 +13,46 @@ import {
   isTrackpadScroll,
   nextZoom,
   oneFinger,
-  rotateYaw,
+  isRotatePress,
+  snapYaw,
   START_FRAME,
   START_REACH,
   START_YAW,
   startView,
   TOUCH,
-  twistSteps,
+  turnYaw,
   wheelZoomDelta,
 } from './camera'
 import { parcelAt, pickParcel } from './picking'
 import { terrainHeightAt } from './surface'
 import { createTerrain } from './terrain'
 
-describe('rotateYaw', () => {
-  it('returns to the start after four E steps', () => {
-    let yaw = START_YAW
-    for (let i = 0; i < 4; i++) yaw = rotateYaw(yaw, 1)
-    expect(yaw).toBe(START_YAW)
+describe('snapYaw', () => {
+  it('snaps to the nearest 45° without wrapping', () => {
+    expect(snapYaw(START_YAW)).toBe(45)
+    expect(snapYaw(67)).toBe(45)
+    expect(snapYaw(68)).toBe(90)
+    expect(snapYaw(-20)).toBe(0)
+    expect(snapYaw(-23)).toBe(-45)
+    expect(snapYaw(400)).toBe(405)
   })
+})
 
-  it('undoes one E step with one Q step', () => {
-    expect(rotateYaw(rotateYaw(START_YAW, 1), -1)).toBe(START_YAW)
+describe('turnYaw', () => {
+  it('moves toward the goal at CAMERA.turnSpeed and stops on it', () => {
+    expect(turnYaw(45, 135, 100)).toBeCloseTo(45 + CAMERA.turnSpeed / 10)
+    expect(turnYaw(135, 45, 100)).toBeCloseTo(135 - CAMERA.turnSpeed / 10)
+    expect(turnYaw(45, 135, 1e6)).toBe(135)
+    expect(turnYaw(90, 90, 16)).toBe(90)
   })
+})
 
-  it('changes the yaw by 90° per step', () => {
-    expect(rotateYaw(START_YAW, 1)).toBe(START_YAW + 90)
-    expect(rotateYaw(START_YAW, -1)).toBe(START_YAW + 270)
-    expect(rotateYaw(315, 1)).toBe(45)
+describe('isRotatePress', () => {
+  it('rotates with the middle button or Alt + left, not with left or right', () => {
+    expect(isRotatePress({ button: 1, altKey: false })).toBe(true)
+    expect(isRotatePress({ button: 0, altKey: true })).toBe(true)
+    expect(isRotatePress({ button: 0, altKey: false })).toBe(false)
+    expect(isRotatePress({ button: 2, altKey: true })).toBe(false)
   })
 })
 
@@ -56,23 +68,6 @@ describe('isTrackpadScroll', () => {
   })
 })
 
-describe('twistSteps', () => {
-  it('turns one step per 90° twist, from a twist of 45° on', () => {
-    expect(twistSteps(0.7).steps).toBe(0)
-    expect(twistSteps(0.8).steps).toBe(1)
-    expect(twistSteps(-0.8).steps).toBe(-1)
-    expect(twistSteps(Math.PI).steps).toBe(2)
-  })
-
-  it('keeps the rest, so a twist back below 45° undoes the step', () => {
-    const { steps, rest } = twistSteps(0.8)
-    expect(steps).toBe(1)
-    expect(rest).toBeCloseTo(0.8 - Math.PI / 2)
-    expect(twistSteps(rest + 0.1).steps).toBe(0)
-    expect(twistSteps(rest - 0.1).steps).toBe(-1)
-  })
-})
-
 const SIZE = 48
 const ground = new Plane(new Vector3(0, 1, 0), 0)
 const raycaster = new Raycaster()
@@ -82,10 +77,11 @@ function groundHit(camera: Camera, ndc: Vector2) {
   return raycaster.ray.intersectPlane(ground, new Vector3())!
 }
 
-// A camera turned by 0 to 3 yaw steps.
+// A camera turned by 0 to 3 yaw steps, with the turn animation finished.
 function cameraAt(steps: number) {
   const view = createCamera(16 / 9, SIZE)
   view.rotate(steps)
+  view.update(1e6)
   return view
 }
 
@@ -209,9 +205,33 @@ describe('pan (S22)', () => {
     const target = view.target.clone()
     const zoom = view.camera.zoom
     view.rotate(1)
+    view.update(1e6)
     expect(view.target.equals(target)).toBe(true)
     expect(view.camera.zoom).toBe(zoom)
     expect(groundHit(view.camera, new Vector2(0, 0)).distanceTo(target)).toBeLessThan(1e-6)
+  })
+
+  it('animates Q / E in 90° steps from the snapped yaw', () => {
+    const view = cameraAt(0)
+    const start = view.camera.position.clone()
+    view.rotate(1)
+    expect(view.camera.position.equals(start)).toBe(true)
+    view.update(1e6)
+    const once = view.camera.position.clone()
+    view.rotate(-1)
+    view.update(1e6)
+    expect(view.camera.position.distanceTo(start)).toBeLessThan(1e-9)
+    expect(once.distanceTo(start)).toBeGreaterThan(1)
+  })
+
+  it('snap turns a free rotation to the nearest 45°', () => {
+    const view = cameraAt(0)
+    const start = view.camera.position.clone()
+    view.turnBy(20)
+    expect(view.camera.position.distanceTo(start)).toBeGreaterThan(1)
+    view.snap()
+    view.update(1e6)
+    expect(view.camera.position.distanceTo(start)).toBeLessThan(1e-9)
   })
 })
 
@@ -232,6 +252,7 @@ describe('picking after zoom and pan (S22)', () => {
     view.panBy(5, -3)
     view.pan(40, -25, 900)
     view.rotate(1)
+    view.update(1e6)
     const picked = pickParcel(new Vector2(0, 0), view.camera, terrain, world.size)
     expect(picked).not.toBeNull()
     expect(picked).toEqual(parcelUnderTarget(view))

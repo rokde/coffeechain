@@ -403,7 +403,7 @@
         "text": "Rechteck markieren oder Werkzeug auf mehrere Parzellen anwenden"
       },
       { "keys": "Zwei Finger auseinander / zusammen", "text": "Zoom" },
-      { "keys": "Zwei Finger drehen", "text": "Kamera in 90°-Schritten drehen" },
+      { "keys": "Zwei Finger drehen", "text": "Kamera drehen, rastet in 45°-Schritten ein" },
       { "keys": "Griff über dem Werkzeug nach unten wischen", "text": "Werkzeug ablegen" }
     ],
     "toolKey": "Werkzeug {label}",
@@ -423,15 +423,20 @@
       { "keys": "Linke Maustaste ziehen mit Auswählen", "text": "Rechteck markieren" },
       { "keys": "Erst markieren, dann Werkzeug", "text": "Kosten prüfen und rechts bestätigen" },
       { "keys": "Rechte Maustaste ziehen", "text": "Karte verschieben" },
+      { "keys": "Rechtsklick", "text": "Werkzeug ablegen" },
       { "keys": "W A S D", "text": "Karte verschieben" },
-      { "keys": "Q / E", "text": "Kamera drehen" },
+      {
+        "keys": "Mittlere Maustaste ziehen / Alt + linke Maustaste ziehen",
+        "text": "Kamera drehen, rastet in 45°-Schritten ein"
+      },
+      { "keys": "Trackpad mit zwei Fingern drehen", "text": "Kamera drehen" },
+      { "keys": "Q / E", "text": "Kamera in 90°-Schritten drehen" },
       { "keys": "0 / 1–5", "text": "Pause / 1× / 2× / 4× / 8× / 16×" },
       { "keys": "Leertaste", "text": "Pause an / aus" },
       { "keys": "H", "text": "Hilfe öffnen / schließen" },
       { "keys": "I", "text": "Lager öffnen / schließen" },
       { "keys": "F", "text": "Bildrate (fps) zeigen / verbergen" },
-      { "keys": "Esc", "text": "Hilfe schließen / Werkzeug ablegen" },
-      { "keys": "Rechtsklick", "text": "Werkzeug ablegen" }
+      { "keys": "Esc", "text": "Hilfe schließen / Werkzeug ablegen" }
     ]
   },
   "startScreen": {

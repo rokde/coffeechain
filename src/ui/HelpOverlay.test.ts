@@ -47,6 +47,8 @@ describe('HelpOverlay (S35a)', () => {
       'Rechte Maustaste ziehen',
       'W A S D',
       'Q / E',
+      'Mittlere Maustaste ziehen / Alt + linke Maustaste ziehen',
+      'Trackpad mit zwei Fingern drehen',
       '16×',
       'Leertaste',
       'Hilfe öffnen / schließen',
@@ -85,7 +87,7 @@ describe('tool keys and tooltips (S53)', () => {
     const controls = html.split('data-testid="help-controls"')[1]!.split('</dl>')[0]!
     const rows = [...controls.matchAll(/<dt[^>]*>([^<]*)<\/dt><dd[^>]*>([^<]*)<\/dd>/g)]
     const old = rows.length - tools.length - overlays.length
-    expect(old).toBe(17)
+    expect(old).toBe(19)
     expect(rows.slice(old, old + tools.length).map((m) => [m[1], m[2]])).toEqual(
       tools.map((tool) => [tool.key, `Werkzeug ${tool.label}`]),
     )

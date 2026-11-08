@@ -18,6 +18,12 @@ export const CAMERA = {
   pinchFactor: 0.02,
   // Ground units per second at zoom 1.
   keySpeed: 20,
+  // Yaw degrees per px of a horizontal rotate drag.
+  dragYawPerPx: 0.3,
+  // Degrees per second of the animated turn to the snapped yaw.
+  turnSpeed: 360,
+  // Every rotation ends on a multiple of this yaw step (degrees).
+  snapYaw: 45,
 }
 
 // One-finger touch, not game balancing. A finger that moves less than tapSlop px is still a tap.
@@ -43,9 +49,22 @@ export const START_FRAME = { left: -0.45, right: 0.42, bottom: -0.7, top: 0.78 }
 // The full start reach (balance world.startReach) does not fit between the HUD panels at zoom 2.
 export const START_REACH = 4
 
-// Turns the yaw (degrees) by 90° per step. E is +1, Q is -1. Result is in [0, 360).
-export function rotateYaw(yaw: number, steps: number): number {
-  return (((yaw + steps * 90) % 360) + 360) % 360
+// The nearest multiple of CAMERA.snapYaw. The yaw is not wrapped, so the turn takes the short way.
+export function snapYaw(yaw: number): number {
+  // || 0 turns -0 into 0.
+  return Math.round(yaw / CAMERA.snapYaw) * CAMERA.snapYaw || 0
+}
+
+// The yaw after ms of the animated turn toward goal at CAMERA.turnSpeed.
+export function turnYaw(yaw: number, goal: number, ms: number): number {
+  const max = (CAMERA.turnSpeed * ms) / 1000
+  return Math.abs(goal - yaw) <= max ? goal : yaw + Math.sign(goal - yaw) * max
+}
+
+// True for a press that rotates the map: the middle button, or Alt + the left button.
+// Ctrl + click is a right click on macOS and Cmd + click is close to the Shift multi-select.
+export function isRotatePress(event: { button: number; altKey: boolean }): boolean {
+  return event.button === 1 || (event.button === 0 && event.altKey)
 }
 
 export function clampZoom(zoom: number): number {
@@ -79,14 +98,6 @@ export function isTrackpadScroll(event: {
 // Turns a WebKit gesture scale step into a deltaY, so that the zoom changes by scale / lastScale.
 export function gestureZoomDelta(scale: number, lastScale: number): number {
   return -Math.log(scale / lastScale) / CAMERA.wheelFactor
-}
-
-// Turns the angle change (radians) of a two-finger twist into the 90° steps for rotate.
-// The steps follow the whole twist rounded to 90°. Returns the steps and the rest.
-export function twistSteps(angle: number): { steps: number; rest: number } {
-  // || 0 turns -0 into 0.
-  const steps = Math.round(angle / (Math.PI / 2)) || 0
-  return { steps, rest: angle - (steps * Math.PI) / 2 }
 }
 
 export function clampTarget(target: { x: number; z: number }, size: number) {
@@ -186,6 +197,8 @@ export function createCamera(aspect: number, worldSize: number) {
   const camera = new OrthographicCamera()
   const target = new Vector3()
   let yaw = START_YAW
+  // The yaw that the animated turn moves to.
+  let goal = START_YAW
 
   function place() {
     const y = (yaw * Math.PI) / 180
@@ -207,8 +220,27 @@ export function createCamera(aspect: number, worldSize: number) {
     camera.updateProjectionMatrix()
   }
 
+  // Turns by 90° per step (E is +1, Q is -1) from the snapped goal, animated by update.
   function rotate(steps: number) {
-    yaw = rotateYaw(yaw, steps)
+    goal = snapYaw(goal) + steps * 90
+  }
+
+  // Turns at once by degrees, for a drag or a twist. snap ends it.
+  function turnBy(degrees: number) {
+    yaw += degrees
+    goal = yaw
+    place()
+  }
+
+  // Lets update turn to the nearest snapped yaw.
+  function snap() {
+    goal = snapYaw(yaw)
+  }
+
+  // Moves the yaw toward the goal by ms of the animation.
+  function update(ms: number) {
+    if (yaw === goal) return
+    yaw = turnYaw(yaw, goal, ms)
     place()
   }
 
@@ -257,5 +289,5 @@ export function createCamera(aspect: number, worldSize: number) {
 
   place()
   resize(aspect)
-  return { camera, target, resize, rotate, pan, panBy, zoomAt, frame }
+  return { camera, target, resize, rotate, turnBy, snap, update, pan, panBy, zoomAt, frame }
 }
