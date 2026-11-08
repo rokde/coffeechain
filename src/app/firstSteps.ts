@@ -53,12 +53,31 @@ export function firstSteps(
   return { steps, next, target: null, hint: 'sellWait' }
 }
 
-// The checklist lives in memory only, so every new game (page load) starts it open.
+// Done steps are kept per world seed, so a reload of the same game keeps them and a new world starts fresh.
+const storageKey = (seed: number) => `coffeechain.firstSteps.${seed}`
+
+function loadKept(seed: number): StepId[] {
+  try {
+    const list: unknown = JSON.parse(localStorage.getItem(storageKey(seed)) ?? '[]')
+    return Array.isArray(list) ? stepIds.filter((id) => list.includes(id)) : []
+  } catch {
+    return []
+  }
+}
+
+function saveKept(seed: number, ids: StepId[]) {
+  try {
+    localStorage.setItem(storageKey(seed), JSON.stringify(ids))
+  } catch {
+    // Storage may be blocked. The checklist then works for this session only.
+  }
+}
+
 export const useFirstStepsStore = defineStore('firstSteps', () => {
   const game = useGameStore()
   const view = useViewStore()
   const open = ref(true)
-  const kept = ref<StepId[]>([])
+  const kept = ref<StepId[]>(loadKept(game.state.world.seed))
   const current = computed(() => firstSteps(game.state as GameState, view.overlay, kept.value))
   // Sync flush, so a step is kept before the condition can turn false again.
   watch(
@@ -66,7 +85,10 @@ export const useFirstStepsStore = defineStore('firstSteps', () => {
     () => {
       const done = current.value.steps.filter((s) => s.done).map((s) => s.id)
       // Assign only on a change, so the checklist does not re-render on every tick.
-      if (done.length !== kept.value.length) kept.value = done
+      if (done.length !== kept.value.length) {
+        kept.value = done
+        saveKept(game.state.world.seed, done)
+      }
     },
     { flush: 'sync', immediate: true },
   )
