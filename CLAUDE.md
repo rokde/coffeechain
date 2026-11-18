@@ -42,6 +42,10 @@ Nach Änderungen an Szene oder HUD: `npm run screenshot` (Playwright gegen den V
 ## Sprache
 Code, Bezeichner und Commits auf Englisch. Spieltexte auf Deutsch in `src/ui/i18n/de.json`.
 
+## Issues
+- Beginnst du die Implementierung eines GitHub-Issues, weise es als Erstes dem angemeldeten Nutzer zu: `gh issue edit <nr> --add-assignee @me`. Das gilt auch für Sub-Issues eines Epics, die du mitbearbeitest.
+- Ist das Issue schon jemand anderem zugewiesen, frage nach, bevor du anfängst.
+
 ## Commits und PRs
 release-please erzeugt Version und `CHANGELOG.md` aus den Commits auf `main`. Deshalb:
 - Commit-Messages und PR-Titel im Conventional-Commits-Format: `feat: …`, `fix: …`, `perf: …` erscheinen im Changelog; `docs`, `style`, `chore`, `refactor`, `test`, `build`, `ci` nicht.
