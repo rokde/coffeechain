@@ -41,8 +41,9 @@ describe('Plant', () => {
     const state = testState()
     const before = structuredClone(state)
     const next = plant(state, 'robusta', [0, 0], [1, 0])
-    // 2 seeds at the mid volume of 1 unit: 2 × 2 × (1 + 0.3 × 1 / 200) = 4.006 CC → 5 CC (S57).
-    expect(next.money).toBe(50000 - 500)
+    // 2 seeds at the mean price over the volumes 0 to 2: 2 × 2 × 1.001 = 4.004 CC.
+    // S57: 400.4 hundredths round to 400, so whole 4 CC.
+    expect(next.money).toBe(50000 - 400)
     expect(next.farm.plants).toEqual({
       0: { variety: 'robusta', plantedDay: 5 },
       1: { variety: 'robusta', plantedDay: 5 },
@@ -93,7 +94,7 @@ describe('Plant', () => {
     ['a locked variety', testState(), 'arabicaPremium', [[0, 0]]],
     [
       'a total cost above the money',
-      testState(499),
+      testState(399),
       'robusta',
       [
         [0, 0],
@@ -107,7 +108,7 @@ describe('Plant', () => {
   })
 
   it('AC-2: accepts a total cost equal to the money', () => {
-    expect(plant(testState(500), 'robusta', [0, 0], [1, 0]).money).toBe(0)
+    expect(plant(testState(400), 'robusta', [0, 0], [1, 0]).money).toBe(0)
   })
 
   it.each(['constructor', 'toString', 'hasOwnProperty'])(
@@ -190,7 +191,7 @@ describe('growth stages', () => {
 
 describe('quotePlant (S13)', () => {
   it('AC-3: gives the seed cost in hundredths of CC, rounded up to whole CC', () => {
-    expect(quotePlant(testState(), 'robusta', 2)).toBe(500)
+    expect(quotePlant(testState(), 'robusta', 2)).toBe(400)
     expect(quotePlant(testState(), 'arabicaStandard', 2)).toBe(900)
     expect(quotePlant(testState(), 'robusta', 0)).toBe(0)
   })
@@ -216,9 +217,7 @@ describe('Plant with bought seed (S19b)', () => {
   it('AC-2: buys only the missing seed at the Buy cost', () => {
     const state = withSeeds(1, buy(testState(), 5))
     const buyCost = state.money - buy(state, 2).money
-    // All seed volumes are from today, so their sum is today's volume.
-    const volume = (s: GameState) =>
-      s.market.volumes.filter((v) => v.kind === 'seed').reduce((sum, v) => sum + v.units, 0)
+    const volume = (s: GameState) => s.market.volumes.seed?.robusta?.units ?? 0
     expect(quotePlant(state, 'robusta', 3)).toBe(buyCost)
     const next = plant(state, 'robusta', [0, 0], [1, 0], [2, 0])
     expect(state.money - next.money).toBe(buyCost)
@@ -249,7 +248,7 @@ describe('Plant with bought seed (S19b)', () => {
     ],
     [
       'a locked variety',
-      { ...testState(), market: { volumes: [], seeds: { arabicaPremium: 5 } } },
+      { ...testState(), market: { volumes: {}, seeds: { arabicaPremium: 5 } } },
       'arabicaPremium',
       [[0, 0]],
     ],
@@ -277,11 +276,11 @@ describe('Plant with bought seed (S19b)', () => {
     expect(state).toEqual(before)
   })
 
-  it('AC-5: costs the seed cost at the mid volume of a neutral market with no stock', () => {
+  it('AC-5: costs the mean seed price of a neutral market with no stock', () => {
     const state = testState()
-    expect(quotePlant(state, 'robusta', 2)).toBe(500)
+    expect(quotePlant(state, 'robusta', 2)).toBe(400)
     const next = plant(state, 'robusta', [0, 0], [1, 0])
-    expect(state.money - next.money).toBe(500)
+    expect(state.money - next.money).toBe(400)
     expect(next.market.seeds.robusta).toBe(0)
   })
 

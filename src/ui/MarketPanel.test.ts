@@ -27,7 +27,7 @@ function setup() {
       ...state.storage,
       batches: [{ variety: 'robusta', units: 10, quality: 1, storedDay: 0 }],
     },
-    market: { volumes: [], seeds: { robusta: 3 } },
+    market: { volumes: {}, seeds: { robusta: 3 } },
   })
   return { pinia, game }
 }
@@ -96,9 +96,9 @@ describe('MarketPanel (S20)', () => {
     const { pinia, game } = setup()
     const html = await renderToString(createSSRApp(MarketPanel).use(pinia))
     const income = sellIncome(game.state as GameState, 'robusta', 10)
-    expect(income).toBe(300)
+    expect(income).toBe(400)
     expect(field(block(html, 'robusta'), 'sell')!.trim()).toBe(
-      'Verkaufen (10\u00a0Einh., 3\u00a0CC)',
+      'Verkaufen (10\u00a0Einh., 4\u00a0CC)',
     )
     expect(sellButton(block(html, 'robusta'))).not.toContain('title=')
     expect(field(block(html, 'arabicaStandard'), 'sell')!.trim()).toBe('Verkaufen')
@@ -202,10 +202,10 @@ describe('MarketPanel (S20)', () => {
   it('AC-5: the sell action sells all Robusta units at the bank price', () => {
     const { game } = setup()
     const before = game.state.money
-    // The 10 units sell at the price of the mid volume of 5 units.
-    // S57: 3.98 CC rounds down to 3 CC.
-    expect(10 * bankBuyPrice(game.state as GameState, 'robusta', 10)).toBeCloseTo(3.98)
-    const income = 300
+    // The 10 units sell at the mean price over the volumes 0 to 10.
+    // S57: 3.997 CC is 400 hundredths, so whole 4 CC.
+    expect(10 * bankBuyPrice(game.state as GameState, 'robusta', 10)).toBeCloseTo(3.997)
+    const income = 400
     sellAll(game, 'robusta')
     expect(game.state.storage.batches.filter((b) => b.variety === 'robusta')).toEqual([])
     expect(game.state.money).toBe(before + income)
@@ -327,10 +327,8 @@ describe('MarketPanel processing (S46)', () => {
     const { pinia, game } = processing(true)
     const state = game.state as GameState
     const batches = [{ variety: 'arabicaStandard' as const, units: 7, quality: 100, storedDay: 0 }]
-    // 15 sold units lower the bank price to 0.8 × (1 − 0.3 × 15 / 300) = 0.788 CC.
-    const volumes = [
-      { kind: 'coffee' as const, variety: 'arabicaStandard' as const, day: 0, units: 15 },
-    ]
+    // 120 sold units lower the bank price to 0.8 × (1 − 0.3 × (1 − 2^(−120 / 1500))) = 0.787 CC.
+    const volumes = { coffee: { arabicaStandard: { units: 120, day: 0, monthEnds: [] } } }
     game.replace({ ...state, money: 300, storage: { batches }, market: { volumes, seeds: {} } })
     let html = await render(pinia)
     expect(processCost(7)).toBe(300)

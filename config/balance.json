@@ -157,9 +157,9 @@
     "demandFactorRange": { "v": [0.9, 1.3], "src": "GDD 11.3" },
     "priceFloor": { "v": 0.5, "src": "GDD 3.4, 11.3" },
     "priceCeiling": { "v": 1.5, "src": "GDD 3.4, 11.3" },
-    "volumeWindowDays": { "v": 90, "src": "Robert 2026-10-25 (#27, Faktor 30)" },
-    "supplyUnitsForMinFactor": { "v": 300, "src": "NEU" },
-    "demandUnitsForMaxFactor": { "v": 200, "src": "NEU" },
+    "volumeHalfLifeDays": { "v": 30, "src": "NEU" },
+    "supplyUnitsForHalfFactor": { "v": 1500, "src": "NEU" },
+    "demandUnitsForHalfFactor": { "v": 200, "src": "NEU" },
     "historyMonths": { "v": 12, "src": "Robert 2026-10-25 (#27, Faktor 30)" }
   },
 

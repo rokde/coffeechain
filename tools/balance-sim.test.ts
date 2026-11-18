@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { balance } from '../src/sim/balance'
-import { daysTo, renderReport, runBot, type BotResult } from './balance-sim'
+import { daysTo, pinnedShare, renderReport, runBot, type BotResult } from './balance-sim'
 
 describe('runBot', () => {
   let first: BotResult | undefined
@@ -31,6 +31,8 @@ describe('daysTo', () => {
 const result = (seed: number, perDay: number, parcelSpend = 100, totalSpend = 300): BotResult => ({
   seed,
   curve: Array.from({ length: 30 }, (_, i) => 500 + perDay * (i + 1)),
+  supply: [1, 1, 0.9, 0.71, 0.75],
+  demand: [1, 1.1, 1.29],
   parcels: seed + 1,
   minMoney: 0,
   parcelSpend,
@@ -41,6 +43,15 @@ const cfgWith = (phase1TargetDays: number) => {
   return { ...cfg, balanceSim: { ...cfg.balanceSim, phase1TargetDays } }
 }
 const section = (md: string) => md.split('## Empfehlung zu PRD §12 Punkt 1')[1]!
+
+describe('pinnedShare (#18)', () => {
+  it('counts the days near the end of the range from the first trade', () => {
+    // 0.71 is within 5 % of the way from 0.7 to 1 (0.015); 0.9 and 0.75 are not.
+    expect(pinnedShare([1, 1, 0.9, 0.71, 0.75], 0.7)).toBeCloseTo(1 / 3)
+    expect(pinnedShare([1, 1.1, 1.29], 1.3)).toBeCloseTo(1 / 2)
+    expect(pinnedShare([1, 1], 0.7)).toBe(0)
+  })
+})
 
 describe('renderReport', () => {
   // Seed 1 gets to 2,000 CC on day 15, seed 2 on day 30, seed 3 never. Nobody gets to 10,000 CC.
@@ -60,6 +71,8 @@ describe('renderReport', () => {
     expect(md).toContain('| 30 | 2.000 | 800 | 3.500 |')
     expect(md).not.toContain('| 40 |')
     expect(md).toContain('## Empfehlung zu PRD §12 Punkt 1')
+    expect(md).toContain('## Marktreaktion Robusta (#18)')
+    expect(md).toContain('| 1 | 33 % | 0,900 | 50 % | 1,100 |')
   })
 
   it('needs no change when the median is at or below the target', () => {

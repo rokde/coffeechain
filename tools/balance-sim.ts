@@ -6,7 +6,7 @@ import { dispatch, type Command } from '../src/sim/commands'
 import { isFree, quoteParcels } from '../src/sim/farm/parcels'
 import { growth, quotePlant } from '../src/sim/farm/plants'
 import type { Variety } from '../src/sim/farm/yield'
-import { bankSellPrice } from '../src/sim/market/market'
+import { bankSellPrice, marketPrice } from '../src/sim/market/market'
 import { capital } from '../src/sim/progression/capital'
 import { createState, type GameState } from '../src/sim/state'
 import { storageUsed } from '../src/sim/storage/storage'
@@ -16,6 +16,10 @@ export interface BotResult {
   seed: number
   // Capital in CC at the end of each game day. Index 0 is day 1.
   curve: number[]
+  // Robusta supply factor (market price / reference price) at the end of each game day.
+  supply: number[]
+  // Robusta seed demand factor (seed price / seed cost) at the end of each game day.
+  demand: number[]
   parcels: number
   // Lowest balance in hundredths of CC after any action or day.
   minMoney: number
@@ -39,6 +43,8 @@ export function runBot(seed: number, days: number): BotResult {
   let totalSpend = 0
   let minMoney = state.money
   const curve: number[] = []
+  const supply: number[] = []
+  const demand: number[] = []
 
   const act = (command: Command) => {
     const before = state.money
@@ -122,8 +128,22 @@ export function runBot(seed: number, days: number): BotResult {
     state = step(state)
     minMoney = Math.min(minMoney, state.money)
     curve.push(capital(state) / 100)
+    const price = (kind: 'coffee' | 'seed') =>
+      marketPrice(state.market.volumes, { kind, variety: 'robusta' }, state.time.day, cfg)
+    supply.push(price('coffee') / cfg.varieties.robusta.referencePrice)
+    demand.push(price('seed') / cfg.varieties.robusta.seedCost)
   }
-  return { seed, curve, parcels: owned().length, minMoney, parcelSpend, totalSpend }
+  return { seed, curve, supply, demand, parcels: owned().length, minMoney, parcelSpend, totalSpend }
+}
+
+// Share of the days, from the first day the factor leaves 1, on which the factor is within 5 % of
+// its distance to the end of its range (#18). 0 if the factor never leaves 1.
+export function pinnedShare(factors: number[], end: number): number {
+  const first = factors.findIndex((f) => f !== 1)
+  if (first < 0) return 0
+  const days = factors.slice(first)
+  const near = Math.abs(end - 1) * 0.05
+  return days.filter((f) => Math.abs(f - end) <= near).length / days.length
 }
 
 // Median of the values. null counts as "never", so it sorts last.
@@ -185,6 +205,18 @@ export function renderReport(results: BotResult[], cfg: Balance): string {
   const sCap = stats(finals)
   const sPar = stats(parcels)
 
+  const [minSupply] = cfg.market.supplyFactorRange
+  const [, maxDemand] = cfg.market.demandFactorRange
+  const pct = (share: number) => `${fmt(share * 100)} %`
+  const factor = (values: number[]) => fmt(median(values) ?? 1, 3)
+  const market = results.map((r) => ({
+    seed: r.seed,
+    supplyPinned: pinnedShare(r.supply, minSupply!),
+    supply: factor(r.supply),
+    demandPinned: pinnedShare(r.demand, maxDemand!),
+    demand: factor(r.demand),
+  }))
+
   return [
     '# Balance-Report (Bot-Simulation)',
     '',
@@ -240,6 +272,23 @@ export function renderReport(results: BotResult[], cfg: Balance): string {
       const s = stats(results.map((r) => r.curve[d - 1] ?? null))
       return row([d, fmt(s.median ?? 0), fmt(s.min ?? 0), fmt(s.max ?? 0)])
     }),
+    '',
+    '## Marktreaktion Robusta (#18)',
+    '',
+    `Angebotsfaktor des Rohkaffees (Bereich ab ${fmt(minSupply!, 2)}) und Nachfragefaktor des Saatguts (bis ${fmt(maxDemand!, 2)}) am Ende jedes Spieltags. „Am Ende“: Anteil der Tage ab dem ersten Handel, an denen der Faktor höchstens 5 % seines Wegs vom Ende des Bereichs entfernt ist. Halbwertszeit der Menge: ${fmt(cfg.market.volumeHalfLifeDays)} Tage.`,
+    '',
+    row(['Seed', 'Angebot am Ende', 'Angebot Median', 'Nachfrage am Ende', 'Nachfrage Median']),
+    row(['---', '---', '---', '---', '---']),
+    ...market.map((r) =>
+      row([r.seed, pct(r.supplyPinned), r.supply, pct(r.demandPinned), r.demand]),
+    ),
+    row([
+      'Median',
+      pct(median(market.map((r) => r.supplyPinned)) ?? 0),
+      factor(results.flatMap((r) => r.supply)),
+      pct(median(market.map((r) => r.demandPinned)) ?? 0),
+      factor(results.flatMap((r) => r.demand)),
+    ]),
     '',
     '## Empfehlung zu PRD §12 Punkt 1',
     '',

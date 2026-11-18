@@ -105,9 +105,9 @@ export const balanceSchema = z.object({
     demandFactorRange: val(range),
     priceFloor: val(num),
     priceCeiling: val(num),
-    volumeWindowDays: val(int),
-    supplyUnitsForMinFactor: val(num),
-    demandUnitsForMaxFactor: val(num),
+    volumeHalfLifeDays: val(num.positive()),
+    supplyUnitsForHalfFactor: val(num.positive()),
+    demandUnitsForHalfFactor: val(num.positive()),
     historyMonths: val(int),
   }),
   orders: z.object({

@@ -53,7 +53,7 @@ schneller).
 
 | Wert | Alt | Neu | Lesart | Sim | Spiel | Notiz |
 |---|---|---|---|---|---|---|
-| `market.volumeWindowDays` | 3 | 90 | 3 Monate | – | offen | Bot verkauft jeden Tag an die Bank, das Fenster senkt seinen Preis mit. Der Report hat keinen eigenen Messwert dafür, wirkt nur indirekt im Umsatz. |
+| ~~`market.volumeWindowDays`~~ | 3 | 90 | 3 Monate | – | entfällt | #18 ersetzt das Fenster durch eine abklingende Menge mit `market.volumeHalfLifeDays` (30 Tage, `NEU`). Der Report misst die Marktreaktion jetzt im Abschnitt „Marktreaktion Robusta“. |
 | `market.historyMonths` | 14 Tage | 12 Monate, 1 Punkt pro Monat | rollend: die letzten 12 Monate bis heute, Beschriftung nur an den Enden (z. B. „Mai“ … „Apr“) | – | offen | Alter Name: `historyDays`. Offen für Robert: feste Achse Jan–Dez statt rollend? |
 | `orders.chancePerDay` | 0,3 | 0,01 | 0,3 pro Monat | – | offen | Bot nimmt keine Aufträge an. |
 | `orders.deadlineDays` | 5–10 | 150–300 | 5–10 Monate | – | offen | Bot nimmt keine Aufträge an. |

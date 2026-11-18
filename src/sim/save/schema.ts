@@ -74,8 +74,12 @@ export const gameStateSchema = z.object({
     ),
   }),
   market: z.object({
-    volumes: z.array(
-      z.object({ kind: z.enum(['coffee', 'washed', 'seed']), variety, day: int, units: num }),
+    volumes: z.partialRecord(
+      z.enum(['coffee', 'washed', 'seed']),
+      z.partialRecord(
+        variety,
+        z.object({ units: num.nonnegative(), day: int, monthEnds: z.array(num.nonnegative()) }),
+      ),
     ),
     seeds: z.partialRecord(z.string(), num),
   }),

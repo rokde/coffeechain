@@ -12,14 +12,23 @@ export interface Good {
   variety: Variety
 }
 
-// Units sold (coffee) or bought (seed) by the player on one game day.
-export interface Volume extends Good {
-  day: number
+export type GoodKind = Good['kind']
+
+// Traded units of one good as of its last trade day. The volume halves every
+// market.volumeHalfLifeDays. Each sale (coffee) or purchase (seed) adds its units after the decay
+// to the trade day.
+export interface Volume {
   units: number
+  day: number
+  // Volume on the last day of each month before the month of day, oldest first, for the price
+  // history. At most historyMonths − 1 entries; the last one is the month just before.
+  monthEnds: number[]
 }
 
+export type Volumes = Partial<Record<GoodKind, Partial<Record<Variety, Volume>>>>
+
 export interface MarketState {
-  volumes: Volume[]
+  volumes: Volumes
   seeds: Partial<Record<Variety, number>>
 }
 
@@ -49,37 +58,64 @@ function reference(good: Good, cfg: Balance): number {
   return variety.referencePrice * washed
 }
 
-// Market price of a good on a game day, from the volumes in the window that ends on that day.
-// extra adds units to the volume of that day, for example half of a trade.
-export function marketPrice(
-  market: MarketState,
-  good: Good,
-  day: number,
-  cfg = balance(),
-  extra = 0,
-): number {
+const decay = (v: Volume, day: number, cfg: Balance) =>
+  v.units * 2 ** (-Math.max(0, day - v.day) / cfg.market.volumeHalfLifeDays)
+
+// The volume moved forward to day: pure decay, with the month ends it passes.
+function advance(v: Volume | undefined, day: number, cfg: Balance): Volume {
+  if (!v) return { units: 0, day, monthEnds: [] }
+  const perMonth = cfg.time.daysPerMonth
+  const from = Math.floor(v.day / perMonth)
+  const to = Math.floor(day / perMonth)
+  const passed = Array.from(
+    { length: Math.max(0, Math.min(to - from, cfg.market.historyMonths)) },
+    (_, i) => decay(v, (to - i) * perMonth - 1, cfg),
+  ).reverse()
+  const monthEnds = [...v.monthEnds, ...passed].slice(-(cfg.market.historyMonths - 1))
+  return { units: decay(v, day, cfg), day: Math.max(v.day, day), monthEnds }
+}
+
+// Volume of a good on a day, after the decay since its last trade.
+export function volumeOn(volumes: Volumes, good: Good, day: number, cfg = balance()): number {
+  const v = volumes[good.kind]?.[good.variety]
+  return v ? decay(v, day, cfg) : 0
+}
+
+// Mean of 1 − 2^(−u / half) over the volumes u from `from` to `from + units`.
+// With units 0 it is the value at `from`. The exact mean makes one trade cost the same
+// as two trades of half the units.
+function saturation(from: number, units: number, half: number): number {
+  const start = 2 ** (-from / half)
+  if (units === 0) return 1 - start
+  // ∫ 2^(−u / half) du = half / ln 2 × (2^(−from / half) − 2^(−to / half))
+  const k = Math.LN2 / half
+  return 1 + (start * Math.expm1(-k * units)) / (k * units)
+}
+
+// Market price of a good at a volume. With units, it is the mean price per unit of a trade of
+// that size: the trade adds to the volume as it goes. The factor approaches the far end of its
+// range but never reaches it: supply goes down, demand up.
+export function priceAt(good: Good, volume: number, cfg = balance(), units = 0): number {
   const m = cfg.market
-  const units = market.volumes
-    .filter((v) => v.kind === good.kind && v.variety === good.variety)
-    .filter((v) => v.day <= day && v.day > day - m.volumeWindowDays)
-    .reduce((sum, v) => sum + v.units, extra)
-  // The factor moves linearly from 1.0 to the far end of its range: supply goes down, demand up.
   const factor =
     good.kind !== 'seed'
-      ? clamp(
-          1 - (1 - m.supplyFactorRange[0]) * Math.min(1, units / m.supplyUnitsForMinFactor),
-          m.supplyFactorRange,
-        )
-      : clamp(
-          1 + (m.demandFactorRange[1] - 1) * Math.min(1, units / m.demandUnitsForMaxFactor),
-          m.demandFactorRange,
-        )
+      ? 1 - (1 - m.supplyFactorRange[0]!) * saturation(volume, units, m.supplyUnitsForHalfFactor)
+      : 1 + (m.demandFactorRange[1]! - 1) * saturation(volume, units, m.demandUnitsForHalfFactor)
   const ref = reference(good, cfg)
   return clamp(ref * factor, [m.priceFloor * ref, m.priceCeiling * ref])
 }
 
+// Market price of a good on a game day, from the decayed volume of that day.
+export const marketPrice = (
+  volumes: Volumes,
+  good: Good,
+  day: number,
+  cfg = balance(),
+  units = 0,
+): number => priceAt(good, volumeOn(volumes, good, day, cfg), cfg, units)
+
 // Price in CC per unit that the bank pays for raw (or washed) coffee today.
-// With units, it is the price for each unit of a sale of that size, at the mid volume of the sale.
+// With units, it is the mean price per unit of a sale of that size.
 export function bankBuyPrice(
   state: GameState,
   variety: Variety,
@@ -89,7 +125,7 @@ export function bankBuyPrice(
   const cfg = balance()
   const day = state.time.day
   const good: Good = { kind: washed ? 'washed' : 'coffee', variety }
-  return marketPrice(state.market, good, day, cfg, units / 2) * cfg.market.bankBuyFactor
+  return marketPrice(state.market.volumes, good, day, cfg, units) * cfg.market.bankBuyFactor
 }
 
 // Whole-CC income of a sale, in hundredths of CC. The sell command and the HUD both use it.
@@ -97,24 +133,23 @@ export const sellIncome = (state: GameState, variety: Variety, units: number, wa
   roundIncome(Math.round(units * bankBuyPrice(state, variety, units, washed) * 100))
 
 // Price in CC per unit that the bank asks for seed today.
-// With units, it is the price for each unit of a purchase of that size, at the mid volume of the purchase.
+// With units, it is the mean price per unit of a purchase of that size.
 export function bankSellPrice(state: GameState, variety: Variety, units = 0): number {
   const day = state.time.day
-  return marketPrice(state.market, { kind: 'seed', variety }, day, balance(), units / 2)
+  return marketPrice(state.market.volumes, { kind: 'seed', variety }, day, balance(), units)
 }
 
 // Market prices of the last historyMonths months, from the oldest month to the current month.
 // A past month gives the price of its last day. The current month gives the price of today.
+// A month before the first trade gives the neutral price.
 export function priceHistory(state: GameState, good: Good): number[] {
   const cfg = balance()
   const today = state.time.day
-  const months = cfg.market.historyMonths
-  const perMonth = cfg.time.daysPerMonth
-  const lastDay = (Math.floor(today / perMonth) + 1) * perMonth - 1
-  return Array.from({ length: months }, (_, i) => {
-    const day = i === months - 1 ? today : lastDay - perMonth * (months - 1 - i)
-    return marketPrice(state.market, good, day, cfg)
-  })
+  const v = state.market.volumes[good.kind]?.[good.variety]
+  const { monthEnds, units } = advance(v, today, cfg)
+  const past = cfg.market.historyMonths - 1
+  const volumes = [...Array<number>(past - monthEnds.length).fill(0), ...monthEnds, units]
+  return volumes.map((volume) => priceAt(good, volume, cfg))
 }
 
 function checkTrade(command: Sell | Buy, cfg: Balance) {
@@ -125,15 +160,13 @@ function checkTrade(command: Sell | Buy, cfg: Balance) {
   }
 }
 
-// Adds the trade to today's volume and drops volumes that no price in the history needs.
-function record(market: MarketState, good: Good, units: number, day: number, cfg: Balance) {
-  const keep = cfg.market.historyMonths * cfg.time.daysPerMonth + cfg.market.volumeWindowDays
-  const volumes = market.volumes.filter((v) => v.day > day - keep)
-  const same = (v: Volume) => v.kind === good.kind && v.variety === good.variety && v.day === day
-  const i = volumes.findIndex(same)
-  if (i < 0) volumes.push({ ...good, day, units })
-  else volumes[i] = { ...volumes[i]!, units: volumes[i]!.units + units }
-  return volumes
+// Decays the volume of the good to today and adds the trade.
+function record(volumes: Volumes, good: Good, units: number, day: number, cfg: Balance): Volumes {
+  const v = advance(volumes[good.kind]?.[good.variety], day, cfg)
+  return {
+    ...volumes,
+    [good.kind]: { ...volumes[good.kind], [good.variety]: { ...v, units: v.units + units } },
+  }
 }
 
 export function sell(state: GameState, command: Sell): GameState {
@@ -164,7 +197,7 @@ export function sell(state: GameState, command: Sell): GameState {
 
   const day = state.time.day
   const volumes = record(
-    state.market,
+    state.market.volumes,
     { kind: washed ? 'washed' : 'coffee', variety },
     units,
     day,
@@ -187,7 +220,7 @@ export function buy(state: GameState, command: Buy): GameState {
     throw new Error(`Not enough money: cost ${cost / 100} CC, balance ${state.money / 100} CC`)
 
   const day = state.time.day
-  const volumes = record(state.market, { kind: 'seed', variety }, units, day, cfg)
+  const volumes = record(state.market.volumes, { kind: 'seed', variety }, units, day, cfg)
   const seeds = { ...state.market.seeds, [variety]: (state.market.seeds[variety] ?? 0) + units }
-  return { ...state, money: state.money - cost, market: { volumes, seeds } }
+  return { ...state, money: state.money - cost, market: { ...state.market, volumes, seeds } }
 }

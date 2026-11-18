@@ -5,9 +5,10 @@ import { gameStateSchema } from './schema'
 // When a slice adds a state field: increase SAVE_VERSION by one and append one migration
 // to MIGRATIONS that fills the default value. Migration i turns version i + 1 into i + 2.
 // Never edit an old migration.
-export const SAVE_VERSION = 15
-// #9 adds storedDay to each batch without a migration, so older saves do not load.
-export const MIN_SAVE_VERSION = 15
+export const SAVE_VERSION = 16
+// #18 replaces the market volume list with a decaying volume per good, without a migration,
+// so older saves do not load.
+export const MIN_SAVE_VERSION = 16
 
 export type Migration = (state: Record<string, unknown>) => Record<string, unknown>
 
@@ -102,6 +103,12 @@ export const MIGRATIONS: Migration[] = [
   (state) => state,
   // 14 -> 15: #9 adds storedDay to each batch. MIN_SAVE_VERSION rejects the older saves.
   (state) => state,
+  // 15 -> 16: #18 stores a decaying volume per good. MIN_SAVE_VERSION rejects the older saves.
+  // The legacy format still runs this step, so it drops the old volume list.
+  (state) => {
+    const market = state.market as Record<string, unknown> | undefined
+    return market ? { ...state, market: { ...market, volumes: {} } } : state
+  },
 ]
 
 export interface SaveFormat {

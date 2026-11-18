@@ -28,13 +28,12 @@ function v11(state: GameState): Record<string, unknown> {
       { ...plant, plantedHour: (plantedDay * 24) / 30 },
     ]),
   )
-  // Old day numbers start at 1.
-  const volumes = state.market.volumes.map((v) => ({ ...v, day: v.day / 30 + 1 }))
   return {
     ...state,
     time: { ...time, hour: (day * 24) / 30 },
     farm: { ...state.farm, plants },
-    market: { ...state.market, volumes },
+    // The volume list before #18. The 15 -> 16 step drops it.
+    market: { ...state.market, volumes: [] },
   }
 }
 
@@ -85,7 +84,9 @@ describe('save format', () => {
     const fresh = createState(5)
     expect(deserialize(serialize(fresh, 0))).toEqual(fresh)
     const state = runDays(populated(), 120)
-    expect(state.storage.batches.length + state.market.volumes.length).toBeGreaterThan(0)
+    expect(state.storage.batches.length + Object.keys(state.market.volumes).length).toBeGreaterThan(
+      0,
+    )
     expect(deserialize(serialize(state, 0))).toEqual(state)
   })
 
@@ -204,7 +205,7 @@ describe('washed batches (S46)', () => {
       },
       market: {
         ...base.market,
-        volumes: [{ kind: 'washed', variety: 'robusta', day: 1, units: 2 }],
+        volumes: { washed: { robusta: { units: 2.5, day: 31, monthEnds: [0, 1.25] } } },
       },
     }
     expect(deserialize(serialize(state, 0))).toEqual(state)
@@ -314,6 +315,12 @@ describe('remove events migration (#8)', () => {
     return JSON.stringify({ version: 8, state: old })
   }
 
+  // The 15 -> 16 step (#18) drops the old volume list.
+  const expected = (): GameState => {
+    const state = populated()
+    return { ...state, market: { ...state.market, volumes: {} } }
+  }
+
   it('AC-4: has version 9 and drops events, research and growthDelayHours of a version 8 save', () => {
     expect(SAVE_VERSION).toBeGreaterThanOrEqual(9)
     const loaded = loadOld(oldSave())
@@ -321,12 +328,12 @@ describe('remove events migration (#8)', () => {
     expect(loaded).not.toHaveProperty('research')
     for (const plant of Object.values(loaded.farm.plants))
       expect(plant).not.toHaveProperty('growthDelayHours')
-    expect(loaded).toEqual(populated())
+    expect(loaded).toEqual(expected())
   })
 
   it('AC-4: save, load and 150 more days of a version 8 save equal 150 days without a break', () => {
     const loaded = loadOld(oldSave())
-    expect(runDays(deserialize(serialize(loaded, 0)), 150)).toEqual(runDays(populated(), 150))
+    expect(runDays(deserialize(serialize(loaded, 0)), 150)).toEqual(runDays(expected(), 150))
   })
 })
 
@@ -386,8 +393,8 @@ describe('save timestamp (#3)', () => {
   it('AC-1: writes the version with savedAt, and readSave gives the state and savedAt', () => {
     const state = runDays(populated(), 60)
     const text = serialize(state, 1_700_000_000_000)
-    expect(JSON.parse(text)).toMatchObject({ version: 15, savedAt: 1_700_000_000_000 })
-    expect(SAVE_VERSION).toBe(15)
+    expect(JSON.parse(text)).toMatchObject({ version: 16, savedAt: 1_700_000_000_000 })
+    expect(SAVE_VERSION).toBe(16)
     expect(readSave(text)).toEqual({ state, savedAt: 1_700_000_000_000 })
     expect(deserialize(text)).toEqual(state)
   })
@@ -407,7 +414,7 @@ describe('save timestamp (#3)', () => {
 
 describe('harvest quality (#21)', () => {
   it('rejects a version 14 save', () => {
-    expect(MIN_SAVE_VERSION).toBe(15)
+    expect(MIN_SAVE_VERSION).toBeGreaterThanOrEqual(15)
     const text = JSON.stringify({ version: 14, state: createState(5) })
     expect(() => deserialize(text)).toThrow('unknown or old version')
   })
@@ -437,5 +444,31 @@ describe('batch age (#9)', () => {
       state: { ...base, storage: { batches: [old] } },
     })
     expect(() => deserialize(text)).toThrow()
+  })
+})
+
+describe('decaying market volume (#18)', () => {
+  it('rejects a version 15 save with the volume list', () => {
+    expect(MIN_SAVE_VERSION).toBe(16)
+    const state = { ...createState(5), market: { volumes: [], seeds: {} } }
+    expect(() => deserialize(JSON.stringify({ version: 15, state }))).toThrow(
+      'unknown or old version',
+    )
+    expect(() => deserialize(JSON.stringify({ version: 16, state }))).toThrow(/market\.volumes/)
+  })
+
+  it('round-trips the volume per good with its month ends', () => {
+    const base = createState(5)
+    const state: GameState = {
+      ...base,
+      market: {
+        ...base.market,
+        volumes: {
+          coffee: { robusta: { units: 12.5, day: 95, monthEnds: [0, 3.2, 40] } },
+          seed: { arabicaStandard: { units: 4, day: 2, monthEnds: [] } },
+        },
+      },
+    }
+    expect(deserialize(serialize(state, 0))).toEqual(state)
   })
 })
