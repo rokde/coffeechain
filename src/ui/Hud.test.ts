@@ -128,7 +128,7 @@ describe('Hud left panel (S59)', () => {
       },
       market: {
         ...state.market,
-        volumes: [{ kind: 'coffee', variety: 'robusta', day: 1, units: 1 }],
+        volumes: { coffee: { robusta: { units: 1, day: 1, monthEnds: [] } } },
       },
     })
     const steps = useFirstStepsStore(pinia)

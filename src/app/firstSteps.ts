@@ -33,7 +33,7 @@ export function firstSteps(
     parcel: Object.keys(state.farm.parcels).length > 0,
     plant: plants.some((p) => p.variety === 'robusta'),
     fertilize: plants.some((p) => p.fertilized === true),
-    sell: state.market.volumes.some((v) => v.kind === 'coffee'),
+    sell: Object.keys(state.market.volumes.coffee ?? {}).length > 0,
   }
   const steps = stepIds.map((id) => ({ id, done: now[id] || kept.includes(id) }))
   const next = steps.find((s) => !s.done)?.id ?? null

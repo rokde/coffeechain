@@ -133,8 +133,9 @@ describe('S57 costs round up per booking', () => {
 
 describe('S57 income rounds down per booking', () => {
   it('AC-2: a bank sale', () => {
+    // 9 units at about 0.3998 CC give 3.60 CC, which rounds down to 3 CC.
     const state = withStock(testState(), 10)
-    expect(-spent(state, { type: 'Sell', variety: 'robusta', units: 10 })).toBe(300)
+    expect(-spent(state, { type: 'Sell', variety: 'robusta', units: 9 })).toBe(300)
   })
 
   it('AC-2: an order delivery', () => {

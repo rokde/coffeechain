@@ -42,9 +42,8 @@ describe('Process (S46)', () => {
         readyDay: day,
       },
     ])
-    const market = { volumes: [], seeds: {} }
-    expect(marketPrice(market, { kind: 'washed', variety: 'arabicaStandard' }, 1)).toBeCloseTo(1.5)
-    expect(marketPrice(market, { kind: 'coffee', variety: 'arabicaStandard' }, 1)).toBeCloseTo(1.0)
+    expect(marketPrice({}, { kind: 'washed', variety: 'arabicaStandard' }, 1)).toBeCloseTo(1.5)
+    expect(marketPrice({}, { kind: 'coffee', variety: 'arabicaStandard' }, 1)).toBeCloseTo(1.0)
   })
 
   it('#9: washed batches keep the storage day of the raw batch', () => {

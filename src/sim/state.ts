@@ -38,7 +38,7 @@ export function createState(seed: number): GameState {
     farm: { parcels: {}, fields: [], nextFieldId: 0, plants: {} },
     buildings: {},
     storage: { batches: [] },
-    market: { volumes: [], seeds: {} },
+    market: { volumes: {}, seeds: {} },
     orders: { open: [], nextId: 0 },
     milestones: { harvested: 0 },
   }

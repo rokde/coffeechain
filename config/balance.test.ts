@@ -112,7 +112,6 @@ describe('balance.json', () => {
       ['farm.overripe.graceDays', cfg.farm.overripe.graceDays, 60],
       ['farm.overripe.lossPerDay', cfg.farm.overripe.lossPerDay, 0.005],
       ['processing.washed.durationDays', cfg.processing.washed.durationDays, 30],
-      ['market.volumeWindowDays', cfg.market.volumeWindowDays, 90],
       ['market.historyMonths', cfg.market.historyMonths, 12],
       ['orders.chancePerDay', cfg.orders.chancePerDay, 0.01],
       ['orders.deadlineDays', cfg.orders.deadlineDays, [150, 300]],

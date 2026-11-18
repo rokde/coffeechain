@@ -125,6 +125,7 @@ describe('save (S47)', () => {
     const old: Record<string, unknown> = { ...createState(5) }
     delete old.invested
     old.time = { hour: 0, speed: 1 } // The time shape before #27.
+    old.market = { volumes: [], seeds: {} } // The volume list before #18.
     const loaded = deserialize(JSON.stringify({ version: 5, state: old }), {
       version: SAVE_VERSION,
       minVersion: 1,

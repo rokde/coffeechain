@@ -66,10 +66,10 @@ describe('PlantTool (S13)', () => {
     expect(useSelectionStore(createPinia()).variety).toBe('robusta')
   })
 
-  // The 2 seeds cost the price at the mid volume of 1 unit, so the total is a little above 2 × seedCost.
-  // S57: the total rounds up to whole CC.
-  it('AC-3: the total for 2 parcels is 5 CC for Robusta and 9 CC for Arabica Standard', async () => {
-    expect(await render(50000, 'robusta')).toMatch(/plant-tool-total"[^>]*>5 CC</)
+  // The 2 seeds cost the mean price over the volumes 0 to 2, a little above 2 × seedCost.
+  // S57: the total rounds up to whole CC; Robusta 4.004 CC is 400 hundredths, so 4 CC.
+  it('AC-3: the total for 2 parcels is 4 CC for Robusta and 9 CC for Arabica Standard', async () => {
+    expect(await render(50000, 'robusta')).toMatch(/plant-tool-total"[^>]*>4 CC</)
     expect(await render(50000, 'arabicaStandard')).toMatch(/plant-tool-total"[^>]*>9 CC</)
   })
 
@@ -90,7 +90,7 @@ describe('PlantTool (S13)', () => {
   })
 
   it('AC-4: disables "Pflanzen" when the total is more than the balance', async () => {
-    const html = await render(499)
+    const html = await render(399)
     expect(plantButton(html)).toContain('disabled')
     expect(html).toContain('Nicht genug CC.')
   })

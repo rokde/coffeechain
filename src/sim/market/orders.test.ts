@@ -37,7 +37,7 @@ function withOrder(): GameState {
         { variety: 'robusta', units: 40, quality: 90, storedDay: 0 },
       ],
     },
-    market: { volumes: [{ kind: 'coffee', variety: 'robusta', day: 10, units: 5 }], seeds: {} },
+    market: { volumes: { coffee: { robusta: { units: 5, day: 10, monthEnds: [] } } }, seeds: {} },
     orders: { open: [order], nextId: 5 },
   }
 }

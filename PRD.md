@@ -237,11 +237,11 @@ menge = basisErtrag(sorte)
 - **Preisbildung pro Ware (GDD 3.4, 11.3):**
   ```
   preis = referenz × angebotsFaktor × nachfrageFaktor
-  angebotsFaktor  0,7–1,1   sinkt mit der Menge, die der Spieler in den letzten 3 Monaten (90 Tage, `market.volumeWindowDays`) verkauft hat
-  nachfrageFaktor 0,9–1,3   steigt mit der Menge, die der Spieler in den letzten 3 Monaten gekauft hat
+  angebotsFaktor  0,7–1,1   sinkt mit der verkauften Menge der Ware
+  nachfrageFaktor 0,9–1,3   steigt mit der gekauften Menge der Ware
   Ergebnis immer zwischen 50 % und 150 % des Referenzpreises
   ```
-  Wie stark die Faktoren auf Mengen reagieren und wie schnell sie zurückkehren, ist `NEU` (`market.*`).
+  **Abklingende Menge (#18):** Jeder Verkauf (Kaffee) und jeder Kauf (Saatgut) zählt seine Einheiten zur Menge der Ware. Die Menge halbiert sich alle `market.volumeHalfLifeDays` Tage, so erholt sich der Preis nach und nach. Der Faktor folgt einer sättigenden Kurve: bei `market.supplyUnitsForHalfFactor` (Saatgut: `market.demandUnitsForHalfFactor`) Einheiten ist die halbe Spanne erreicht, das Ende der Spanne nie. Ein Handel zahlt den mittleren Preis über die Menge, die er hinzufügt; ein großer Verkauf bringt also so viel wie zwei halbe. Alle drei Werte sind `NEU`.
 - Keine Transaktionsgebühren bei der Bank (GDD 3.7).
 - Preisverlauf der letzten 12 Monate (`market.historyMonths`) pro Ware, ein Punkt pro Monat, im Markt-Panel als Linie.
 - Keine Öffnungszeiten.
