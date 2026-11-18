@@ -2,10 +2,9 @@
 
 ## [0.7.0](https://github.com/rokde/coffeechain/compare/v0.6.0...v0.7.0) (2026-11-18)
 
-
 ### Features
 
-* decaying market volume and a smooth price curve ([#18](https://github.com/rokde/coffeechain/issues/18)) ([#51](https://github.com/rokde/coffeechain/issues/51)) ([f249358](https://github.com/rokde/coffeechain/commit/f249358c5b226644b1fa890a2b8855308a27851d))
+- decaying market volume and a smooth price curve ([#18](https://github.com/rokde/coffeechain/issues/18)) ([#51](https://github.com/rokde/coffeechain/issues/51)) ([f249358](https://github.com/rokde/coffeechain/commit/f249358c5b226644b1fa890a2b8855308a27851d))
 
 ## [0.6.0](https://github.com/rokde/coffeechain/compare/v0.5.0...v0.6.0) (2026-11-08)
 
