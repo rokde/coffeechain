@@ -7,10 +7,13 @@ import { mulberry32 } from '../rng'
 import { createState, type GameState } from '../state'
 import {
   bankBuyPrice,
+  bankPriceAfterSale,
+  bankReferencePrice,
   bankSellPrice,
   marketPrice,
   priceAt,
   priceHistory,
+  saleBatches,
   sell,
   sellableUnits,
   sellIncome,
@@ -561,5 +564,126 @@ describe('bank minimum quality (#38)', () => {
     expect(sellableUnits(state, raw, c)).toBe(0)
     expect(below(state)).toEqual(kept)
     expect(unsellableUnits(state, raw, c)).toBe(kept.reduce((sum, [, u]) => sum + u!, 0))
+  })
+
+  it.each([0, 40])('min %i: saleBatches names the batches that sell takes', (min) => {
+    const state = mixed()
+    const c = withMin(min)
+    const command = { type: 'Sell', variety: 'robusta', units: 11 } as const
+    const batches = saleBatches(state, command, c)
+    expect(batches.every((b) => b.quality >= min)).toBe(true)
+    const next = sell(state, command, c)
+    for (const b of batches) {
+      const before = state.storage.batches.find(
+        (x) => x.variety === 'robusta' && !x.washed && x.storedDay === b.storedDay,
+      )!
+      const after = next.storage.batches.find(
+        (x) => x.variety === 'robusta' && !x.washed && x.storedDay === b.storedDay,
+      )
+      expect(before.units - (after?.units ?? 0)).toBe(b.units)
+    }
+    expect(batches.reduce((sum, b) => sum + b.units, 0)).toBe(11)
+  })
+})
+
+describe('sell ticket (#20)', () => {
+  it('bankPriceAfterSale is the bank price the day after the sale books', () => {
+    for (const washed of [false, true]) {
+      const state = atDay(
+        {
+          ...testState(),
+          storage: {
+            batches: [
+              {
+                variety: 'robusta',
+                units: 400,
+                quality: 80,
+                storedDay: 0,
+                ...(washed && { washed: true as const }),
+              },
+            ],
+          },
+        },
+        200,
+      )
+      for (const units of [1, 50, 400]) {
+        const after = dispatch(state, {
+          type: 'Sell',
+          variety: 'robusta',
+          units,
+          ...(washed && { washed: true as const }),
+        })
+        expect(bankPriceAfterSale(state, 'robusta', units, washed)).toBeCloseTo(
+          bankBuyPrice(after, 'robusta', 0, washed),
+          12,
+        )
+      }
+    }
+  })
+
+  it('bankPriceAfterSale with 0 units is the price today', () => {
+    const state = testState()
+    expect(bankPriceAfterSale(state, 'robusta', 0)).toBe(bankBuyPrice(state, 'robusta'))
+  })
+
+  it('saleBatches takes the oldest sellable batches first and splits the last one', () => {
+    const state = testState()
+    expect(saleBatches(state, { type: 'Sell', variety: 'robusta', units: 10 })).toEqual([
+      { quality: 90, storedDay: 0, units: 6 },
+      { quality: 100, storedDay: 0, units: 4 },
+    ])
+    expect(saleBatches(state, { type: 'Sell', variety: 'robusta', units: 6 })).toEqual([
+      { quality: 90, storedDay: 0, units: 6 },
+    ])
+    expect(saleBatches(state, { type: 'Sell', variety: 'robusta', units: 0 })).toEqual([])
+  })
+
+  it('saleBatches skips washed and running batches like sell does', () => {
+    const state: GameState = {
+      ...testState(),
+      storage: {
+        batches: [
+          { variety: 'robusta', units: 5, quality: 70, storedDay: 0, washed: true, readyDay: 999 },
+          { variety: 'robusta', units: 5, quality: 60, storedDay: 0, washed: true },
+          { variety: 'robusta', units: 5, quality: 50, storedDay: 0 },
+        ],
+      },
+    }
+    expect(saleBatches(state, { type: 'Sell', variety: 'robusta', units: 5 })).toEqual([
+      { quality: 50, storedDay: 0, units: 5 },
+    ])
+    expect(
+      saleBatches(state, { type: 'Sell', variety: 'robusta', units: 5, washed: true }),
+    ).toEqual([{ quality: 60, storedDay: 0, units: 5 }])
+  })
+
+  it('sell removes exactly the units that saleBatches names', () => {
+    const state = testState()
+    const command = { type: 'Sell', variety: 'robusta', units: 300 } as const
+    const taken = saleBatches(state, command)
+    const after = dispatch(state, command)
+    const left = (s: GameState, q: number) =>
+      s.storage.batches
+        .filter((b) => b.variety === 'robusta' && b.quality === q)
+        .reduce((n, b) => n + b.units, 0)
+    for (const q of [90, 100]) {
+      const sold = taken.filter((t) => t.quality === q).reduce((n, t) => n + t.units, 0)
+      expect(left(state, q) - left(after, q)).toBe(sold)
+    }
+  })
+
+  it('bankReferencePrice is the reference times the bank factor, washed with its multiplier', () => {
+    expect(bankReferencePrice('robusta')).toBeCloseTo(
+      cfg.varieties.robusta.referencePrice * m.bankBuyFactor,
+      12,
+    )
+    expect(bankReferencePrice('robusta', true)).toBeCloseTo(
+      cfg.varieties.robusta.referencePrice *
+        cfg.processing.washed.valueMultiplier *
+        m.bankBuyFactor,
+      12,
+    )
+    // A neutral market pays exactly the reference.
+    expect(bankBuyPrice(createState(1), 'robusta')).toBeCloseTo(bankReferencePrice('robusta'), 12)
   })
 })
