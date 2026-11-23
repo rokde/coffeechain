@@ -203,29 +203,81 @@
   },
   "marketPanel": {
     "heading": "Markt",
-    "hint": "Die Bank kauft Roh- und gewaschenen Kaffee und verkauft Saatgut. Verkäufe senken den Preis, Käufe heben ihn. Das Lager kostet jeden Monat 1 CC je angefangene {units} Einheiten. Ein leeres Lager kostet nichts.",
-    "stock": "Im Lager",
-    "seeds": "Saatgut",
-    "sellPrice": "Bank zahlt je Einheit",
-    "buyPrice": "Saatgut kostet je Einheit",
-    "coffeeLine": "Kaffee, {months} Monate",
-    "seedLine": "Saatgut, {months} Monate",
-    "sell": "Verkaufen",
-    "sellAmount": "Verkaufen ({units}\u00a0Einh., {income})",
-    "sellWashedAmount": "Gewaschen verkaufen ({units}\u00a0Einh., {income})",
-    "sellZero": "Menge zu klein",
-    "washedStock": "Gewaschen bereit",
-    "washedSellPrice": "Bank zahlt (gewaschen) je Einheit",
-    "process": "Aufbereiten",
-    "processAmount": "Aufbereiten ({units}\u00a0Einh., {cost})",
-    "processWhy": {
-      "building": "Baue zuerst eine Aufbereitung.",
-      "running": "Es läuft schon eine Aufbereitung.",
-      "stock": "Kein Rohkaffee im Lager.",
-      "money": "Zu wenig Geld."
+    "close": "Markt schließen",
+    "tabsLabel": "Bereiche des Markts",
+    "tabs": {
+      "bank": "Bank",
+      "orders": "Aufträge",
+      "seed": "Saatgut"
     },
-    "sellWashed": "Gewaschen verkaufen",
-    "processing": "Aufbereitung läuft bis {date}"
+    "ordersCount": "{open} Aufträge, {ready} lieferbar",
+    "bank": {
+      "lead": "Die Bank kauft immer. Jeder Verkauf drückt ihren Preis; er erholt sich wieder, in {days} Tagen um die Hälfte.",
+      "columns": {
+        "state": "Zustand",
+        "sellable": "Verkaufbar",
+        "price": "Bank zahlt je Einh.",
+        "trend": "Trend"
+      },
+      "inStorage": "{units} Einh. im Lager",
+      "raw": "roh",
+      "washed": "gewaschen",
+      "units": "Einh.",
+      "nothing": "nichts im Lager",
+      "running": "+ {units} in Aufbereitung",
+      "pays": "Bank zahlt ",
+      "ofReference": "{percent} % der Referenz",
+      "toLastMonth": "zum Vormonat"
+    },
+    "ticket": {
+      "chartHeading": "Bank zahlt je Einheit · {months} Monate",
+      "chartNote": "Feste Skala: 50 bis 150 % der Referenz ({price}).",
+      "amount": "Menge",
+      "of": "von {max} Einh.",
+      "amountText": "{units} von {max} Einheiten",
+      "presetsLabel": "Anteil am verkaufbaren Bestand",
+      "presets": ["25 %", "50 %", "Alles"],
+      "income": "Erlös",
+      "average": "Ø Preis je Einheit",
+      "after": "Preis danach",
+      "rest": "Bleibt verkaufbar",
+      "units": "{units} Einh.",
+      "sell": "{units} Einh. verkaufen · {income}",
+      "choose": "Menge wählen",
+      "tooSmall": "Menge zu klein: Die Bank zahlt dafür 0 CC.",
+      "batches": "Die Bank nimmt die ältesten Chargen zuerst: {list}.",
+      "batchesNone": "Die Bank nimmt die ältesten Chargen zuerst.",
+      "batch": "{units} × Q {quality}",
+      "running": "{units} Einh. in der Aufbereitung: verkaufbar ab {date} (in {days} Tagen).",
+      "nothing": "Nichts zu verkaufen",
+      "nothingRunning": "Die Ware ist noch in der Aufbereitung.",
+      "nothingStock": "Von dieser Ware liegt nichts Verkaufbares im Lager.",
+      "processLead": "Stattdessen aufbereiten?",
+      "processPays": "Gewaschen zahlt die Bank {price} je Einh.",
+      "processBlocked": "Gerade nicht möglich: {why}",
+      "process": "Aufbereiten",
+      "processAmount": "Aufbereiten ({units} Einh., {cost})",
+      "processWhy": {
+        "building": "Baue zuerst eine Aufbereitung.",
+        "running": "Es läuft schon eine Aufbereitung.",
+        "stock": "Kein Rohkaffee im Lager.",
+        "money": "Zu wenig Geld."
+      }
+    },
+    "chart": {
+      "label": "Preisverlauf der letzten {months} Monate. Heute {price}, das sind {percent} % der Referenz von {reference}.",
+      "labelAfter": "Nach dem Handel {after}.",
+      "today": "heute",
+      "after": "danach",
+      "reference": "Referenz",
+      "point": "{month}: {price} ({percent} % der Referenz)"
+    },
+    "seed": {
+      "lead": "Die Bank verkauft Saatgut. Beim Pflanzen kauft das Spiel fehlendes Saatgut selbst; jeder Kauf hebt den Preis, er erholt sich wieder.",
+      "stock": "Saatgut im Lager",
+      "price": "Saatgut kostet je Einheit",
+      "chartHeading": "Saatgut kostet je Einheit · {months} Monate"
+    }
   },
   "orders": {
     "heading": "Aufträge",
@@ -375,9 +427,9 @@
       "Wähle mit „Auswählen“ eine eigene, leere Parzelle.",
       "Öffne „Bauen“. Klicke bei „Aufbereitung“ auf „Bauen“. Sie kostet {cost} CC und ist ab Phase {phase} frei. Du kannst eine pro Farm bauen.",
       "Wähle „Ernten“ (Taste {harvestKey}) und klicke eine reife Pflanze an. Der Kaffee liegt dann als Rohkaffee im Lager.",
-      "Öffne „Markt“ und klicke „Aufbereiten“. Eine Charge nimmt höchstens {batch} Einheiten und kostet {unitCost} CC je Einheit. Der älteste Kaffee kommt zuerst dran. Eine Charge wäscht eine Sorte. Es läuft immer nur eine Aufbereitung. Für mehr als {batch} Einheiten wäschst du nach dem Ende noch einmal.",
-      "Warte, bis „Aufbereitung läuft bis …“ verschwindet. Die Aufbereitung dauert {days} {dayUnit}.",
-      "Klicke im „Markt“ auf „Gewaschen verkaufen“."
+      "Öffne „Markt“, klappe im Tab „Bank“ den Rohkaffee („roh“) einer Sorte auf und klicke „Aufbereiten“. Eine Charge nimmt höchstens {batch} Einheiten und kostet {unitCost} CC je Einheit. Der älteste Kaffee kommt zuerst dran. Eine Charge wäscht eine Sorte. Es läuft immer nur eine Aufbereitung. Für mehr als {batch} Einheiten wäschst du nach dem Ende noch einmal.",
+      "Warte, bis die Aufbereitung fertig ist. Bis dahin steht im Markt „… in der Aufbereitung: verkaufbar ab …“. Die Aufbereitung dauert {days} {dayUnit}.",
+      "Klappe im „Markt“ die Zeile „gewaschen“ auf, wähle die Menge und klicke „… Einh. verkaufen“."
     ],
     "washingPays": "Wann lohnt sich das? Die Bank zahlt für gewaschenen Kaffee das {factor}-Fache des Rohpreises. Die Qualität bleibt gleich. Es lohnt sich ab etwa {breakEven} CC je Einheit Rohpreis, bei voller Charge. Die Kosten werden auf ganze CC aufgerundet.",
     "dayOne": "Tag",

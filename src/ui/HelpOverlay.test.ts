@@ -122,11 +122,14 @@ describe('help: buildings and washing (S62)', () => {
       de.buildTool.heading,
       de.buildTool.buildings.processing,
       de.marketPanel.heading,
-      de.marketPanel.process,
-      de.marketPanel.sellWashed,
+      de.marketPanel.tabs.bank,
+      de.marketPanel.bank.raw,
+      de.marketPanel.bank.washed,
+      de.marketPanel.ticket.process,
     ]
     for (const label of labels) expect(washing).toContain(label)
-    expect(washing).toContain(de.marketPanel.processing.replace('{date}', '…'))
+    expect(washing).toContain('in der Aufbereitung: verkaufbar ab')
+    expect(washing).toContain(de.marketPanel.ticket.sell.replace('{units}', '…').split(' · ')[0]!)
     expect(section(html, 'help-storage')).toContain(de.buildTool.buildings.storage)
   })
 
@@ -219,7 +222,7 @@ describe('help: buildings and washing (S62)', () => {
     const html = await renderToString(createSSRApp(HudMocked).use(pinia))
     vi.doUnmock('../sim/balance')
     const washing = section(html, 'help-washing')
-    expect(washing).toContain('Gewaschen verkaufen')
+    expect(washing).toContain('die Zeile „gewaschen“ auf')
     expect(washing).not.toContain('Wann lohnt sich das')
     expect(washing).not.toMatch(/Infinity|NaN|-\d+ CC/)
   })

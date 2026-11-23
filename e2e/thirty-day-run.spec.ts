@@ -73,7 +73,7 @@ test('S55: a fixed-seed farm plays from month 1 to month 30', async ({ page }) =
     if ((await storedUnits()) > 0) {
       await tool('market')
       const before = await moneyValue()
-      await page.getByTestId('market-robusta').getByTestId('market-sell').click()
+      await page.getByTestId('ticket-robusta-raw').getByTestId('ticket-sell').click()
       await expect.poll(moneyValue).toBeGreaterThan(before)
       sales++
     }

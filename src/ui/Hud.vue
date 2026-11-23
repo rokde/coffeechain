@@ -145,7 +145,7 @@ const phaseText = computed(() => {
 </script>
 
 <template>
-  <div class="hud">
+  <div class="hud" :class="{ market: selection.tool === 'market' }">
     <header class="frame top-bar" data-testid="hud-top-bar">
       <div class="name">
         <strong>{{ de.game.name }}</strong>
@@ -297,7 +297,12 @@ const phaseText = computed(() => {
       <FirstSteps v-if="steps.open && steps.current.next !== null" />
       <template v-else><FieldList /><MessagePanel /></template>
     </aside>
-    <aside ref="sheet" class="frame right-panel" data-testid="hud-right-panel">
+    <aside
+      ref="sheet"
+      class="frame right-panel"
+      :class="{ wide: selection.tool === 'market' }"
+      data-testid="hud-right-panel"
+    >
       <button
         v-if="selection.tool !== 'select'"
         type="button"
@@ -628,6 +633,15 @@ button:active {
   max-height: 480px;
   overflow-y: auto;
 }
+/* The market is as wide as the storage panel of the mockup (docs/mockups/market-panel) and runs down
+   to the toolbar. Its own body scrolls, so the sell button can stick to the bottom. */
+.right-panel.wide {
+  width: 640px;
+  max-height: calc(100vh - 92px - 16px - 80px - 12px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
 @media (max-width: 1279px) {
   .left-panel {
     --left-max: 204px;
@@ -636,6 +650,11 @@ button:active {
   .right-panel {
     top: 126px;
     max-height: 446px;
+  }
+  /* Beside the left column. */
+  .right-panel.wide {
+    width: calc(100vw - 348px);
+    max-height: calc(100vh - 126px - 16px - 80px - 12px);
   }
 }
 .toolbar {
@@ -723,6 +742,11 @@ button:active {
   .hud > .right-panel {
     flex: 0 1 auto;
     min-height: 0;
+  }
+  /* The market sheet takes all the room between the left panel and the toolbar. */
+  .hud > .right-panel.wide {
+    flex: 1 1 auto;
+    max-height: none;
   }
   /* Reading order: bar, left panel, money toasts over the island, sheet, toolbar. */
   .hud > .left-panel {
@@ -910,6 +934,10 @@ button:active {
 @media (max-width: 480px) {
   .phase-progress,
   .storage-word {
+    display: none;
+  }
+  /* The market sheet runs from the top bar to the toolbar, as in docs/mockups/market-panel. */
+  .hud.market > .left-panel {
     display: none;
   }
   .stats,
