@@ -1,0 +1,755 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Markt-Panel Mockup</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+  /* Layout: Übersichtsseite mit Spielrahmen in Originalgröße; das Panel selbst nutzt die HUD-Farben aus index.html. */
+  :root {
+    color-scheme: light;
+    --page: #e9e4dc;
+    --ink: #2b2420;
+    --hud-bg: rgb(31 27 22 / 95%);
+    --hud-solid: #221e19;
+    --hud-fg: #f5ece0;
+    --fg-2: #c2baae;
+    --fg-3: #9a9388;
+    --amber: #f2c48d;
+    --dark: #1f1b16;
+    --soft: rgb(255 255 255 / 8%);
+    --softer: rgb(255 255 255 / 5%);
+    --line: rgb(255 255 255 / 12%);
+    --green: #9ccf7a;
+    --red: #e8735f;
+    --red-fg: #ffb3a4;
+    --dash: rgb(242 196 141 / 55%);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font-family: "DM Sans", "Segoe UI", system-ui, sans-serif; }
+  button, input { font: inherit; color: inherit; }
+
+  /* ---------- Übersichtsseite (nicht Teil des Spiels) ---------- */
+  .overview { padding-block: 32px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); max-width: 1520px; margin: 0 auto; }
+  .overview h1 { margin: 0 0 4px; font-size: 28px; text-wrap: balance; }
+  .overview > p { margin: 0 0 20px; max-width: 80ch; line-height: 1.5; }
+  .shot { margin: 0 0 56px; }
+  .shot h2 { margin: 0 0 4px; font-size: 20px; }
+  .shot > p { margin: 0 0 12px; max-width: 90ch; line-height: 1.5; }
+  .shot .scroll { overflow-x: auto; padding-bottom: 8px; }
+  .legend { display: flex; gap: 8px 16px; flex-wrap: wrap; margin: 0 0 28px; padding: 0; list-style: none; font-size: 14px; }
+  .legend li.d::before { content: ""; display: inline-block; width: 22px; height: 12px; margin-right: 6px; vertical-align: -1px; border: 1.5px dashed #a6743a; border-radius: 4px; }
+  .trio { display: flex; gap: 24px; align-items: flex-start; }
+  .trio figure, .states figure { margin: 0; }
+  .trio figcaption, .states figcaption { margin: 0 0 8px; font-weight: 700; }
+  .states { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+  .crop { width: 672px; max-width: 100%; overflow: hidden; border-radius: 12px; }
+  .crop .frame { transform: translateX(-768px); }
+
+  /* ---------- Rahmen (ein Spielfenster) ---------- */
+  .frame { position: relative; overflow: hidden; container-type: size; background: #86bcc4; flex: none; border-radius: 12px; }
+  .frame[data-size="desktop"] { width: 1440px; height: 900px; }
+  .frame[data-size="tablet"] { width: 800px; height: 900px; }
+  .frame[data-size="phone"] { width: 390px; height: 844px; }
+  .frame svg.scene { position: absolute; inset: 0; width: 100%; height: 100%; }
+  body.single { background: none; }
+  body.single .frame { margin: 0; border-radius: 0; }
+
+  .hud { position: absolute; inset: 0; color: var(--hud-fg); font-size: 14px; line-height: 1.35; }
+  .box { position: absolute; background: var(--hud-bg); border-radius: 12px; }
+  .top-bar { top: 16px; left: 16px; right: 16px; height: 60px; display: flex; align-items: center; padding: 0 16px; }
+  .name { display: flex; flex-direction: column; }
+  .name strong { font-size: 18px; }
+  .name small { font-size: 12px; color: var(--fg-2); }
+  .time { display: flex; align-items: center; gap: 8px; margin: 0 auto; font-size: 15px; font-weight: 600; }
+  .chip { padding: 8px 12px; border-radius: 8px; background: var(--soft); white-space: nowrap; font-size: 15px; font-weight: 600; }
+  .clock .sep { display: inline; }
+  .speeds { display: flex; gap: 4px; padding: 2px; border-radius: 10px; background: var(--soft); }
+  .speeds span { min-width: 44px; height: 44px; display: grid; place-items: center; border-radius: 8px; color: var(--fg-2); }
+  .speeds span.on { background: var(--amber); color: var(--dark); }
+  .time-unit { font-size: 12px; font-weight: 400; color: var(--fg-2); }
+  .stats { display: flex; align-items: center; gap: 12px; font-weight: 600; }
+  .money-group { display: flex; gap: 8px; font-size: 20px; font-weight: 700; align-items: center; }
+  .money-group > * { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .storage-btn { height: 40px; padding: 0 12px; border-radius: 8px; background: var(--soft); }
+  .sq { width: 44px; height: 44px; margin-left: 8px; border-radius: 8px; background: var(--soft); display: grid; place-items: center; font-weight: 600; font-size: 18px; flex: none; }
+  .save { height: 44px; margin-left: 8px; padding: 0 12px; border-radius: 8px; background: var(--soft); display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; flex: none; }
+  .left-panel { top: 92px; left: 16px; width: 300px; padding: 14px 20px; }
+  .cap { margin: 0; font-size: 13px; font-weight: 600; color: var(--fg-2); }
+  .field { padding: 6px 0; }
+  .field .line { display: flex; justify-content: space-between; align-items: center; }
+  .field small { font-size: 12px; color: var(--fg-2); }
+  .field .badge { padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; background: #c0392b; color: #fff; }
+  .field .badge.care { background: var(--amber); color: var(--dark); }
+  .field .prog { display: block; height: 4px; margin-top: 4px; border-radius: 2px; background: rgb(255 255 255 / 15%); }
+  .field .prog i { display: block; height: 100%; border-radius: 2px; background: #8fc65a; }
+  .toolbar { bottom: 16px; left: 50%; transform: translateX(-50%); width: min(1000px, calc(100cqw - 32px)); height: 80px; display: flex; gap: 8px; padding: 8px; }
+  .toolbar span { flex: 1 0 0; display: grid; place-items: center; border-radius: 8px; font-size: 14px; font-weight: 600; color: var(--fg-2); }
+  .toolbar span.on { background: var(--amber); color: var(--dark); }
+  .toolbar .ov { flex: 2 0 0; display: flex; gap: 8px; padding-left: 8px; border-left: 1px solid rgb(255 255 255 / 25%); }
+
+  /* ---------- Markt-Panel ---------- */
+  .market { top: 92px; right: 16px; width: 640px; max-height: calc(100cqh - 92px - 16px - 80px - 12px); display: flex; flex-direction: column; padding: 14px 20px 0; z-index: 5; font-variant-numeric: tabular-nums; }
+  .market > header { flex: none; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: -8px; }
+  .market .title { margin: 8px 0 0; font-size: 20px; font-weight: 700; }
+  .market .title small { font-size: 14px; font-weight: 400; color: var(--fg-2); }
+  .close { width: 44px; height: 44px; border: 0; border-radius: 8px; background: var(--soft); font-size: 20px; flex: none; margin: -2px -8px 0 0; cursor: pointer; }
+  :is(button, input, [tabindex]):focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+  /* Tabs: Auswahl über aria-selected, Unterstrich als Form (nicht nur Farbe), eine Zeile. */
+  .tabs { display: flex; flex: none; margin-top: 6px; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
+  .tabs button { position: relative; flex: none; min-height: 44px; padding: 0 16px; border: 0; background: none; font-weight: 600; font-size: 15px; color: var(--fg-2); cursor: pointer; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+  .tabs button:hover { color: var(--hud-fg); }
+  .tabs button[aria-selected="true"] { color: var(--amber); }
+  .tabs button[aria-selected="true"]::after { content: ""; position: absolute; inset: auto 0 -1px; border-block-end: 3px solid var(--amber); }
+  .count { min-width: 22px; padding: 1px 7px; border-radius: 999px; background: var(--soft); font-size: 12px; font-weight: 700; color: var(--hud-fg); text-align: center; }
+  .count.go { background: var(--green); color: #1f2d14; }
+
+  .body { overflow-y: auto; min-height: 0; flex: 1 1 auto; margin-right: -12px; padding: 0 12px 0 0; scrollbar-color: var(--fg-3) transparent; }
+  .inner { padding-bottom: 16px; }
+  .lead { margin: 10px 0 2px; font-size: 13px; color: var(--fg-2); max-width: 68ch; }
+  .thead, .grow { display: grid; grid-template-columns: 104px minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 1fr) 28px; column-gap: 10px; align-items: center; }
+  .thead { padding: 10px 10px 6px; font-size: 12px; color: var(--fg-2); }
+  .group { display: flex; align-items: baseline; gap: 10px; padding: 12px 0 4px; }
+  .group h3 { margin: 0; font-size: 15px; }
+  .group .sum { font-size: 12px; color: var(--fg-2); }
+  .good { border-radius: 10px; margin-top: 4px; background: var(--softer); }
+  .good[data-open="true"] { background: rgb(255 255 255 / 7%); outline: 1px solid var(--line); }
+  .grow { width: 100%; min-height: 56px; padding: 8px 10px; border: 0; border-radius: 10px; background: none; text-align: left; cursor: pointer; font-size: 13px; }
+  .grow:hover { background: var(--softer); }
+  .grow[disabled] { cursor: default; color: var(--fg-3); }
+  .grow[disabled]:hover { background: none; }
+  .grow b { font-size: 15px; font-weight: 700; }
+  .grow small { display: block; font-size: 12px; color: var(--fg-2); }
+  .grow small.bad { color: var(--red-fg); }
+  .chev { justify-self: end; width: 10px; height: 10px; border-right: 2px solid var(--fg-2); border-bottom: 2px solid var(--fg-2); transform: rotate(45deg) translate(-2px, -2px); }
+  [aria-expanded="true"] > .chev { transform: rotate(225deg) translate(-2px, -2px); }
+  .tag { display: inline-block; padding: 2px 9px; border-radius: 6px; font-size: 12px; font-weight: 700; border: 1px solid rgb(255 255 255 / 35%); white-space: nowrap; }
+  .tag.washed { background: var(--green); color: #1f2d14; border-color: var(--green); }
+  .tag.seed { background: none; border-color: var(--amber); color: var(--amber); }
+  .up { color: var(--green); }
+  .down { color: var(--red-fg); }
+  .trend { font-weight: 700; white-space: nowrap; }
+
+  /* Ticket: Diagramm links, Menge und Vorschau rechts, Aktionen darunter. */
+  .ticket { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px 20px; padding: 6px 12px 14px; }
+  .ticket h4 { margin: 0 0 4px; font-size: 12px; font-weight: 600; color: var(--fg-2); }
+  .t-chart svg { display: block; width: 100%; height: auto; }
+  .t-chart .note { margin: 2px 0 0; font-size: 11px; color: var(--fg-3); }
+  .t-form { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .amount label { display: block; font-size: 12px; font-weight: 600; color: var(--fg-2); margin-bottom: 4px; }
+  .num { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--fg-2); }
+  .num input { width: 92px; height: 44px; padding: 0 10px; border: 1px solid rgb(255 255 255 / 30%); border-radius: 8px; background: rgb(0 0 0 / 25%); font-size: 18px; font-weight: 700; color: var(--hud-fg); text-align: right; }
+  .step { width: 44px; height: 44px; border: 0; border-radius: 8px; background: var(--soft); font-size: 20px; font-weight: 700; cursor: pointer; flex: none; }
+  .presets { display: flex; gap: 6px; }
+  .presets button { flex: 1; min-height: 36px; padding: 0 8px; border: 0; border-radius: 8px; background: var(--soft); font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .presets button[aria-pressed="true"] { background: var(--amber); color: var(--dark); }
+  .seg { display: flex; padding: 2px; border-radius: 10px; background: var(--soft); grid-column: 1 / -1; }
+  .seg button { flex: 1; min-height: 40px; padding: 0 10px; border: 0; border-radius: 8px; background: none; font-size: 13px; font-weight: 600; color: var(--fg-2); cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--amber); color: var(--dark); }
+
+  /* Slider: natives range-Element, WebKit und Firefox getrennt gestylt. */
+  input[type="range"] { --track: 6px; --thumb: 22px; --p: 50%; appearance: none; width: 100%; height: 36px; margin: 0; padding: 0; border: 0; background: transparent; cursor: pointer; display: block; }
+  input[type="range"]::-webkit-slider-runnable-track { height: var(--track); border-radius: 999px; background: linear-gradient(to right, var(--amber) var(--p), rgb(255 255 255 / 28%) var(--p)); }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: var(--thumb); height: var(--thumb); margin-top: calc((var(--track) - var(--thumb)) / 2); border: 3px solid var(--hud-solid); border-radius: 50%; background: var(--amber); }
+  input[type="range"]::-moz-range-track { height: var(--track); border-radius: 999px; background: rgb(255 255 255 / 28%); }
+  input[type="range"]::-moz-range-progress { height: var(--track); border-radius: 999px; background: var(--amber); }
+  input[type="range"]::-moz-range-thumb { width: var(--thumb); height: var(--thumb); border: 3px solid var(--hud-solid); border-radius: 50%; background: var(--amber); }
+  input[type="range"]:focus-visible { outline-offset: 0; }
+
+  .preview { display: grid; grid-template-columns: 1fr auto; gap: 5px 12px; margin: 0; padding: 10px 12px; border-radius: 8px; background: rgb(0 0 0 / 22%); font-size: 13px; }
+  .preview dt { color: var(--fg-2); }
+  .preview dd { margin: 0; font-weight: 700; text-align: right; white-space: nowrap; }
+  .preview .total { font-size: 18px; }
+  .preview .total + dd, .preview dd.total { font-size: 18px; }
+  .preview dd small { font-weight: 600; margin-left: 4px; }
+  .t-notes { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px; }
+  .alert { padding: 8px 12px; border-radius: 8px; background: rgb(232 115 95 / 16%); color: var(--red-fg); font-size: 13px; display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+  .hintrow { padding: 8px 12px; border-radius: 8px; background: rgb(242 196 141 / 12%); font-size: 13px; display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+  .link { flex: none; min-height: 32px; padding: 0 10px; border: 1px solid currentColor; border-radius: 8px; background: none; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .t-second { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 12px; align-items: center; padding-top: 10px; border-top: 1px solid var(--line); }
+  .t-second p { margin: 0; font-size: 13px; color: var(--fg-2); }
+  .t-second p b { color: var(--hud-fg); }
+  /* Die Hauptaktion klebt am unteren Rand der Liste, damit sie ohne Scrollen erreichbar bleibt. */
+  .t-actions { grid-column: 1 / -1; position: sticky; bottom: 0; z-index: 2; margin: 0 -12px -14px; padding: 10px 12px 14px; border-radius: 0 0 10px 10px; background: #322e29; box-shadow: 0 -1px 0 var(--line); }
+  .btn { width: 100%; min-height: 44px; padding: 6px 14px; border: 0; border-radius: 8px; background: var(--soft); font-weight: 700; font-size: 14px; cursor: pointer; }
+  .btn.primary { background: var(--amber); color: var(--dark); }
+  .btn[disabled] { background: var(--soft); color: var(--fg-3); cursor: not-allowed; }
+  .why { margin: 4px 0 0; font-size: 12px; color: var(--fg-2); }
+  .small { margin: 0; font-size: 12px; color: var(--fg-3); }
+
+  /* Aufträge */
+  .filters { display: flex; align-items: center; gap: 6px; margin-top: 12px; }
+  .filters button { min-height: 36px; padding: 0 12px; border: 0; border-radius: 8px; background: var(--soft); font-size: 13px; font-weight: 600; cursor: pointer; }
+  .filters button[aria-pressed="true"] { background: var(--amber); color: var(--dark); }
+  .filters .sort { margin-left: auto; font-size: 12px; color: var(--fg-2); }
+  .slot { margin-top: 10px; padding: 8px 12px; border: 1.5px dashed var(--dash); border-radius: 10px; font-size: 12px; color: var(--amber); }
+  .slot strong { display: block; font-size: 13px; }
+  .pill-slot { padding: 1px 8px; border: 1.5px dashed var(--dash); border-radius: 999px; font-size: 11px; font-weight: 600; color: var(--amber); white-space: nowrap; }
+  .order { margin-top: 10px; padding: 12px; border-radius: 10px; background: var(--softer); display: grid; gap: 10px; }
+  .order.ready { outline: 1px solid rgb(156 207 122 / 55%); }
+  .o-head { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+  .avatar { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 14px; background: rgb(255 255 255 / 14%); }
+  .o-head h3 { margin: 0; font-size: 15px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .o-head p { margin: 0; font-size: 12px; color: var(--fg-2); }
+  .due { text-align: right; font-size: 13px; font-weight: 700; white-space: nowrap; }
+  .due small { display: block; font-size: 12px; font-weight: 400; color: var(--fg-2); }
+  .due.soon, .due.soon small { color: var(--amber); }
+  .ask { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; font-size: 15px; font-weight: 700; }
+  .ask .q { padding: 2px 9px; border-radius: 6px; background: var(--soft); font-size: 12px; }
+  .cells { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .cell { padding: 8px 10px; border-radius: 8px; background: rgb(0 0 0 / 22%); font-size: 12px; color: var(--fg-2); min-width: 0; }
+  .cell b { display: block; font-size: 15px; color: var(--hud-fg); }
+  .cell .lab { display: block; margin-bottom: 1px; }
+  .match { display: block; height: 5px; margin: 4px 0; border-radius: 3px; background: rgb(255 255 255 / 15%); overflow: hidden; }
+  .match i { display: block; height: 100%; background: var(--amber); }
+  .ready .match i { background: var(--green); }
+  .o-act { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 12px; align-items: center; }
+  .o-act p { margin: 0; font-size: 13px; }
+  .ok { color: var(--green); font-weight: 700; }
+
+  /* Saatgut */
+  .stock2 { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .radio { display: flex; flex-direction: column; gap: 4px; }
+  .radio label { display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 10px; border-radius: 8px; background: var(--soft); font-size: 13px; cursor: pointer; }
+  .radio input { accent-color: var(--amber); width: 18px; height: 18px; margin: 0; }
+  .radio .off { color: var(--fg-3); cursor: not-allowed; }
+  .empty { margin: 18px 0 8px; padding: 22px 16px; text-align: center; border: 1px dashed rgb(255 255 255 / 25%); border-radius: 10px; }
+  .empty strong { display: block; font-size: 16px; margin-bottom: 4px; }
+  .empty span { font-size: 13px; color: var(--fg-2); }
+  .only-narrow, .lab-n { display: none; }
+  .lab-n { font-size: 12px; color: var(--fg-2); }
+
+  /* ---------- unter 1280 px: Panel neben der linken Spalte, Zeilen zweizeilig, Ticket einspaltig ---------- */
+  @container (max-width: 1439px) {
+    .clock { display: flex; flex-direction: column; align-items: center; padding: 4px 8px; font-size: 12px; line-height: 15px; }
+    .clock .sep { display: none; }
+  }
+  @container (max-width: 1279px) {
+    .top-bar { height: 94px; flex-wrap: wrap; align-content: space-between; padding: 8px 16px 6px; }
+    .stats { order: 1; flex-basis: 100%; justify-content: center; height: 40px; }
+    .stats .chip { padding: 4px 12px; font-size: 14px; }
+    .save span.t { display: none; }
+    .save { width: 44px; padding: 0; justify-content: center; margin-left: 2px; }
+    .left-panel { top: 134px; }
+    .market { top: 134px; width: calc(100cqw - 348px); max-height: calc(100cqh - 134px - 16px - 80px - 12px); }
+    .thead { display: none; }
+    .grow { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 28px; grid-template-areas: "tag price chev" "stock trend chev"; row-gap: 4px; }
+    .grow .c-tag { grid-area: tag; } .grow .c-stock { grid-area: stock; } .grow .c-price { grid-area: price; text-align: right; } .grow .c-trend { grid-area: trend; text-align: right; } .grow .chev { grid-area: chev; }
+    .grow .c-trend small, .grow .c-price small { display: inline; margin-left: 4px; }
+    .ticket { grid-template-columns: minmax(0, 1fr); }
+    .t-chart { order: 2; } .t-second { order: 3; } .t-actions { order: 4; }
+    .lab-n { display: inline; }
+    .t-second { grid-template-columns: 1fr; gap: 8px; }
+    .cells { grid-template-columns: 1fr 1fr; }
+    .cells .cell:last-child { grid-column: 1 / -1; }
+    .o-act { grid-template-columns: 1fr; gap: 8px; }
+    .toolbar span { font-size: 12px; }
+  }
+  @container (max-width: 760px) {
+    .name strong { display: none; }
+    .name small, .time-unit { position: absolute; top: calc(100% + 4px); left: 12px; padding: 1px 8px; border-radius: 6px; background: var(--hud-bg); font-size: 11px; line-height: 13px; white-space: nowrap; }
+    .time-unit { left: auto; right: 12px; }
+    .speeds { gap: 0; }
+    .speeds span { min-width: 22px; padding: 0 1px; font-size: 14px; }
+    .chip { padding: 8px 4px; font-size: 14px; }
+  }
+  /* ---------- bis 480 px: Sheet über die ganze Breite, deckt die Werkzeugleiste ab ---------- */
+  @container (max-width: 480px) {
+    .top-bar { min-height: 94px; height: auto; padding: 8px 4px 6px; }
+    .stats, .money-group { gap: 6px; }
+    .storage-btn { height: 36px; padding: 0 10px; font-size: 18px; }
+    .storage-word, .phase-progress { display: none; }
+    .toolbar, .left-panel { display: none; }
+    .market { left: 0; right: 0; top: 134px; bottom: 0; width: auto; max-height: none; padding: 12px 16px 0; border-radius: 12px 12px 0 0; background: var(--hud-solid); }
+    .grow .c-price small { display: block; margin-left: 0; }
+    .market .title { font-size: 18px; }
+    .tabs button { flex: 1 0 auto; justify-content: center; padding: 0 10px; }
+    .lead { display: none; }
+    .o-head { grid-template-columns: 40px minmax(0, 1fr); }
+    .due { grid-column: 1 / -1; text-align: left; display: flex; gap: 8px; align-items: baseline; }
+    .due small { display: inline; }
+    .stock2 { grid-template-columns: 1fr; }
+    .filters .sort { display: none; }
+    .only-narrow { display: initial; }
+    .only-wide { display: none; }
+  }
+  @media (prefers-reduced-motion: no-preference) { .chev { transition: transform .15s; } }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ---------- Daten (nur für das Mockup). Die Preisformel ist die aus src/sim/market/market.ts. ----------
+const MONTHS = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+const SHORT = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+const TODAY = { day: 12, month: 3, year: 2 };
+const CAPACITY = 600, MONEY = 1250;
+const CFG = {
+  bankBuyFactor: 0.8, supplyMin: 0.7, demandMax: 1.3, halfSupply: 1500, halfDemand: 200,   // config/balance.json, market
+  washedMult: 1.5, washCost: 0.3, batchCap: 50,                                             // processing.washed
+  bankMinQ: 40,        // NEU, #38: market.bankMinQuality
+  seedMinQ: 75,        // NEU, #26: Mindestqualität zum Zurücklegen
+  seedRatio: 4,        // NEU, #26: Einheiten Rohkaffee je Einheit Saatgut
+  seedStdQ: 70,        // NEU, #26: Qualität von gekauftem Saatgut
+};
+const VAR = { robusta: { name: 'Robusta', ref: 0.5, seed: 2 }, arabica: { name: 'Arabica Standard', ref: 1, seed: 4 } };
+// hist: Marktfaktor der letzten 11 Monatsenden (1 = Referenz). Werte über 1 entstehen erst mit #19 (Marktleben).
+const GOODS = [
+  { id: 'robusta-raw', v: 'robusta', kind: 'raw', volume: 300, hist: [1.04, 1.08, 1.05, 0.98, 0.91, 0.86, 0.88, 0.93, 0.99, 0.96, 0.93],
+    batches: [{ q: 36, u: 40 }, { q: 74, u: 140 }, { q: 82, u: 220 }] },   // älteste zuerst
+  { id: 'robusta-washed', v: 'robusta', kind: 'washed', volume: 0, hist: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], batches: [] },
+  { id: 'arabica-raw', v: 'arabica', kind: 'raw', volume: 80, hist: [0.97, 0.95, 0.98, 1.03, 1.07, 1.1, 1.06, 1.02, 0.99, 1.0, 1.01],
+    batches: [{ q: 85, u: 60 }] },
+  { id: 'arabica-washed', v: 'arabica', kind: 'washed', volume: 40, hist: [1.0, 1.02, 1.05, 1.04, 1.0, 0.97, 0.95, 0.96, 0.98, 0.97, 0.98],
+    batches: [{ q: 81, u: 30 }, { q: 79, u: 50, running: '28. März', inDays: 16 }] },
+];
+const SEEDS = [
+  { id: 'robusta-seed', v: 'robusta', volume: 40, hist: [1.0, 1.0, 1.06, 1.12, 1.08, 1.04, 1.02, 1.01, 1.09, 1.07, 1.05], bought: 6, own: [{ q: 82, u: 12 }] },
+  { id: 'arabica-seed', v: 'arabica', volume: 10, hist: [1.0, 1.0, 1.0, 1.03, 1.02, 1.01, 1.0, 1.0, 1.0, 1.02, 1.01], bought: 4, own: [] },
+];
+const ORDERS = [
+  { id: 2, buyer: 'Kaffeekontor West', ini: 'KW', profile: 'Discounter · kauft viel Robusta, zahlt knapp über der Bank', good: 'robusta-raw', units: 300, minQ: 60, price: 0.40, due: '2. April', days: 20 },
+  { id: 1, buyer: 'Rösterei Nord', ini: 'RN', profile: 'Rösterei · kauft Arabica in hoher Qualität', good: 'arabica-washed', units: 60, minQ: 80, price: 1.45, due: '14. Juni', days: 92 },
+  { id: 3, buyer: 'Café Hafen', ini: 'CH', profile: 'Spezialitätencafé · kauft gewaschene Spitzenqualität', good: 'arabica-washed', units: 20, minQ: 90, price: 1.80, due: '30. September', days: 198 },
+];
+
+const nf2 = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const nf0 = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 0 });
+const nf1 = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const nf3 = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+const cc3 = (x) => nf3.format(x) + ' CC';
+const cc = (x) => nf2.format(x) + ' CC';
+const whole = (x) => nf0.format(x) + ' CC';
+const pct = (x) => (x > 0 ? '+' : x < 0 ? '−' : '±') + nf1.format(Math.abs(x) * 100).replace(',0', '') + ' %';
+const good = (id) => GOODS.find((g) => g.id === id) || SEEDS.find((g) => g.id === id);
+const isSeed = (g) => g.id.endsWith('seed');
+
+function saturation(from, units, half) {                      // wie in market.ts
+  const start = 2 ** (-from / half);
+  if (units === 0) return 1 - start;
+  const k = Math.LN2 / half;
+  return 1 + (start * Math.expm1(-k * units)) / (k * units);
+}
+const factor = (g, volume, units = 0) => isSeed(g)
+  ? 1 + (CFG.demandMax - 1) * saturation(volume, units, CFG.halfDemand)
+  : 1 - (1 - CFG.supplyMin) * saturation(volume, units, CFG.halfSupply);
+// Referenz in CC je Einheit, so wie die Bank sie handelt (Kaffee: Marktpreis × bankBuyFactor).
+const refPrice = (g) => isSeed(g) ? VAR[g.v].seed : VAR[g.v].ref * (g.kind === 'washed' ? CFG.washedMult : 1) * CFG.bankBuyFactor;
+const price = (g, units = 0, extra = 0) => refPrice(g) * factor(g, g.volume + extra, units);
+const sellable = (g) => g.batches.filter((b) => b.q >= CFG.bankMinQ && !b.running).reduce((s, b) => s + b.u, 0);
+const below = (g) => g.batches.filter((b) => b.q < CFG.bankMinQ).reduce((s, b) => s + b.u, 0);
+const running = (g) => g.batches.find((b) => b.running);
+const total = (g) => g.batches.reduce((s, b) => s + b.u, 0);
+const history = (g) => [...g.hist, factor(g, g.volume)];
+function trendOf(g) {
+  const h = history(g), d = h[11] / h[10] - 1;
+  const cls = d > 0.005 ? 'up' : d < -0.005 ? 'down' : '';
+  return { d, cls, html: `<span class="trend ${cls}">${d > 0.005 ? '▲' : d < -0.005 ? '▼' : '▶'} ${pct(d)}</span>` };
+}
+
+// ---------- Diagramm: feste Skala 50 bis 150 % der Referenz ----------
+function chart(g, units, w, H = 200) {
+  const L = 56, R = 78, T = 12, B = 22, pw = w - L - R, ph = H - T - B;
+  const h = history(g), ref = refPrice(g);
+  const y = (f) => T + (1.5 - f) * ph, x = (i) => L + (i * pw) / 11;
+  const after = factor(g, g.volume + units), now = h[11];
+  const monthAt = (i) => SHORT[(((TODAY.month - 1 - (11 - i)) % 12) + 12) % 12];
+  const grid = [1.5, 1, 0.5].map((f) => `
+    <line x1="${L}" x2="${L + pw}" y1="${y(f)}" y2="${y(f)}" stroke="${f === 1 ? 'rgb(255 255 255 / 55%)' : 'rgb(255 255 255 / 14%)'}" stroke-width="1" ${f === 1 ? 'stroke-dasharray="4 4"' : ''}/>
+    <text x="${L - 8}" y="${y(f) + (f === 1 ? -1 : 4)}" text-anchor="end" font-size="11" fill="#c2baae">${nf2.format(ref * f)}</text>${f === 1 ? `<text x="${L - 8}" y="${y(f) + 11}" text-anchor="end" font-size="10" fill="#c2baae">Referenz</text>` : ''}`).join('');
+  const pts = h.map((f, i) => `${x(i).toFixed(1)},${y(f).toFixed(1)}`).join(' ');
+  const dots = h.slice(0, 11).map((f, i) => `<circle cx="${x(i)}" cy="${y(f)}" r="6" fill="transparent"><title>${monthAt(i)}: ${cc(ref * f)} (${Math.round(f * 100)} % der Referenz)</title></circle>`).join('');
+  const xl = [2, 5, 8, 11].map((i) => `<text x="${x(i)}" y="${H - 6}" text-anchor="${i === 11 ? 'end' : 'middle'}" font-size="11" fill="#c2baae">${monthAt(i)}</text>`).join('');
+  const ex = x(11), ey = y(now), ay = y(after), lx = ex + 16;
+  const up = after > now;                                            // Saatgut: Kauf hebt den Preis
+  const y1 = up ? ey + 18 : ey - 8;      // Etikett „heute“
+  const y2 = up ? y1 - 32 : y1 + 34;                                 // Etikett „danach“
+  const moved = units > 0;
+  return `<svg viewBox="0 0 ${w} ${H}" role="img" aria-label="Preisverlauf der letzten 12 Monate. Heute ${cc(ref * now)}, das sind ${Math.round(now * 100)} % der Referenz von ${cc(ref)}.${moved ? ' Nach dem Handel ' + cc(ref * after) + '.' : ''}">
+    ${grid}
+    <polyline points="${pts}" fill="none" stroke="#f2c48d" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    ${dots}
+    ${moved ? `<line x1="${ex + 9}" x2="${ex + 9}" y1="${ey}" y2="${ay}" stroke="#f5ece0" stroke-width="1.5"/><circle cx="${ex + 9}" cy="${ay}" r="3.5" fill="#221e19" stroke="#f5ece0" stroke-width="1.5"/>` : ''}
+    <circle cx="${ex}" cy="${ey}" r="5" fill="#f2c48d" stroke="#221e19" stroke-width="2"/>
+    <text x="${lx}" y="${y1 - 13}" font-size="11" fill="#c2baae">heute</text>
+    <text x="${lx}" y="${y1}" font-size="13" font-weight="700" fill="#f5ece0">${cc(ref * now)}</text>
+    ${moved ? `<text x="${lx}" y="${y2 - 13}" font-size="11" fill="#c2baae">danach</text><text x="${lx}" y="${y2}" font-size="13" font-weight="700" fill="#ffb3a4">${up ? '▲' : '▼'} ${pct(after / now - 1)}</text>` : ''}
+    ${xl}
+  </svg>`;
+}
+const chartW = (size) => size === 'desktop' ? 288 : size === 'tablet' ? 388 : 334;
+const chartH = (size) => size === 'desktop' ? 216 : 132;
+
+// ---------- Szene und HUD (wie im Lager-Mockup) ----------
+function scene(w, h, cx) {
+  const tw = Math.min(84, w / 13), th = tw / 2, n = 9, cy = h * 0.5 - (n * th) / 2 + 10;
+  const greens = ['#8db556', '#7fa84c', '#97bf60', '#86b04f'];
+  let out = ''; const hash = (i, j) => Math.abs(Math.sin(i * 12.9898 + j * 78.233) * 43758.5453) % 1;
+  const pt = (i, j) => [cx + (i - j) * tw / 2, cy + (i + j) * th / 2];
+  const poly = (pts, fill) => `<polygon points="${pts.map((p) => p.join(',')).join(' ')}" fill="${fill}"/>`;
+  for (let s = 0; s < 2 * n - 1; s++) for (let i = 0; i < n; i++) {
+    const j = s - i; if (j < 0 || j >= n) continue;
+    const field = (i >= 2 && i <= 4 && j >= 2 && j <= 3), road = (j === 5 && i > 1 && i < 8);
+    const fill = field ? '#5f9138' : road ? '#d9c79a' : greens[Math.floor(hash(i, j) * greens.length)];
+    const [x, y] = pt(i, j), [x2, y2] = pt(i + 1, j), [x3, y3] = pt(i + 1, j + 1), [x4, y4] = pt(i, j + 1);
+    if (i === n - 1) out += poly([[x2, y2], [x3, y3], [x3, y3 + 16], [x2, y2 + 16]], '#7a5a3c');
+    if (j === n - 1) out += poly([[x3, y3], [x4, y4], [x4, y4 + 16], [x3, y3 + 16]], '#8d6a47');
+    out += poly([[x, y], [x2, y2], [x3, y3], [x4, y4]], fill);
+    if (field) { const [px, py] = pt(i + .5, j + .5); for (const [dx, dy] of [[-10, 0], [0, -5], [10, 0], [0, 6]]) out += `<circle cx="${px + dx}" cy="${py + dy - 4}" r="${tw / 11}" fill="#3f6b2a"/>`; }
+  }
+  return `<svg class="scene" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="${w}" height="${h}" fill="#86bcc4"/>${out}</svg>`;
+}
+const icon = {
+  coin: '<svg viewBox="0 0 16 16" width="22" height="22" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="3.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>',
+  crate: '<svg viewBox="0 0 16 16" width="22" height="22" aria-hidden="true"><path d="M2 5h12v9H2z M2 5l1.5-3h9L14 5 M6 8h4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
+  save: '<svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><path d="M2 2h9l3 3v9H2z M4.5 2v4h6V2 M4.5 14V9.5h7V14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
+};
+function hud() {
+  const used = GOODS.reduce((s, g) => s + total(g), 0);
+  return `
+  <div class="box top-bar">
+    <div class="name"><strong>CoffeeChain</strong><small>Welt #48213</small></div>
+    <div class="time">
+      <span class="chip clock"><span>${TODAY.day}. ${MONTHS[TODAY.month - 1]}</span><span class="sep">, </span><span>Jahr ${TODAY.year}</span></span>
+      <div class="speeds"><span>‖</span><span class="on">1×</span><span>2×</span><span>4×</span><span>8×</span><span>16×</span></div>
+      <span class="time-unit">Wochen</span>
+    </div>
+    <div class="stats">
+      <div class="money-group"><span>${icon.coin}${nf0.format(MONEY)} CC</span><span class="storage-btn">${icon.crate}<span><span class="storage-word">Lager </span>${used} / ${CAPACITY}</span></span></div>
+      <span class="chip">Phase 2 <span class="phase-progress">· 38 %</span></span>
+    </div>
+    <span class="save">${icon.save}<span class="t">Spielstand</span></span><span class="sq">?</span>
+  </div>
+  <div class="box left-panel">
+    <h2 class="cap">Deine Felder</h2>
+    <div class="field"><div class="line"><b>Feld A</b><span class="badge">Erntereif</span></div><small>6 Parzellen · Boden sehr gut</small><span class="prog"><i style="width:100%;background:#d9503c"></i></span></div>
+    <div class="field"><div class="line"><b>Feld B</b><span class="badge care">Pflege</span></div><small>4 Parzellen · Blüte · 64 %</small><span class="prog"><i style="width:64%"></i></span></div>
+  </div>
+  <div class="box toolbar">
+    ${['Auswählen','Parzelle','Pflanzen','Düngen','Wässern','Ernten','Bauen'].map((t) => `<span>${t}</span>`).join('')}<span class="on">Markt</span>
+    <div class="ov"><span>Boden</span><span>Lagen</span></div>
+  </div>`;
+}
+
+// ---------- Tab „Bank“ ----------
+// Welche Chargen ein Verkauf nimmt: die ältesten zuerst, ohne Unverkäufliches und laufende Aufbereitung.
+function lotsOf(g, units) {
+  let left = units;
+  return g.batches.filter((b) => b.q >= CFG.bankMinQ && !b.running).map((b) => { const t = Math.min(b.u, left); left -= t; return { b, t }; });
+}
+const orderFor = (g) => ORDERS.find((o) => o.good === g.id && matching(o).have >= o.units);
+function sellParts(g, units, size) {
+  const max = sellable(g), u = Math.min(units, max);
+  const lots = lotsOf(g, u), o = orderFor(g);
+  const left = o ? lots.filter((l) => l.b.q >= o.minQ).reduce((s, l) => s + l.b.u - l.t, 0) : 0;
+  const income = Math.floor(u * price(g, u)), avg = u ? price(g, u) : price(g);
+  const after = price(g, 0, u), d = after / price(g) - 1;
+  return {
+    income: whole(income), avg: cc3(avg),
+    after: `${cc3(after)}<small class="${u ? 'down' : ''}">${u ? '▼ ' + pct(d) : ''}</small>`,
+    lots: u ? `Die Bank nimmt die ältesten Chargen zuerst: ${lots.filter((l) => l.t).map((l) => `${l.t} × Q ${l.b.q}`).join(', ')}.` : 'Die Bank nimmt die ältesten Chargen zuerst.',
+    order: o ? `<span><b>${o.buyer}</b> zahlt ${cc(o.price)} je Einh. für ${o.units} Einh. ab Q ${o.minQ}, bis ${o.due}.${left < o.units ? ` <b class="down">Nach diesem Verkauf fehlen dafür ${o.units - left} Einh.</b>` : ' Dafür bleibt genug.'}</span>` : '',
+    rest: `${max - u} Einh.`,
+    cta: u === 0 ? 'Menge wählen' : `${u} Einh. verkaufen · ${whole(income)}`,
+    chart: chart(g, u, chartW(size), chartH(size)),
+  };
+}
+function sellTicket(g, st, size) {
+  const max = sellable(g), u = Math.min(st.amount[g.id] ?? max, max), p = sellParts(g, u, size);
+  const bad = below(g), run = running(g), raw = g.kind === 'raw';
+  const order = orderFor(g);
+  const id = `${st.key}-${g.id}`;
+  const washU = Math.min(CFG.batchCap, max);
+  if (max === 0) return `<div class="ticket" data-ticket="${g.id}">
+    <div class="t-chart"><h4>Bank zahlt je Einheit · 12 Monate</h4><div data-out="chart">${chart(g, 0, chartW(size), chartH(size))}</div></div>
+    <div class="t-form"><div class="empty" style="margin:0"><strong>Nichts zu verkaufen</strong><span>${run ? `${run.u} Einh. sind in der Aufbereitung und ab ${run.running} verkaufbar.` : 'Von dieser Ware liegt nichts Verkaufbares im Lager.'}</span></div></div></div>`;
+  return `<div class="ticket" data-ticket="${g.id}">
+    <div class="t-notes">
+      ${bad ? `<div class="alert"><span><b>${bad} Einh. unter Q ${CFG.bankMinQ}:</b> Die Bank nimmt sie nicht. „Alles“ lässt sie im Lager.</span><button type="button" class="link">Im Lager zeigen</button></div>` : ''}
+      ${run ? `<div class="hintrow"><span><b>${run.u} Einh. in der Aufbereitung:</b> verkaufbar ab ${run.running} (in ${run.inDays} Tagen).</span></div>` : ''}
+      ${order ? `<div class="hintrow"><span data-out="order" style="display:contents">${p.order}</span><button type="button" class="link" data-tab="orders">Zum Auftrag</button></div>` : ''}
+    </div>
+    <div class="t-chart"><h4>Bank zahlt je Einheit · 12 Monate</h4><div data-out="chart">${p.chart}</div><p class="note">Feste Skala: 50 bis 150 % der Referenz (${cc(refPrice(g))}).</p></div>
+    <div class="t-form">
+      <div class="amount">
+        <label for="${id}-n">Menge</label>
+        <div class="num"><input id="${id}-n" type="number" inputmode="numeric" min="0" max="${max}" step="1" value="${u}" data-amount><span>von ${max} Einh.</span></div>
+        <input id="${id}-r" type="range" min="0" max="${max}" step="1" value="${u}" aria-label="Menge" aria-valuetext="${u} von ${max} Einheiten" style="--p:${(u / max) * 100}%" data-amount>
+        <div class="presets" role="group" aria-label="Anteil am verkaufbaren Bestand">
+          ${[[0.25, '25 %'], [0.5, '50 %'], [1, 'Alles']].map(([f, l]) => `<button type="button" data-preset="${f}" aria-pressed="${u === Math.round(max * f)}">${l}</button>`).join('')}
+        </div>
+      </div>
+      <dl class="preview" aria-live="polite">
+        <dt>Erlös</dt><dd class="total" data-out="income">${p.income}</dd>
+        <dt>Ø Preis je Einheit</dt><dd data-out="avg">${p.avg}</dd>
+        <dt>Preis danach</dt><dd data-out="after">${p.after}</dd>
+        <dt>Bleibt verkaufbar</dt><dd data-out="rest">${p.rest}</dd>
+      </dl>
+    </div>
+    ${raw ? `<div class="t-second"><p id="${id}-why"><b>Stattdessen aufbereiten?</b> Gewaschen zahlt die Bank ${cc(price(good(g.v + '-washed')))} je Einh. Gerade nicht möglich: Es läuft schon eine Aufbereitung (bis 28. März).</p><button type="button" class="btn" disabled aria-describedby="${id}-why">Aufbereiten (${washU} Einh., ${whole(Math.ceil(washU * CFG.washCost))})</button></div>` : ''}
+    <div class="t-actions"><button type="button" class="btn primary" data-out="cta" ${u === 0 ? 'disabled' : ''}>${p.cta}</button><p class="why" data-out="lots">${p.lots}</p></div>
+  </div>`;
+}
+function bankRow(g, st, size) {
+  const max = sellable(g), bad = below(g), run = running(g), t = trendOf(g), open = st.open === g.id;
+  const none = total(g) === 0;
+  return `<div class="good" data-open="${open}">
+    <button type="button" class="grow" ${none ? 'disabled' : `aria-expanded="${open}" data-open="${g.id}"`}>
+      <span class="c-tag"><span class="tag ${g.kind === 'washed' ? 'washed' : ''}">${g.kind === 'washed' ? 'gewaschen' : 'roh'}</span></span>
+      <span class="c-stock">${none ? 'nichts im Lager' : `<b>${max}</b> Einh.`}${bad ? `<small class="bad">+ ${bad} unter Q ${CFG.bankMinQ}</small>` : ''}${run ? `<small>+ ${run.u} in Aufbereitung</small>` : ''}</span>
+      <span class="c-price"><span class="lab-n">Bank zahlt </span><b>${cc(price(g))}</b><small>${Math.round(factor(g, g.volume) * 100)} % der Referenz</small></span>
+      <span class="c-trend">${t.html}<small>zum Vormonat</small></span>
+      ${none ? '<span></span>' : '<span class="chev" aria-hidden="true"></span>'}
+    </button>
+    ${open ? sellTicket(g, st, size) : ''}
+  </div>`;
+}
+function bankTab(st, size) {
+  if (st.variant === 'empty') return `<div class="empty"><strong>Nichts zu verkaufen</strong><span>Das Lager ist leer. Ernte reife Parzellen, dann kannst du hier an die Bank verkaufen.</span></div>`;
+  const groups = Object.keys(VAR).map((v) => {
+    const goods = GOODS.filter((g) => g.v === v);
+    return `<div class="group"><h3>${VAR[v].name}</h3><span class="sum">${goods.reduce((s, g) => s + total(g), 0)} Einh. im Lager</span></div>${goods.map((g) => bankRow(g, st, size)).join('')}`;
+  }).join('');
+  return `<p class="lead">Die Bank kauft immer. Jeder Verkauf drückt ihren Preis; er erholt sich wieder, in 30 Tagen um die Hälfte.</p>
+    <div class="thead" aria-hidden="true"><span>Zustand</span><span>Verkaufbar</span><span>Bank zahlt je Einh.</span><span>Trend</span><span></span></div>${groups}`;
+}
+
+// ---------- Tab „Aufträge“ ----------
+function matching(o) {
+  const g = good(o.good);
+  const fit = g.batches.filter((b) => b.q >= o.minQ && !b.running);
+  const have = fit.reduce((s, b) => s + b.u, 0);
+  const near = g.batches.filter((b) => b.q < o.minQ || b.running).sort((a, b) => b.q - a.q)[0];
+  return { g, fit, have, near };
+}
+function orderCard(o) {
+  const { g, fit, have, near } = matching(o), ready = have >= o.units, washed = g.kind === 'washed';
+  const income = Math.floor(o.units * o.price), bank = Math.floor(o.units * price(g, o.units)), d = o.price / price(g) - 1;
+  const kind = washed ? 'gewaschen' : 'roh';
+  const why = ready ? '' : have === 0
+    ? `Kein ${VAR[g.v].name} (${kind}) ab Q ${o.minQ} im Lager.${near ? ` Beste Charge: Q ${near.q}.` : ''}`
+    : `Es fehlen ${o.units - have} Einh. ${kind} ab Q ${o.minQ}.${near ? ` ${near.u} Einh. mit Q ${near.q} liegen knapp darunter.` : ''}`;
+  return `<article class="order ${ready ? 'ready' : ''}" aria-labelledby="o${o.id}-h">
+    <div class="o-head">
+      <span class="avatar" aria-hidden="true">${o.ini}</span>
+      <div><h3 id="o${o.id}-h">${o.buyer} <span class="pill-slot" title="Platzhalter für #23">Ruf · #23</span></h3><p>${o.profile}</p></div>
+      <div class="due ${o.days <= 30 ? 'soon' : ''}">bis ${o.due}<small>noch ${o.days} Tage</small></div>
+    </div>
+    <div class="ask"><span>${o.units} Einh. ${VAR[g.v].name}</span><span class="tag ${washed ? 'washed' : ''}">${kind}</span><span class="q">mind. Q ${o.minQ}</span></div>
+    <div class="cells">
+      <div class="cell"><span class="lab">Preis je Einheit</span><b>${cc(o.price)}</b>Bank heute ${cc(price(g))} · <span class="${d >= 0 ? 'up' : 'down'}">${pct(d)}</span></div>
+      <div class="cell"><span class="lab">Erlös</span><b>${whole(income)}</b>Bank für ${o.units} Einh.: ${whole(bank)}</div>
+      <div class="cell"><span class="lab">Passend im Lager</span><b>${Math.min(have, o.units)} / ${o.units}</b><span class="match" role="img" aria-label="${have} von ${o.units} Einheiten passen"><i style="width:${Math.min(100, (have / o.units) * 100)}%"></i></span>${fit.length ? fit.map((b) => `${b.u} × Q ${b.q}`).join(', ') : 'keine passende Charge'}</div>
+    </div>
+    <div class="o-act">
+      <p id="o${o.id}-why">${ready ? `<span class="ok">✓ Lieferbar.</span> Geliefert wird die niedrigste passende Qualität zuerst.` : why}</p>
+      <button type="button" class="btn ${ready ? 'primary' : ''}" ${ready ? '' : 'disabled'} aria-describedby="o${o.id}-why">${ready ? `Liefern · ${whole(income)}` : 'Liefern'}</button>
+    </div>
+  </article>`;
+}
+function ordersTab(st) {
+  const list = ORDERS.filter((o) => st.filter !== 'ready' || matching(o).have >= o.units);
+  const nReady = ORDERS.filter((o) => matching(o).have >= o.units).length;
+  return `<div class="filters" role="group" aria-label="Aufträge filtern">
+      <button type="button" data-filter="all" aria-pressed="${st.filter !== 'ready'}">Alle ${ORDERS.length}</button>
+      <button type="button" data-filter="ready" aria-pressed="${st.filter === 'ready'}">Lieferbar ${nReady}</button>
+      <span class="sort">Lieferbare zuerst, dann nach Frist</span>
+    </div>
+    <div class="slot"><strong>Laufende Verträge · folgt mit #23</strong>Stehen hier über den Aufträgen: Käufer, Menge je Zyklus, nächster Liefertermin, Restlaufzeit.</div>
+    ${list.map(orderCard).join('')}`;
+}
+
+// ---------- Tab „Saatgut“ ----------
+function buyParts(g, n, size) {
+  const cost = Math.ceil(n * price(g, n)), after = price(g, 0, n), d = after / price(g) - 1;
+  return {
+    income: whole(cost), avg: cc(n ? price(g, n) : price(g)),
+    after: `${cc(after)}<small class="${n ? 'down' : ''}">${n ? '▲ ' + pct(d) : ''}</small>`,
+    rest: whole(MONEY - cost), cta: n === 0 ? 'Menge wählen' : `${n} Saatgut kaufen · ${whole(cost)}`,
+    chart: chart(g, n, chartW(size), chartH(size)),
+  };
+}
+function seedTicket(g, st, size) {
+  const id = `${st.key}-${g.id}`, mode = st.seedMode, n = st.amount[g.id] ?? 5;
+  const seg = `<div class="seg" role="group" aria-label="Herkunft"><button type="button" data-mode="buy" aria-pressed="${mode === 'buy'}">Bei der Bank kaufen</button><button type="button" data-mode="keep" aria-pressed="${mode === 'keep'}">Aus der Ernte zurücklegen</button></div>`;
+  const stock = `<div class="stock2">
+      <div class="cell"><span class="lab">Gekauft · Q ${CFG.seedStdQ} (Standard)</span><b>${g.bought} Einh.</b></div>
+      <div class="cell"><span class="lab">Eigenes${g.own.length ? ' · ' + g.own.map((b) => 'Q ' + b.q).join(', ') : ''}</span><b>${g.own.reduce((s, b) => s + b.u, 0)} Einh.</b></div>
+    </div>`;
+  if (mode === 'buy') {
+    const p = buyParts(g, n, size);
+    return `<div class="ticket" data-ticket="${g.id}">${seg}${stock}
+      <div class="t-chart"><h4>Saatgut kostet je Einheit · 12 Monate</h4><div data-out="chart">${p.chart}</div><p class="note">Feste Skala: 50 bis 150 % der Referenz (${cc(refPrice(g))}).</p></div>
+      <div class="t-form">
+        <div class="amount"><label for="${id}-n">Menge</label>
+          <div class="num"><button type="button" class="step" data-step="-1" aria-label="Eine Einheit weniger">−</button><input id="${id}-n" type="number" inputmode="numeric" min="0" max="999" step="1" value="${n}" data-amount><button type="button" class="step" data-step="1" aria-label="Eine Einheit mehr">+</button><span>Einh.</span></div>
+          <div class="presets" role="group" aria-label="Menge" style="margin-top:8px">${[1, 5, 10, 25].map((v) => `<button type="button" data-set="${v}" aria-pressed="${n === v}">${v}</button>`).join('')}</div>
+        </div>
+        <dl class="preview" aria-live="polite">
+          <dt>Kosten</dt><dd class="total" data-out="income">${p.income}</dd>
+          <dt>Ø Preis je Einheit</dt><dd data-out="avg">${p.avg}</dd>
+          <dt>Preis danach</dt><dd data-out="after">${p.after}</dd>
+          <dt>Geld danach</dt><dd data-out="rest">${p.rest}</dd>
+        </dl>
+      </div>
+      <div class="t-actions"><button type="button" class="btn primary" data-out="cta">${p.cta}</button><p class="why">Gekauftes Saatgut hat immer Q ${CFG.seedStdQ}. Ob du eigenes oder gekauftes setzt, wählst du beim Pflanzen.</p></div>
+    </div>`;
+  }
+  const raw = good(g.v + '-raw'), src = raw.batches;
+  const pick = src.find((b) => b.q >= CFG.seedMinQ), maxSeed = pick ? Math.floor(pick.u / CFG.seedRatio) : 0, k = Math.min(n, maxSeed);
+  const lost = Math.floor(k * CFG.seedRatio * price(raw, k * CFG.seedRatio)), buy = Math.ceil(k * price(g, k));
+  return `<div class="ticket" data-ticket="${g.id}">${seg}${stock}
+    <div class="t-form">
+      <fieldset class="radio" style="border:0;padding:0;margin:0"><legend class="small" style="padding:0;margin-bottom:4px;color:var(--fg-2);font-weight:600">Aus welcher Charge?</legend>
+        ${src.map((b, i) => `<label class="${b.q < CFG.seedMinQ ? 'off' : ''}"><input type="radio" name="${id}-src" id="${id}-src${i}" ${b === pick ? 'checked' : ''} ${b.q < CFG.seedMinQ ? 'disabled' : ''}>${b.u} Einh. roh · Q ${b.q}${b.q < CFG.seedMinQ ? ` · unter Q ${CFG.seedMinQ}` : ''}</label>`).join('')}
+      </fieldset>
+      <p class="small">Saatgut braucht Rohkaffee ab Q ${CFG.seedMinQ} und behält dessen Qualität.</p>
+    </div>
+    <div class="t-form">
+      <div class="amount"><label for="${id}-n">Saatgut</label>
+        <div class="num"><button type="button" class="step" aria-label="Eine Einheit weniger">−</button><input id="${id}-n" type="number" inputmode="numeric" min="0" max="${maxSeed}" step="1" value="${k}"><button type="button" class="step" aria-label="Eine Einheit mehr">+</button><span>von max. ${maxSeed}</span></div>
+      </div>
+      <dl class="preview">
+        <dt>Ergibt</dt><dd class="total">${k} Saatgut · Q ${pick ? pick.q : '–'}</dd>
+        <dt>Verbraucht</dt><dd>${k * CFG.seedRatio} Einh. Rohkaffee</dd>
+        <dt>Entgangener Bankerlös</dt><dd>${whole(lost)}</dd>
+        <dt>Zum Vergleich: ${k} kaufen (Q ${CFG.seedStdQ})</dt><dd>${whole(buy)}</dd>
+      </dl>
+    </div>
+    <div class="t-actions"><button type="button" class="btn primary">${k} Saatgut zurücklegen</button><p class="why">${CFG.seedRatio} Einh. Rohkaffee ergeben 1 Einh. Saatgut.</p></div>
+  </div>`;
+}
+function seedTab(st, size) {
+  const rows = SEEDS.map((g) => {
+    const open = st.open === g.id, t = trendOf(g), own = g.own.reduce((s, b) => s + b.u, 0);
+    return `<div class="group"><h3>${VAR[g.v].name}</h3><span class="sum">${g.bought + own} Einh. Saatgut</span></div>
+    <div class="good" data-open="${open}">
+      <button type="button" class="grow" aria-expanded="${open}" data-open="${g.id}">
+        <span class="c-tag"><span class="tag seed">Saatgut</span></span>
+        <span class="c-stock"><b>${g.bought + own}</b> Einh.<small>${g.bought} gekauft · ${own} eigenes</small></span>
+        <span class="c-price"><span class="lab-n">Bank verlangt </span><b>${cc(price(g))}</b><small>${Math.round(factor(g, g.volume) * 100)} % der Referenz</small></span>
+        <span class="c-trend">${t.html.replace('up', 'x').replace('down', 'up').replace('"trend x"', '"trend down"')}<small>zum Vormonat</small></span>
+        <span class="chev" aria-hidden="true"></span>
+      </button>
+      ${open ? seedTicket(g, st, size) : ''}
+    </div>`;
+  }).join('');
+  return `<p class="lead">Saatgut ist eine eigene Ware im Lager. Jeder Kauf hebt den Preis der Bank; er sinkt wieder, in 30 Tagen um die Hälfte.</p>
+    <div class="thead" aria-hidden="true"><span>Ware</span><span>Bestand</span><span>Bank verlangt je Einh.</span><span>Trend</span><span></span></div>${rows}`;
+}
+
+// ---------- Panel ----------
+const TABS = [['bank', 'Bank'], ['orders', 'Aufträge'], ['seed', 'Saatgut']];
+function panel(st, size) {
+  const nReady = ORDERS.filter((o) => matching(o).have >= o.units).length;
+  const body = st.tab === 'bank' ? bankTab(st, size) : st.tab === 'orders' ? ordersTab(st) : seedTab(st, size);
+  return `
+  <section class="box market" aria-label="Markt" data-testid="market-panel">
+    <header>
+      <h2 class="title">Markt</h2>
+      <button type="button" class="close" aria-label="Markt schließen">×</button>
+    </header>
+    <div class="tabs" focusgroup="tablist nomemory" role="tablist" aria-label="Bereiche des Markts">
+      ${TABS.map(([k, l]) => `<button type="button" role="tab" id="${st.key}-tab-${k}" aria-selected="${st.tab === k}" ${st.tab === k ? 'focusgroupstart' : 'tabindex="-1"'} data-tab="${k}">${l}${k === 'orders' ? `<span class="count ${nReady ? 'go' : ''}" title="${ORDERS.length} Aufträge, ${nReady} lieferbar">${ORDERS.length}</span>` : ''}</button>`).join('')}
+    </div>
+    <div class="body" role="tabpanel" aria-labelledby="${st.key}-tab-${st.tab}"><div class="inner">${body}</div></div>
+  </section>`;
+}
+
+// ---------- Aufbau ----------
+const SIZES = { desktop: [1440, 900], tablet: [800, 900], phone: [390, 844] };
+const STATE = new Map();
+let seq = 0;
+function makeState(o = {}) {
+  const st = { key: 'f' + (++seq), tab: 'bank', open: null, amount: {}, seedMode: 'buy', filter: 'all', variant: '', ...o };
+  if (st.open === null) st.open = st.tab === 'seed' ? 'robusta-seed' : st.tab === 'bank' ? 'robusta-raw' : '';
+  if (st.tab === 'bank' && st.open === 'robusta-raw' && st.amount['robusta-raw'] === undefined) st.amount['robusta-raw'] = 180;
+  STATE.set(st.key, st);
+  return st;
+}
+function frame(size, o) {
+  const [w, h] = SIZES[size], st = makeState(o);
+  const cx = size === 'desktop' ? 400 : size === 'tablet' ? 170 : 195;
+  return `<div class="frame" data-size="${size}" data-key="${st.key}">${scene(w, h, cx)}<div class="hud">${hud()}${panel(st, size)}</div></div>`;
+}
+function crop(o, h) {
+  const st = makeState(o);
+  const p = panel(st, 'desktop').replace('class="box market"', `class="box market" style="top:16px;max-height:${h - 32}px"`);
+  return `<div class="crop" style="height:${h}px"><div class="frame" data-size="desktop" data-key="${st.key}" data-crop="${h}" style="width:1440px;height:${h}px">${scene(1440, h, 400)}<div class="hud">${p}</div></div></div>`;
+}
+function rerender(frameEl) {
+  const st = STATE.get(frameEl.dataset.key), size = frameEl.dataset.size, old = frameEl.querySelector('.market');
+  const top = old.querySelector('.body').scrollTop, tmp = document.createElement('div');
+  let html = panel(st, size);
+  if (frameEl.dataset.crop) html = html.replace('class="box market"', `class="box market" style="top:16px;max-height:${frameEl.dataset.crop - 32}px"`);
+  tmp.innerHTML = html;
+  old.replaceWith(tmp.firstElementChild);
+  frameEl.querySelector('.body').scrollTop = top;
+}
+function live(frameEl, value) {                                     // Menge geändert: nur die Vorschau neu schreiben
+  const st = STATE.get(frameEl.dataset.key), t = frameEl.querySelector('[data-ticket]'), g = good(t.dataset.ticket);
+  const max = isSeed(g) ? 999 : sellable(g), u = Math.max(0, Math.min(max, Math.round(Number(value) || 0)));
+  st.amount[g.id] = u;
+  const p = isSeed(g) ? buyParts(g, u, frameEl.dataset.size) : sellParts(g, u, frameEl.dataset.size);
+  for (const el of t.querySelectorAll('[data-out]')) if (el.dataset.out in p) el.innerHTML = p[el.dataset.out];
+  for (const el of t.querySelectorAll('[data-amount]')) { if (Number(el.value) !== u || el.type === 'range') el.value = u; }
+  const r = t.querySelector('input[type="range"]');
+  if (r) { r.style.setProperty('--p', (u / max) * 100 + '%'); r.setAttribute('aria-valuetext', `${u} von ${max} Einheiten`); }
+  for (const b of t.querySelectorAll('[data-preset]')) b.setAttribute('aria-pressed', String(u === Math.round(max * Number(b.dataset.preset))));
+  for (const b of t.querySelectorAll('[data-set]')) b.setAttribute('aria-pressed', String(u === Number(b.dataset.set)));
+  const cta = t.querySelector('.btn.primary'); if (cta) cta.disabled = u === 0;
+}
+
+const statesHtml = () => `
+        <figure><figcaption>Gewaschener Kaffee, Aufbereitung läuft</figcaption>${crop({ tab: 'bank', open: 'arabica-washed' }, 880)}</figure>
+        <figure><figcaption>Saatgut aus der Ernte zurücklegen</figcaption>${crop({ tab: 'seed', seedMode: 'keep' }, 880)}</figure>
+        <figure><figcaption>Aufträge, Filter „Lieferbar“</figcaption>${crop({ tab: 'orders', filter: 'ready' }, 520)}</figure>
+        <figure><figcaption>Leeres Lager</figcaption>${crop({ tab: 'bank', variant: 'empty' }, 320)}</figure>`;
+const params = new URLSearchParams(location.search);
+const app = document.getElementById('app');
+if (params.get('frame')) {
+  document.body.classList.add('single');
+  app.innerHTML = frame(params.get('frame'), { tab: params.get('tab') || 'bank', ...(params.get('open') ? { open: params.get('open') } : {}), ...(params.get('mode') ? { seedMode: params.get('mode') } : {}) });
+  if (params.get('scroll')) document.querySelector('.body').scrollTop = Number(params.get('scroll'));
+} else if (params.get('view') === 'states') {
+  document.body.classList.add('single');
+  app.innerHTML = `<div class="states" style="padding:16px;background:#e9e4dc;width:1440px">${statesHtml()}</div>`;
+} else {
+  const row = (title, text, tab) => `
+    <section class="shot"><h2>${title}</h2><p>${text}</p>
+      <div class="scroll">${frame('desktop', { tab })}</div>
+      <div class="scroll" style="margin-top:24px"><div class="trio">
+        <figure><figcaption>800 px · Panel neben der linken Spalte</figcaption>${frame('tablet', { tab })}</figure>
+        <figure><figcaption>390 px · Sheet über die ganze Breite</figcaption>${frame('phone', { tab })}</figure>
+      </div></div></section>`;
+  app.innerHTML = `
+  <div class="overview">
+    <h1>Markt-Panel · Mockup für Issue #48</h1>
+    <p>Entwurf, nichts gebaut. Ein Panel mit drei Tabs: <b>Bank</b> (#20, #38), <b>Aufträge</b> (#22, Platz für #23) und <b>Saatgut</b> (#26). Datenstand: 12. März, Jahr 2, Phase 2, Lager mit 600 Einheiten. Die Preise rechnet die Seite mit der Formel aus <code>src/sim/market/market.ts</code> und den Werten aus <code>config/balance.json</code>. Tabs, Zeilen, Regler und Mengenknöpfe sind hier bedienbar.</p>
+    <ul class="legend"><li class="d">gestrichelt = Platzhalter für #23 (Verträge, Ruf)</li><li>Werte mit „NEU“ (Bank-Mindestqualität Q 40, Saatgut 4 : 1 ab Q 75, gekauftes Saatgut Q 70) sind Annahmen</li><li>Kurven über 100 % der Referenz gibt es erst mit #19</li></ul>
+    ${row('Bank: Menge wählen, Erlös sehen, Preis lesen', 'Eine Zeile je Ware (Sorte × roh/gewaschen), gruppiert wie im Lager. Ein Klick klappt die Zeile zum Verkaufsticket auf: links das Diagramm mit fester Skala, Referenzlinie, heutigem Wert und dem Preis nach dem Verkauf, rechts Menge (Zahl, Regler, 25 % / 50 % / Alles) und die Vorschau. Der Knopf nennt Menge und Erlös. Kaffee unter der Bank-Mindestqualität zählt nicht zum verkaufbaren Bestand und wird benannt.', 'bank')}
+    ${row('Aufträge: Käufer, Bedarf, Vergleich mit der Bank, passender Bestand', 'Eine Karte je Auftrag: Käufer mit Profil, Frist, Ware mit Mindestqualität, Preis und Erlös jeweils neben dem Bankwert, passender Bestand aus dem Lager mit den Chargen. Lieferbare Aufträge stehen oben und haben einen grünen Rand. Ein gesperrtes „Liefern“ sagt, was fehlt. Die Zahl am Tab ist grün, sobald ein Auftrag lieferbar ist.', 'orders')}
+    ${row('Saatgut: eigene Ware, gekauft und eigenes getrennt', 'Gleiche Zeile und gleiches Ticket wie bei der Bank, nur in Kaufrichtung: der Preis steigt mit der Menge. Der Bestand zeigt gekauftes und eigenes Saatgut getrennt mit Qualität. Der Umschalter im Ticket wechselt zu „Aus der Ernte zurücklegen“.', 'seed')}
+    <section class="shot"><h2>Zustände (1440 px, nur Panel)</h2>
+      <div class="states">${statesHtml()}</div>
+    </section>
+  </div>`;
+}
+// Bedienung in der Übersicht.
+app.addEventListener('click', (e) => {
+  const f = e.target.closest('.frame'); if (!f) return;
+  const st = STATE.get(f.dataset.key), b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.tab) { st.tab = b.dataset.tab; st.open = st.tab === 'seed' ? 'robusta-seed' : 'robusta-raw'; st.variant = ''; rerender(f); f.querySelector('.body').scrollTop = 0; }
+  else if (b.dataset.open) { st.open = st.open === b.dataset.open ? '' : b.dataset.open; rerender(f); }
+  else if (b.dataset.preset) live(f, sellable(good(b.closest('[data-ticket]').dataset.ticket)) * Number(b.dataset.preset));
+  else if (b.dataset.set) live(f, b.dataset.set);
+  else if (b.dataset.step) live(f, (st.amount[b.closest('[data-ticket]').dataset.ticket] ?? 5) + Number(b.dataset.step));
+  else if (b.dataset.mode) { st.seedMode = b.dataset.mode; rerender(f); }
+  else if (b.dataset.filter) { st.filter = b.dataset.filter; rerender(f); }
+});
+app.addEventListener('input', (e) => { if (e.target.matches('[data-amount]')) live(e.target.closest('.frame'), e.target.value); });
+</script>
+</body>
+</html>
