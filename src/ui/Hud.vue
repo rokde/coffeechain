@@ -145,7 +145,7 @@ const phaseText = computed(() => {
 </script>
 
 <template>
-  <div class="hud">
+  <div class="hud" :class="{ market: selection.tool === 'market' }">
     <header class="frame top-bar" data-testid="hud-top-bar">
       <div class="name">
         <strong>{{ de.game.name }}</strong>
@@ -937,7 +937,7 @@ button:active {
     display: none;
   }
   /* The market sheet runs from the top bar to the toolbar, as in docs/mockups/market-panel. */
-  .hud:has(> .right-panel.wide) > .left-panel {
+  .hud.market > .left-panel {
     display: none;
   }
   .stats,

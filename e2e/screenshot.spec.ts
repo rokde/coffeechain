@@ -999,7 +999,7 @@ for (const [width, height] of [[1440, 900] as const, [800, 600] as const, [390, 
     expect(box.x).toBeGreaterThanOrEqual(0)
     expect(box.x + box.width).toBeLessThanOrEqual(width)
     expect(box.y + box.height).toBeLessThanOrEqual(height)
-    await expect(page.getByTestId('help-washing')).toContainText('Gewaschen verkaufen')
+    await expect(page.getByTestId('help-washing')).toContainText('die Zeile „gewaschen“ auf')
     await expect(page.getByTestId('help-storage')).toContainText('Lager-Ausbau')
     await panel.evaluate((el) => el.scrollTo(0, el.scrollHeight))
     await expect(page.getByTestId('help-controls').locator('dd').last()).toBeInViewport()
