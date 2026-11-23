@@ -160,7 +160,8 @@
     "volumeHalfLifeDays": { "v": 30, "src": "NEU" },
     "supplyUnitsForHalfFactor": { "v": 1500, "src": "NEU" },
     "demandUnitsForHalfFactor": { "v": 200, "src": "NEU" },
-    "historyMonths": { "v": 12, "src": "Robert 2026-10-25 (#27, Faktor 30)" }
+    "historyMonths": { "v": 12, "src": "Robert 2026-10-25 (#27, Faktor 30)" },
+    "bankMinQuality": { "v": 0, "src": "NEU" }
   },
 
   "orders": {
