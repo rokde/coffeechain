@@ -1594,8 +1594,11 @@ test('S56: deliver a buyer order in the market panel', async ({ page }) => {
       ],
     }
     save.state.orders = {
-      open: [{ id: 0, variety: 'robusta', units: 30, minQuality: 80, price: 60, deadlineDay: 10 }],
-      nextId: 1,
+      open: [
+        { id: 1, variety: 'robusta', units: 50, minQuality: 95, price: 70, deadlineDay: 200 },
+        { id: 0, variety: 'robusta', units: 30, minQuality: 80, price: 60, deadlineDay: 10 },
+      ],
+      nextId: 2,
     }
     localStorage.setItem(key, JSON.stringify(save))
   })
@@ -1607,28 +1610,53 @@ test('S56: deliver a buyer order in the market panel', async ({ page }) => {
   const robusta = page.getByTestId('bank-row-robusta-raw')
   await expect(robusta.getByTestId('bank-stock')).toHaveText('60')
   // #20: the orders have their own tab. Its count turns green while an order can be delivered.
-  await expect(page.getByTestId('market-orders-count')).toHaveText('1')
+  await expect(page.getByTestId('market-orders-count')).toHaveText('2')
   await expect(page.getByTestId('market-orders-count')).toHaveClass(/\bgo\b/)
   await page.getByTestId('market-tab-orders').click()
 
+  const panel = page.getByTestId('orders-panel')
   const order = page.getByTestId('order-0')
+  const blocked = page.getByTestId('order-1')
+  // Deliverable first, although its id is lower in the list of the save.
+  await expect(panel.locator('article')).toHaveCount(2)
+  await expect(panel.locator('article').first()).toHaveAttribute('data-testid', 'order-0')
   await expect(order).toContainText('Rösterei Nord')
-  await expect(order).toContainText('30 Robusta')
-  await expect(order.getByTestId('order-deadline')).toHaveText('11. Januar, Jahr 1')
-  await expect(order.getByTestId('order-price')).toHaveText('0,6 CC (Bank 0,4 CC)')
-  await expect(order.getByTestId('order-stock')).toHaveCount(0)
+  await expect(order.getByTestId('order-ask')).toHaveText(/30 Einh\. Robusta\s+roh\s+mind\. Q 80/)
+  await expect(order.getByTestId('order-deadline')).toHaveText(
+    /bis 11\. Januar\s*heute letzter Tag/,
+  )
+  await expect(order.getByTestId('order-price')).toContainText('0,6 CC')
+  await expect(order.getByTestId('order-price')).toContainText('Bank heute 0,4 CC')
+  await expect(order.getByTestId('order-lots')).toHaveText('40 × Q 90')
+  await expect(order.getByTestId('order-deliver')).toHaveText('Liefern · 18 CC')
+  await expect(blocked.getByTestId('order-deliver')).toBeDisabled()
+  await expect(blocked.getByTestId('order-why')).toHaveText(
+    'Kein Robusta (roh) ab Q 95 im Lager. Beste Charge: Q 90.',
+  )
   await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
   await page.screenshot({ path: 'docs/progress/orders.png' })
+
+  await page.getByTestId('orders-filter-ready').click()
+  await expect(panel.locator('article')).toHaveCount(1)
+  await page.getByTestId('orders-filter-all').click()
+  await expect(panel.locator('article')).toHaveCount(2)
+
+  // The card fits the market panel at 1024 px and a phone without a horizontal scroll bar.
+  for (const width of [390, 1024]) {
+    await page.setViewportSize({ width, height: 844 })
+    for (const card of await panel.locator('article').all())
+      expect(await card.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+  }
   await page.setViewportSize({ width: 390, height: 844 })
-  for (const row of await order.locator('dl').all())
-    expect(await row.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+  await order.scrollIntoViewIfNeeded()
+  await page.screenshot({ path: 'docs/progress/orders-390.png' })
   await page.setViewportSize({ width: 1440, height: 900 })
 
   const money = page.getByTestId('money')
   await expect(money).toHaveText('500 CC')
   await order.getByTestId('order-deliver').click()
   await expect(order).toHaveCount(0)
-  await expect(page.getByTestId('orders-panel')).toContainText('Keine Aufträge')
+  await expect(page.getByTestId('orders-filter-ready')).toHaveText('Lieferbar 0')
   // 30 units at 0.60 CC.
   await expect(money).toHaveText('518 CC')
   await page.getByTestId('market-tab-bank').click()
