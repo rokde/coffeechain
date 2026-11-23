@@ -495,7 +495,7 @@ function strategySection(runs: BotResult[], cfg: Balance, params: BotParams): st
         code(s),
         cc(med(s, (r) => r.bank.income)!),
         cc(med(s, (r) => r.orders.income)!),
-        pct(sum(s, (r) => r.orders.income) / Math.max(1, sum(s, income))),
+        `${fmt((sum(s, (r) => r.orders.income) / Math.max(1, sum(s, income))) * 100, 1)} %`,
         perUnit(
           s,
           (r) => r.bank.income,

@@ -1,6 +1,6 @@
 # Balance-Report (Bot-Simulation)
 
-Erzeugt mit `npm run balance-sim`. Der Bot spielt die Simulation ohne Grafik. Jeden Spieltag erntet er alle reifen Parzellen, verkauft das ganze Lager an die Bank, pflanzt auf leeren Parzellen (Arabica Standard im Hochland, sonst Robusta), düngt und kauft neue Parzellen. Neue Parzellen kauft er in fester Reihenfolge (bester Boden zuerst), solange das Geld für Saatgut und Dünger aller Parzellen reicht.
+Erzeugt mit `npm run balance-sim`. Der Bot spielt die Simulation ohne Grafik. Bis zum Abschnitt „Verkaufsstrategien“ zeigt der Bericht die Strategie `bank-now`: Jeden Spieltag erntet er alle reifen Parzellen, verkauft das ganze Lager an die Bank, pflanzt auf leeren Parzellen (Arabica Standard im Hochland, sonst Robusta), düngt und kauft neue Parzellen. Neue Parzellen kauft er in fester Reihenfolge (bester Boden zuerst), solange das Geld für Saatgut und Dünger aller Parzellen reicht.
 
 Kapital nach PRD §10: Kontostand + Lager zum Bank-Ankaufspreis + bezahlte Parzellen und Gebäude.
 
@@ -680,6 +680,32 @@ Angebotsfaktor des Rohkaffees (Bereich ab 0,70) und Nachfragefaktor des Saatguts
 | 19 | 40 % | 0,722 | 0 % | 1,190 |
 | 20 | 24 % | 0,734 | 0 % | 1,172 |
 | Median | 40 % | 0,724 | 0 % | 1,184 |
+
+## Verkaufsstrategien (#50)
+
+Alle Strategien spielen dieselben Seeds und dieselben 6000 Spieltage. Sie unterscheiden sich nur im Verkauf; Ernten, Pflanzen, Düngen und Parzellenkauf folgen denselben Regeln. Die Schwellen sind Bot-Parameter und stehen nicht in `config/balance.json`.
+
+- **`bank-now`** verkauft jede Ernte sofort an die Bank (der Bot oben).
+- **`hold`** verkauft eine Sorte ganz, wenn der Bankpreis des Verkaufs mindestens 90 % des Bankpreises bei unberührtem Markt erreicht oder wenn ein Monat Warten weniger Preis bringt, als er an Lagerkosten kostet. Sonst verkauft sie nur Partien ab 6 Monaten im Lager und die ältesten Einheiten über 80 % der Lagerkapazität. Stehen reife Parzellen bei vollem Lager, verkauft sie das Lager, um zu ernten.
+- **`orders`** liefert jeden offenen Auftrag, den das Lager erfüllen kann (der beste Preis zuerst), und verkauft den Rest an die Bank. Für Aufträge, die sie noch nicht erfüllen kann, hält sie passende Einheiten zurück, höchstens 50 % der Lagerkapazität, die früheste Frist zuerst.
+
+CC-Beträge sind Mediane der Seeds. Ø Preise sind über alle Seeds gepoolt: Einnahmen des Kanals geteilt durch seine verkauften Einheiten. Qualitätsverlust: Qualitätspunkte, die das Lager an den Monatswechseln abzieht, summiert über alle Einheiten.
+
+### Einnahmen je Kanal
+
+| Strategie | Bank (CC) | Aufträge (CC) | Anteil Aufträge | Ø Preis Bank (CC/Einheit) | Ø Preis Aufträge (CC/Einheit) | Ø Preis gesamt (CC/Einheit) |
+| --- | --- | --- | --- | --- | --- | --- |
+| `bank-now` | 261.934 | 0 | 0,0 % | 0,329 | – | 0,329 |
+| `hold` | 262.069 | 0 | 0,0 % | 0,329 | – | 0,329 |
+| `orders` | 262.765 | 1.043 | 0,4 % | 0,329 | 0,824 | 0,330 |
+
+### Kosten des Lagerns und Ergebnis
+
+| Strategie | Lagerkosten (CC) | Qualitätsverlust (Punkte × Einheiten) | Ø Verlust je verkaufter Einheit (Punkte) | Aufträge geliefert / angeboten | Tag bis 2.000 CC | Kapital Tag 6000 (CC) | gegenüber `bank-now` (CC) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `bank-now` | 0 | 0 | 0,000 | 0 / 918 | 903 | 104.955 | – |
+| `hold` | 157 | 4.796 | 0,006 | 0 / 918 | 903 | 104.070 | −884 (−0,8 %) |
+| `orders` | 10 | 229 | 0,000 | 683 / 1.130 | 902,5 | 105.483 | +529 (+0,5 %) |
 
 ## Empfehlung zu PRD §12 Punkt 1
 

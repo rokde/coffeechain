@@ -351,9 +351,9 @@ describe('renderReport, sell strategies (#50)', () => {
   })
 
   it('shows the income per channel and the price per unit', () => {
-    expect(strategies).toContain('| `bank-now` | 400 | 0 | 0 % | 0,400 | – | 0,400 |')
-    expect(strategies).toContain('| `hold` | 400 | 0 | 0 % | 0,400 | – | 0,400 |')
-    expect(strategies).toContain('| `orders` | 360 | 90 | 20 % | 0,400 | 0,900 | 0,450 |')
+    expect(strategies).toContain('| `bank-now` | 400 | 0 | 0,0 % | 0,400 | – | 0,400 |')
+    expect(strategies).toContain('| `hold` | 400 | 0 | 0,0 % | 0,400 | – | 0,400 |')
+    expect(strategies).toContain('| `orders` | 360 | 90 | 20,0 % | 0,400 | 0,900 | 0,450 |')
   })
 
   it('shows storage cost, quality loss, orders and the capital against bank-now', () => {
