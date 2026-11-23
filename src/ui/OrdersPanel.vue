@@ -114,8 +114,8 @@ const shown = computed(() => cards.value.filter((c) => filter.value === 'all' ||
 </script>
 
 <template>
-  <section class="orders" data-testid="orders-panel">
-    <h3>{{ t.heading }}</h3>
+  <!-- The tab "Aufträge" of the market panel is the visible heading. -->
+  <section class="orders" data-testid="orders-panel" :aria-label="t.heading">
     <p v-if="cards.length === 0" class="none">{{ t.none }}</p>
     <template v-else>
       <div class="filters" role="group" :aria-label="t.filter">
@@ -210,15 +210,11 @@ const shown = computed(() => cards.value.filter((c) => filter.value === 'all' ||
 </template>
 
 <style scoped>
-/* The card works in the 330 px tool panel and in the 640 px market panel. */
+/* The card works from 330 px (narrow panel, phone sheet) to the 640 px market panel. */
 .orders {
   --green: #9ccf7a;
   --red-fg: #ffb3a4;
   container: orders / inline-size;
-}
-h3 {
-  margin: 10px 0 0;
-  font-size: 14px;
 }
 .none {
   margin: 6px 0 0;

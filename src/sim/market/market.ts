@@ -14,6 +14,9 @@ export interface Good {
 
 export type GoodKind = Good['kind']
 
+// A good the bank buys from the player.
+export type SellGood = Good & { kind: 'coffee' | 'washed' }
+
 // Traded units of one good as of its last trade day. The volume halves every
 // market.volumeHalfLifeDays. Each sale (coffee) or purchase (seed) adds its units after the decay
 // to the trade day.
@@ -121,16 +124,66 @@ export function bankBuyPrice(
   variety: Variety,
   units = 0,
   washed = false,
+  cfg = balance(),
 ): number {
-  const cfg = balance()
   const day = state.time.day
   const good: Good = { kind: washed ? 'washed' : 'coffee', variety }
   return marketPrice(state.market.volumes, good, day, cfg, units) * cfg.market.bankBuyFactor
 }
 
+// Reference price in CC per unit that the bank pays for raw (or washed) coffee at a neutral market.
+export function bankReferencePrice(variety: Variety, washed = false): number {
+  const cfg = balance()
+  return reference({ kind: washed ? 'washed' : 'coffee', variety }, cfg) * cfg.market.bankBuyFactor
+}
+
+// Price in CC per unit that the bank pays right after a sale of units today: the price at the
+// volume that sell records.
+export function bankPriceAfterSale(
+  state: GameState,
+  variety: Variety,
+  units: number,
+  washed = false,
+): number {
+  const cfg = balance()
+  const good: Good = { kind: washed ? 'washed' : 'coffee', variety }
+  const volume = volumeOn(state.market.volumes, good, state.time.day, cfg) + units
+  return priceAt(good, volume, cfg) * cfg.market.bankBuyFactor
+}
+
+// Batches of a good that the bank could take today: raw batches, or washed batches that are ready.
+const ofGood = (state: GameState, good: SellGood) => (b: Batch) =>
+  b.variety === good.variety &&
+  (good.kind === 'washed' ? b.washed === true && !isRunning(b, state.time.day) : !b.washed)
+
+const unitsWhere = (state: GameState, keep: (b: Batch) => boolean) =>
+  state.storage.batches.filter(keep).reduce((sum, b) => sum + b.units, 0)
+
+// Stored units of a good that the bank buys: the batches from market.bankMinQuality on.
+export function sellableUnits(state: GameState, good: SellGood, cfg = balance()): number {
+  const of = ofGood(state, good)
+  return unitsWhere(state, (b) => of(b) && b.quality >= cfg.market.bankMinQuality)
+}
+
+// Stored units of a good that the bank refuses: the ready batches below market.bankMinQuality.
+export function unsellableUnits(state: GameState, good: SellGood, cfg = balance()): number {
+  const of = ofGood(state, good)
+  return unitsWhere(state, (b) => of(b) && b.quality < cfg.market.bankMinQuality)
+}
+
 // Whole-CC income of a sale, in hundredths of CC. The sell command and the HUD both use it.
-export const sellIncome = (state: GameState, variety: Variety, units: number, washed = false) =>
-  roundIncome(Math.round(units * bankBuyPrice(state, variety, units, washed) * 100))
+// Only the sellable stock counts: units above it earn nothing.
+export function sellIncome(
+  state: GameState,
+  variety: Variety,
+  units: number,
+  washed = false,
+  cfg = balance(),
+): number {
+  const stock = sellableUnits(state, { kind: washed ? 'washed' : 'coffee', variety }, cfg)
+  const sold = Math.min(units, stock)
+  return roundIncome(Math.round(sold * bankBuyPrice(state, variety, sold, washed, cfg) * 100))
+}
 
 // Price in CC per unit that the bank asks for seed today.
 // With units, it is the mean price per unit of a purchase of that size.
@@ -169,40 +222,73 @@ function record(volumes: Volumes, good: Good, units: number, day: number, cfg: B
   }
 }
 
-export function sell(state: GameState, command: Sell): GameState {
-  const cfg = balance()
+// The batches a sale may take: a washed sale only ready washed batches, a raw sale only raw ones,
+// and none below market.bankMinQuality. With quality and storedDay only the batches of that
+// storage panel row.
+function inSale(state: GameState, command: Sell) {
+  const of = ofGood(state, {
+    kind: command.washed === true ? 'washed' : 'coffee',
+    variety: command.variety,
+  })
+  return (b: Batch) =>
+    of(b) &&
+    (command.quality === undefined || b.quality === command.quality) &&
+    (command.storedDay === undefined || b.storedDay === command.storedDay)
+}
+
+function sellable(state: GameState, command: Sell, cfg: Balance) {
+  const of = inSale(state, command)
+  return (b: Batch) => of(b) && b.quality >= cfg.market.bankMinQuality
+}
+
+// Units that a sale takes from each batch, in storage order. Batches are in harvest order, so
+// the oldest go first. The sell command and the HUD both use it. Stops at the sellable stock.
+export function saleBatches(
+  state: GameState,
+  command: Sell,
+  cfg = balance(),
+): { quality: number; storedDay: number; units: number }[] {
+  const take = sellable(state, command, cfg)
+  let rest = command.units
+  const out: { quality: number; storedDay: number; units: number }[] = []
+  for (const b of state.storage.batches) {
+    if (rest <= 0) break
+    if (!take(b)) continue
+    const units = Math.min(rest, b.units)
+    rest -= units
+    out.push({ quality: b.quality, storedDay: b.storedDay, units })
+  }
+  return out
+}
+
+export function sell(state: GameState, command: Sell, cfg = balance()): GameState {
   checkTrade(command, cfg)
   const { variety, units } = command
   const washed = command.washed === true
-  // A washed sale takes only ready washed batches. A raw sale takes only raw batches.
-  const sellable = (b: Batch) =>
-    b.variety === variety &&
-    (washed ? b.washed === true && !isRunning(b, state.time.day) : !b.washed) &&
-    (command.quality === undefined || b.quality === command.quality) &&
-    (command.storedDay === undefined || b.storedDay === command.storedDay)
-  const stored = state.storage.batches.filter(sellable).reduce((sum, b) => sum + b.units, 0)
-  if (units > stored) throw new Error(`Not enough ${variety} in storage: ${stored} < ${units}`)
+  const good: SellGood = { kind: washed ? 'washed' : 'coffee', variety }
+  const take = sellable(state, command, cfg)
+  const stored = unitsWhere(state, take)
+  if (units > stored) {
+    const min = cfg.market.bankMinQuality
+    const row = inSale(state, command)
+    const refused = unitsWhere(state, (b) => row(b) && b.quality < min)
+    const why = refused > 0 ? `, ${refused} units below quality ${min}` : ''
+    throw new Error(`Not enough sellable ${variety} in storage: ${stored} < ${units}${why}`)
+  }
 
-  const income = sellIncome(state, variety, units, washed)
-  // Batches are in harvest order, so the first batches are the oldest.
+  const income = sellIncome(state, variety, units, washed, cfg)
+  // Takes from each batch what saleBatches names, in the same order.
   let rest = units
   const batches = state.storage.batches
     .map((b) => {
-      if (!sellable(b) || rest === 0) return b
-      const take = Math.min(rest, b.units)
-      rest -= take
-      return { ...b, units: b.units - take }
+      if (!take(b) || rest === 0) return b
+      const n = Math.min(rest, b.units)
+      rest -= n
+      return { ...b, units: b.units - n }
     })
     .filter((b) => b.units > 0)
 
-  const day = state.time.day
-  const volumes = record(
-    state.market.volumes,
-    { kind: washed ? 'washed' : 'coffee', variety },
-    units,
-    day,
-    cfg,
-  )
+  const volumes = record(state.market.volumes, good, units, state.time.day, cfg)
   return {
     ...state,
     money: state.money + income,

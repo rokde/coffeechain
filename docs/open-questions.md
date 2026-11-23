@@ -39,6 +39,7 @@ Values in `config/balance.json` with `src: "NEU"` that the world generation (S3)
 | `market.volumeHalfLifeDays` | 30 | After how many days does a trade count only half for the price (#18)? Each sale (coffee) or purchase (seed) adds its units to a volume per good, and the volume halves every 30 days. It replaces the hard 90-day window (`market.volumeWindowDays`). 62 days would give the same volume as the old window at a steady sales rate. The value belongs to decision 2 of epic #25 (holding back stock): a shorter half-life makes waiting for a better price pay off sooner. |
 | `market.supplyUnitsForHalfFactor` | 1500 | At which volume of coffee is half of the supply range used, i.e. factor 0.85 (#18)? The factor follows 1 − 0.3 × (1 − 2^(−volume / 1500)) and never reaches 0.7. With 1500 the bot is within 5 % of the minimum on 40 % of the days (median over 20 seeds, 6,000 days; `docs/balance-report.md`), with 300 it was 70 %. A larger farm still pushes the price close to the minimum until the virtual buyers of #19 add their own demand. The value is per good, so washed coffee and each variety have their own volume. |
 | `market.demandUnitsForHalfFactor` | 200 | At which volume of seed purchases is half of the demand range used, i.e. factor 1.15 (#18)? The factor follows 1 + 0.3 × (1 − 2^(−volume / 200)) and never reaches 1.3. The bot never comes within 5 % of the maximum; its median seed factor is 1.18. |
+| `market.bankMinQuality` | 0 | From which quality on does the bank buy a batch (#38)? A sale takes only batches from this quality on, still the oldest first; the batches below stay in storage as unsellable stock. With 0 the bank buys every batch, as PRD §6 says, so the rule is off. The market panel mockup (#48) assumes 40. Harvests start around Q 60–85 (#21), so the value must stay well below that. Open with it: is it tied to `storage.shelfLifeMinQuality` or the order minimum, does dumping unsellable coffee cost anything, and does "Alles verkaufen" skip unsellable batches (mockup default) or block? |
 | `orders.maxOpen` | 3 | How many buyer orders (S56) can be open at the same time? |
 | `orders.chancePerDay` | 0.01 | What is the chance that a buyer posts a new order on a day? #27 changed it from 0.3 per game day. |
 | `orders.units` | 20–60 | How many units does one order ask for? |
@@ -56,3 +57,30 @@ Values in `config/balance.json` with `src: "NEU"` that the world generation (S3)
 - ~~**Monsoon cycle time (S51):** GDD 11.8 gives the monsoon a cycle time of +50 % in the Tiefland (`events.types.monsoon.cycleTime`). PRD §9 says that each event effect stays between −30 % and +30 %. Which rule wins: +50 % (GDD) or a cap at +30 % (PRD)? **Decided 2026-10-21: PRD wins, the monsoon cycle time is capped at +30 % (`events.maxEffect`).** S51c applies it.~~ Dropped by #8: the game has no events (Robert 2026-10-25).
 - ~~**Research stacking (S51b):** PRD §9 gives the research breakthrough "~alle 6 Spielwochen" and "dauerhaft". Thus it can occur more than once. Each breakthrough adds +10 % yield (`events.types.research.yieldBonus`). Should breakthroughs stack, each +10 %, up to the ±30 % cap (`events.maxEffect`)? Or should the game give one breakthrough only? A permanent +30 % cancels each positive timed event through the cap. The default now is one (`events.researchMaxCount` = 1). The code works for n breakthroughs. The scheduler always stops at `maxEffect`.~~ Dropped by #8: the game has no events (Robert 2026-10-25).
 - **Phase drop (S47):** PRD §10 gives the phases from the capital. It does not say what occurs when the capital falls below a threshold again. Now the game calculates the phase live, so the phase can drop. Unlocked varieties and buildings then lock again. Should a phase stay after the player reaches it once? **2026-10-21: keep the live phase for now and check in play-testing.** The research breakthrough is gone with the events (#8). The switch to the weeks stage (`time.weeksFromPhase`) does not drop with the phase (#27).
+
+## Market panel (#48): working defaults
+
+The mockup in `docs/mockups/market-panel/` is approved (Robert 2026-11-23, PR #54). Its README lists ten questions. Robert approved without answering them, so the build follows the defaults below until he says otherwise (Bastian 2026-11-23). A default that he changes costs a small rework, not a redesign.
+
+**Display only, or what the sim does today. Build like this:**
+
+| Nr. | Question | Default |
+|---|---|---|
+| 1 | Tabs or one long panel? | Three tabs: Bank, Aufträge, Saatgut. Approved with the mockup. |
+| 3 | Which batches does the bank take? | The oldest first, as `sell` does today. The ticket shows the batches of the chosen amount. The ticket has no choice of the order. |
+| 4 | Which batches go into an order, and are there partial deliveries? | The lowest qualifying quality first and no partial delivery, as `DeliverOrder` does today. |
+| 6 | Buyer profile | One line of profile text on the order card. No buyer view until #23. |
+| 8 | Chart scale | Fixed at 50–150 % of the reference (#20), also while the curve stays between 70 and 100 % before #19. |
+| 9 | Decimals | Three in the ticket (average price, price after the trade), two in the list and the chart. |
+| 10 | Preselected amount | "Alles", like the button today. |
+
+**Built with a neutral value, so the game rule stays as it is:**
+
+- **Bank minimum quality (question 2, #38):** `market.bankMinQuality` starts at 0 with `src: "NEU"`. The panel shows unsellable stock as soon as the value is above 0, and "Alles" skips it. With 0 the bank buys every batch, as PRD §6 says. Robert switches the rule on by setting the value; the mockup assumes 40.
+- **Order price (question 5):** the order card compares the price and the income with the bank. The price rule stays `orders.priceFactor` until #22 changes it.
+
+**Waiting for Robert, not built:**
+
+- **Saving seed (question 7, #26):** the ratio of raw coffee to seed (mockup: 4 : 1), the minimum quality (mockup: 75), the quality of bought seed (mockup: 70), and whether seed counts towards the storage capacity. With 4 : 1 own seed is cheaper and better than bought seed. #26 also depends on #6. Until then the Saatgut tab only buys seed.
+- **Role of orders (decision 3 of epic #25):** size, frequency and the target share of the income. This is the sim part of #22, not the order cards.
+- **Dumping unsellable coffee and its cost (#38):** belongs to the storage panel and is not part of the mockup.

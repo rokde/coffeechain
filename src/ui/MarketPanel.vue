@@ -1,334 +1,224 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import {
-  processAll,
-  processUnits,
-  sellAll,
-  sellAllWashed,
-  storedUnits,
-  washedUnits,
-} from '../app/market'
+import { computed, nextTick, ref } from 'vue'
+import { pickTool, useSelectionStore } from '../app/selection'
 import { useGameStore } from '../app/store'
-import { balance } from '../sim/balance'
-import type { Variety } from '../sim/farm/yield'
-import { bankBuyPrice, bankSellPrice, priceHistory, sellIncome } from '../sim/market/market'
-import { isVarietyUnlocked } from '../sim/progression/capital'
-import { hasProcessing, isRunning, processCost, runningUntil } from '../sim/processing/process'
+import { deliverableUnits } from '../sim/market/orders'
 import type { GameState } from '../sim/state'
-import { formatDate } from './date'
 import de from './i18n/de.json'
-import { formatMoney, formatUnitPrice } from './money'
+import MarketBank from './market/MarketBank.vue'
+import MarketSeed from './market/MarketSeed.vue'
+import { tabKey } from './market/tablist'
 import OrdersPanel from './OrdersPanel.vue'
 
 const t = de.marketPanel
 const game = useGameStore()
-const cfg = balance()
-// The sim functions only read the state, so the cast of the readonly snapshot is safe.
-const varieties = computed(() =>
-  (Object.keys(cfg.varieties) as Variety[]).filter(
-    (v) =>
-      isVarietyUnlocked(game.state as GameState, v) ||
-      game.state.storage.batches.some((b) => b.variety === v),
-  ),
-)
-const price = (cc: number) => formatUnitPrice(Math.round(cc * 100))
-const hint = t.hint.replace('{units}', String(Math.round(1 / cfg.storage.costPerUnitPerMonth)))
-const money = (cents: number) => formatMoney(cents).replace(' ', '\u00a0')
-// Label and zero-income reason of a sell button. A sale that pays 0 CC is blocked.
-const sale = (state: GameState, variety: Variety, units: number, washed: boolean) => {
-  const income = sellIncome(state, variety, units, washed)
-  return {
-    label:
-      units > 0
-        ? (washed ? t.sellWashedAmount : t.sellAmount)
-            .replace('{units}', String(units))
-            .replace('{income}', money(income))
-        : washed
-          ? t.sellWashed
-          : t.sell,
-    why: units > 0 && income === 0 ? t.sellZero : null,
-  }
-}
-const lineLabel = (text: string) => text.replace('{months}', String(cfg.market.historyMonths))
-// Short name of the month `back` months before the month of day. Months before the start wrap.
-const monthShort = (day: number, back: number) => {
-  const n = cfg.time.monthsPerYear
-  const month = Math.floor(day / cfg.time.daysPerMonth) - back
-  return de.time.monthsShort[((month % n) + n) % n]!
-}
+const selection = useSelectionStore()
 
-const W = 100
-const H = 40
-// Polyline points of one price line. A flat line sits in the middle.
-function points(prices: number[]) {
-  const min = Math.min(...prices)
-  const span = Math.max(...prices) - min
-  return prices
-    .map((p, i) => {
-      const y = span === 0 ? H / 2 : H - 2 - ((p - min) / span) * (H - 4)
-      return `${(i * W) / (prices.length - 1)},${y}`
-    })
-    .join(' ')
-}
+const TABS = ['bank', 'orders', 'seed'] as const
+type Tab = (typeof TABS)[number]
+const tab = ref<Tab>('bank')
+const tabs = ref<HTMLButtonElement[]>([])
 
-const blocks = computed(() => {
-  // The sim functions only read the state, so the cast of the readonly snapshot is safe.
+// The count on "Aufträge": open orders, green as soon as one can be delivered.
+const orders = computed(() => {
+  // The sim function only reads the state, so the cast of the readonly snapshot is safe.
   const state = game.state as GameState
-  const busy = state.storage.batches.some((b) => isRunning(b, state.time.day))
-  const axis = [
-    monthShort(state.time.day, cfg.market.historyMonths - 1),
-    monthShort(state.time.day, 0),
-  ]
-  return varieties.value.map((variety) => {
-    const units = processUnits(state, variety)
-    const until = runningUntil(state, variety)
-    const cost = processCost(units)
-    const stock = storedUnits(state, variety)
-    const washed = washedUnits(state, variety)
-    return {
-      variety,
-      stock,
-      washed,
-      sell: sale(state, variety, stock, false),
-      sellWashed: sale(state, variety, washed, true),
-      washedPrice: bankBuyPrice(state, variety, 0, true),
-      processLabel:
-        units > 0
-          ? t.processAmount.replace('{units}', String(units)).replace('{cost}', money(cost))
-          : t.process,
-      // The first reason that blocks "Aufbereiten". The money check keeps a click from a throw.
-      processWhy: !hasProcessing(state)
-        ? t.processWhy.building
-        : busy
-          ? t.processWhy.running
-          : units === 0
-            ? t.processWhy.stock
-            : cost > state.money
-              ? t.processWhy.money
-              : null,
-      runningUntil: until === undefined ? null : t.processing.replace('{date}', formatDate(until)),
-      seeds: state.market.seeds[variety] ?? 0,
-      sellPrice: bankBuyPrice(state, variety),
-      buyPrice: bankSellPrice(state, variety),
-      coffeeLine: points(
-        priceHistory(state, { kind: 'coffee', variety }).map((p) => p * cfg.market.bankBuyFactor),
-      ),
-      seedLine: points(priceHistory(state, { kind: 'seed', variety })),
-      axis,
-    }
-  })
+  const open = state.orders.open
+  const ready = open.filter((o) => deliverableUnits(state, o) >= o.units).length
+  return {
+    open: open.length,
+    ready,
+    title: t.ordersCount.replace('{open}', String(open.length)).replace('{ready}', String(ready)),
+  }
 })
+
+// Arrow keys, Home and End move between the tabs and select the focused one.
+async function onKey(event: KeyboardEvent, index: number) {
+  const next = tabKey(event.key, index, TABS.length)
+  if (next === null) return
+  event.preventDefault()
+  tab.value = TABS[next]!
+  await nextTick()
+  tabs.value[next]?.focus()
+}
+
+const close = () => pickTool(selection, game.state as GameState, 'select')
 </script>
 
 <template>
-  <section class="tool" data-testid="market-panel">
-    <h2>{{ t.heading }}</h2>
-    <p class="hint" data-testid="market-hint">{{ hint }}</p>
-    <OrdersPanel />
-    <article v-for="b in blocks" :key="b.variety" class="good" :data-testid="`market-${b.variety}`">
-      <h3>{{ de.inspector.varieties[b.variety] }}</h3>
-      <dl>
-        <dt>{{ t.stock }}</dt>
-        <dd data-testid="market-stock">{{ b.stock }}</dd>
-        <dt>{{ t.seeds }}</dt>
-        <dd data-testid="market-seeds">{{ b.seeds }}</dd>
-        <dt>{{ t.sellPrice }}</dt>
-        <dd data-testid="market-sell-price">{{ price(b.sellPrice) }}</dd>
-        <dt>{{ t.buyPrice }}</dt>
-        <dd data-testid="market-buy-price">{{ price(b.buyPrice) }}</dd>
-        <dt>{{ t.washedStock }}</dt>
-        <dd data-testid="market-washed-stock">{{ b.washed }}</dd>
-        <dt>{{ t.washedSellPrice }}</dt>
-        <dd data-testid="market-washed-sell-price">{{ price(b.washedPrice) }}</dd>
-      </dl>
-      <div class="lines">
-        <figure v-for="line in ['coffee', 'seed'] as const" :key="line">
-          <figcaption>{{ lineLabel(line === 'coffee' ? t.coffeeLine : t.seedLine) }}</figcaption>
-          <svg
-            :viewBox="`0 0 ${W} ${H}`"
-            preserveAspectRatio="none"
-            role="img"
-            :aria-label="lineLabel(line === 'coffee' ? t.coffeeLine : t.seedLine)"
-            :data-testid="`market-line-${line}`"
-          >
-            <polyline
-              :points="line === 'coffee' ? b.coffeeLine : b.seedLine"
-              fill="none"
-              stroke="#f2c48d"
-              stroke-width="2"
-              vector-effect="non-scaling-stroke"
-            />
-          </svg>
-          <div class="axis" data-testid="market-axis" aria-hidden="true">
-            <span>{{ b.axis[0] }}</span
-            ><span>{{ b.axis[1] }}</span>
-          </div>
-        </figure>
-      </div>
+  <section class="market" data-testid="market-panel" :aria-label="t.heading">
+    <header>
+      <h2 class="title">{{ t.heading }}</h2>
       <button
         type="button"
-        data-testid="market-sell"
-        :disabled="b.stock === 0 || b.sell.why !== null"
-        :aria-describedby="b.sell.why ? `market-sell-why-${b.variety}` : undefined"
-        @click="sellAll(game, b.variety)"
+        class="close"
+        data-testid="market-close"
+        :aria-label="t.close"
+        @click="close"
       >
-        {{ b.sell.label }}
+        ×
       </button>
-      <p
-        v-if="b.sell.why"
-        :id="`market-sell-why-${b.variety}`"
-        class="running"
-        data-testid="market-sell-why"
-      >
-        {{ b.sell.why }}
-      </p>
+    </header>
+    <div class="tabs" role="tablist" :aria-label="t.tabsLabel">
       <button
+        v-for="(id, i) in TABS"
+        :id="`market-tab-${id}`"
+        :key="id"
+        ref="tabs"
         type="button"
-        data-testid="market-process"
-        :disabled="b.processWhy !== null"
-        :title="b.processWhy ?? undefined"
-        :aria-label="b.processWhy ? `${b.processLabel}. ${b.processWhy}` : undefined"
-        @click="processAll(game, b.variety)"
+        role="tab"
+        :aria-selected="tab === id"
+        :aria-controls="`market-tabpanel-${id}`"
+        :tabindex="tab === id ? 0 : -1"
+        :data-testid="`market-tab-${id}`"
+        @click="tab = id"
+        @keydown="onKey($event, i)"
       >
-        {{ b.processLabel }}
+        {{ t.tabs[id]
+        }}<span
+          v-if="id === 'orders'"
+          class="count"
+          :class="{ go: orders.ready > 0 }"
+          :title="orders.title"
+          data-testid="market-orders-count"
+          >{{ orders.open }}</span
+        >
       </button>
-      <p v-if="b.runningUntil" class="running" data-testid="market-processing">
-        {{ b.runningUntil }}
-      </p>
-      <button
-        type="button"
-        data-testid="market-sell-washed"
-        :disabled="b.washed === 0 || b.sellWashed.why !== null"
-        :aria-describedby="b.sellWashed.why ? `market-sell-washed-why-${b.variety}` : undefined"
-        @click="sellAllWashed(game, b.variety)"
-      >
-        {{ b.sellWashed.label }}
-      </button>
-      <p
-        v-if="b.sellWashed.why"
-        :id="`market-sell-washed-why-${b.variety}`"
-        class="running"
-        data-testid="market-sell-washed-why"
-      >
-        {{ b.sellWashed.why }}
-      </p>
-    </article>
+    </div>
+    <div
+      :id="`market-tabpanel-${tab}`"
+      class="body"
+      role="tabpanel"
+      :aria-labelledby="`market-tab-${tab}`"
+      tabindex="0"
+    >
+      <MarketBank v-if="tab === 'bank'" />
+      <OrdersPanel v-else-if="tab === 'orders'" />
+      <MarketSeed v-else />
+    </div>
   </section>
 </template>
 
 <style scoped>
-.tool {
+.market {
+  --green: #9ccf7a;
+  --red-fg: #ffb3a4;
+  --hud-solid: #221e19;
   box-sizing: border-box;
-  height: 100%;
-  overflow-y: auto;
-  padding: 20px;
-}
-h2 {
-  margin: 0;
-  font-size: 13px;
-  color: var(--fg-2);
-  font-weight: 600;
-}
-.hint {
-  margin: 8px 0 8px;
-  font-size: 13px;
-  color: var(--fg-2);
-}
-.good {
-  margin-top: 10px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: rgb(255 255 255 / 6%);
-}
-h3 {
-  margin: 0 0 6px;
-  font-size: 14px;
-}
-dl {
-  display: grid;
-  grid-template-columns: auto 1fr auto 1fr;
-  gap: 4px 10px;
-  margin: 0 0 8px;
-  font-size: 13px;
-}
-dt {
-  color: var(--fg-2);
-}
-dd {
-  margin: 0;
-  font-weight: 600;
-  text-align: right;
-  white-space: nowrap;
-}
-.running {
-  margin: 8px 0;
-  font-size: 13px;
-}
-.lines {
   display: flex;
-  gap: 12px;
-  margin-bottom: 8px;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 100%;
+  padding: 14px 20px 0;
+  font-variant-numeric: tabular-nums;
 }
-figure {
-  flex: 1;
-  margin: 0;
-}
-figcaption {
-  font-size: 12px;
-  color: var(--fg-2);
-}
-svg {
-  display: block;
-  width: 100%;
-  height: 28px;
-  border-bottom: 1px solid rgb(255 255 255 / 12%);
-}
-.axis {
+header {
+  flex: none;
   display: flex;
   justify-content: space-between;
-  font-size: 12px;
-  color: var(--fg-3);
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: -8px;
 }
-button + button {
-  margin-top: 8px;
+.title {
+  margin: 8px 0 0;
+  font-size: 20px;
+  font-weight: 700;
 }
 button {
-  width: 100%;
-  min-height: 34px;
-  padding: 6px 10px;
   border: 0;
-  border-radius: 8px;
-  background: var(--accent);
-  color: var(--on-accent);
+  color: inherit;
   font: inherit;
-  font-weight: 600;
   cursor: pointer;
 }
-button:disabled {
-  background: rgb(255 255 255 / 8%);
-  color: inherit;
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-button:focus-visible {
+:is(button, .body):focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+.close {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  margin: -2px -8px 0 0;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 8%);
+  font-size: 20px;
+}
+/* Tabs: the selection shows as an underline, not only as a colour. */
+.tabs {
+  flex: none;
+  display: flex;
+  margin-top: 6px;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+[role='tab'] {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  background: none;
+  color: var(--fg-2);
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+[role='tab']:hover {
+  color: var(--hud-fg);
+}
+[role='tab'][aria-selected='true'] {
+  color: var(--accent);
+}
+[role='tab'][aria-selected='true']::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 -1px;
+  border-block-end: 3px solid var(--accent);
+}
+[role='tab']:focus-visible {
+  outline-offset: -2px;
+}
+.count {
+  min-width: 22px;
+  padding: 1px 7px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 8%);
+  color: var(--hud-fg);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+.count.go {
+  background: var(--green);
+  color: #1f2d14;
+}
+.body {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-right: -12px;
+  padding: 0 12px 0 0;
+  overflow-y: auto;
+}
+/* The space below the list sits inside the tab, so the sticky sell button ends flush at the bottom. */
+.body > * {
+  padding-bottom: 16px;
+}
 @media (max-width: 480px) {
-  .tool {
-    padding: 12px;
+  .market {
+    padding: 12px 16px 0;
   }
-  /* Room for the label "(gewaschen)" without a hyphen. */
-  .good {
-    padding: 10px 8px;
+  .title {
+    font-size: 18px;
   }
-  dl {
-    grid-template-columns: auto 1fr;
-    column-gap: 6px;
-  }
-  .lines {
-    flex-direction: column;
-    gap: 4px;
+  [role='tab'] {
+    flex: 1 0 auto;
+    justify-content: center;
+    padding: 0 10px;
   }
 }
 </style>

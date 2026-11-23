@@ -175,10 +175,10 @@ describe('OrdersPanel (#22)', () => {
     expect(html).not.toContain('Verträge')
   })
 
-  it('the market panel shows the orders before the bank blocks', async () => {
+  it('AC-5 (#20): the market panel has its own tab for the orders, next to the bank', async () => {
     const pinia = createPinia()
     const html = await renderToString(createSSRApp(MarketPanel).use(pinia))
-    expect(html.indexOf('orders-panel')).toBeGreaterThan(0)
-    expect(html.indexOf('orders-panel')).toBeLessThan(html.indexOf('market-robusta'))
+    expect(html.indexOf('market-tab-orders')).toBeGreaterThan(html.indexOf('market-tab-bank'))
+    expect(html).toContain('data-testid="market-robusta"')
   })
 })

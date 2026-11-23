@@ -522,10 +522,30 @@ test('S20: market panel from the toolbar and the market stand', async ({ page })
   await expect(page.getByTestId('parcel-inspector')).toHaveCount(0)
   await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
   await page.screenshot({ path: 'docs/progress/S20.png' })
-  // The right panel keeps its max height and can scroll down, but never sideways.
+  // #20: the market is 640 px wide like the storage panel, ends above the toolbar and never
+  // scrolls sideways.
   const right = page.getByTestId('hud-right-panel')
-  expect((await right.boundingBox())!.height).toBeLessThanOrEqual(480)
+  const box = (await right.boundingBox())!
+  const toolbar = (await page.getByTestId('hud-toolbar').boundingBox())!
+  expect(box.width).toBe(640)
+  expect(box.y + box.height).toBeLessThanOrEqual(toolbar.y)
   expect(await panel.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+  // The tabs follow the arrow keys, Home and End.
+  const tab = (id: string) => page.getByTestId(`market-tab-${id}`)
+  await tab('bank').focus()
+  await page.keyboard.press('ArrowRight')
+  await expect(tab('orders')).toHaveAttribute('aria-selected', 'true')
+  await expect(tab('orders')).toBeFocused()
+  await expect(page.getByTestId('orders-panel')).toBeVisible()
+  await page.keyboard.press('End')
+  await expect(tab('seed')).toBeFocused()
+  await expect(page.getByTestId('market-seed')).toBeVisible()
+  await page.keyboard.press('ArrowRight')
+  await expect(tab('bank')).toHaveAttribute('aria-selected', 'true')
+  await page.getByTestId('market-close').click()
+  await expect(panel).toHaveCount(0)
+  await expect(page.getByTestId('tool-select')).toHaveAttribute('aria-pressed', 'true')
+  await page.getByTestId('tool-market').click()
 
   // Select a land parcel first: the market click must clear it.
   const canvas = page.locator('canvas#scene')
@@ -979,7 +999,7 @@ for (const [width, height] of [[1440, 900] as const, [800, 600] as const, [390, 
     expect(box.x).toBeGreaterThanOrEqual(0)
     expect(box.x + box.width).toBeLessThanOrEqual(width)
     expect(box.y + box.height).toBeLessThanOrEqual(height)
-    await expect(page.getByTestId('help-washing')).toContainText('Gewaschen verkaufen')
+    await expect(page.getByTestId('help-washing')).toContainText('die Zeile „gewaschen“ auf')
     await expect(page.getByTestId('help-storage')).toContainText('Lager-Ausbau')
     await panel.evaluate((el) => el.scrollTo(0, el.scrollHeight))
     await expect(page.getByTestId('help-controls').locator('dd').last()).toBeInViewport()
@@ -1453,18 +1473,19 @@ test('S46: process raw coffee and sell washed coffee in the market panel', async
   await page.getByTestId('first-steps-close').click()
 
   await page.getByTestId('tool-market').click()
-  const block = page.getByTestId('market-arabicaStandard')
-  const process = block.getByTestId('market-process')
-  const sellWashed = block.getByTestId('market-sell-washed')
-  await expect(block.getByTestId('market-stock')).toHaveText('60')
-  await expect(sellWashed).toBeDisabled()
+  const raw = page.getByTestId('bank-row-arabicaStandard-raw')
+  const washed = page.getByTestId('bank-row-arabicaStandard-washed')
+  const process = raw.getByTestId('ticket-process')
+  await expect(raw.getByTestId('bank-stock')).toHaveText('60')
+  await expect(washed.locator('button.grow')).toBeDisabled()
   await process.click()
-  await expect(block.getByTestId('market-stock')).toHaveText('10')
-  await expect(block.getByTestId('market-processing')).toHaveText(
-    'Aufbereitung läuft bis 11. Februar, Jahr 1',
-  )
+  await expect(raw.getByTestId('bank-stock')).toHaveText('10')
   await expect(process).toBeDisabled()
   await expect(page.getByTestId('money')).toHaveText('485 CC')
+  await washed.locator('button.grow').click()
+  await expect(washed.getByTestId('ticket-running')).toHaveText(
+    '50 Einh. in der Aufbereitung: verkaufbar ab 11. Februar, Jahr 1 (in 30 Tagen).',
+  )
 
   // One frame runs at most 24 steps: two jumps at speed 16 go past day 40, the end of the processing.
   await page.getByTestId('speed-16').click()
@@ -1472,15 +1493,16 @@ test('S46: process raw coffee and sell washed coffee in the market panel', async
   await page.clock.fastForward(60_000)
   await page.getByTestId('speed-0').click()
   await expect(page.getByTestId('clock')).toHaveText(/(Februar|März), Jahr 1$/)
-  await expect(block.getByTestId('market-washed-stock')).toHaveText('50')
-  await expect(block.getByTestId('market-processing')).toHaveCount(0)
-  await expect(process).toBeEnabled()
+  await expect(washed.getByTestId('bank-stock')).toHaveText('50')
+  await expect(washed.getByTestId('ticket-running')).toHaveCount(0)
   await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
   await page.screenshot({ path: 'docs/progress/processing.png' })
 
-  await sellWashed.click()
-  await expect(block.getByTestId('market-washed-stock')).toHaveText('0')
-  await expect(sellWashed).toBeDisabled()
+  await washed.getByTestId('ticket-sell').click()
+  await expect(washed).toContainText('nichts im Lager')
+  await expect(washed.locator('button.grow')).toBeDisabled()
+  await raw.locator('button.grow').click()
+  await expect(process).toBeEnabled()
   expect(errors).toEqual([])
 })
 
@@ -1585,6 +1607,12 @@ test('S56: deliver a buyer order in the market panel', async ({ page }) => {
   await page.getByTestId('save-slot-1').getByTestId('save-slot-load').click()
   await page.getByTestId('first-steps-close').click()
   await page.getByTestId('tool-market').click()
+  const robusta = page.getByTestId('bank-row-robusta-raw')
+  await expect(robusta.getByTestId('bank-stock')).toHaveText('60')
+  // #20: the orders have their own tab. Its count turns green while an order can be delivered.
+  await expect(page.getByTestId('market-orders-count')).toHaveText('2')
+  await expect(page.getByTestId('market-orders-count')).toHaveClass(/\bgo\b/)
+  await page.getByTestId('market-tab-orders').click()
 
   const panel = page.getByTestId('orders-panel')
   const order = page.getByTestId('order-0')
@@ -1605,7 +1633,6 @@ test('S56: deliver a buyer order in the market panel', async ({ page }) => {
   await expect(blocked.getByTestId('order-why')).toHaveText(
     'Kein Robusta (roh) ab Q 95 im Lager. Beste Charge: Q 90.',
   )
-  await expect(page.getByTestId('market-robusta').getByTestId('market-stock')).toHaveText('60')
   await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
   await page.screenshot({ path: 'docs/progress/orders.png' })
 
@@ -1614,7 +1641,7 @@ test('S56: deliver a buyer order in the market panel', async ({ page }) => {
   await page.getByTestId('orders-filter-all').click()
   await expect(panel.locator('article')).toHaveCount(2)
 
-  // The card fits the 330 px tool panel and a phone without a horizontal scroll bar.
+  // The card fits the market panel at 1024 px and a phone without a horizontal scroll bar.
   for (const width of [390, 1024]) {
     await page.setViewportSize({ width, height: 844 })
     for (const card of await panel.locator('article').all())
@@ -1632,7 +1659,8 @@ test('S56: deliver a buyer order in the market panel', async ({ page }) => {
   await expect(page.getByTestId('orders-filter-ready')).toHaveText('Lieferbar 0')
   // 30 units at 0.60 CC.
   await expect(money).toHaveText('518 CC')
-  await expect(page.getByTestId('market-robusta').getByTestId('market-stock')).toHaveText('30')
+  await page.getByTestId('market-tab-bank').click()
+  await expect(robusta.getByTestId('bank-stock')).toHaveText('30')
   expect(errors).toEqual([])
 })
 
@@ -2050,13 +2078,14 @@ test('S58b: a sale shows an income coin at the sell button', async ({ page }) =>
   await page.getByTestId('first-steps-close').click()
   await page.getByTestId('tool-market').click()
   await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 1000)
-  const sell = page.getByTestId('market-arabicaStandard').getByTestId('market-sell')
+  const sell = page.getByTestId('ticket-arabicaStandard-raw').getByTestId('ticket-sell')
+  // Selling everything closes the ticket, so the button box is read before the click.
+  const box = (await sell.boundingBox())!
   await sell.click()
   const coin = page.getByTestId('floating-coin')
   await expect(coin).toHaveCount(1)
   await expect(coin).toHaveText(/^\+[\d.,]+ CC$/)
   await expect(coin).toHaveClass(/\bincome\b/)
-  const box = (await sell.boundingBox())!
   const [left, top] = await coin.evaluate((el) => [
     parseFloat(el.style.left),
     parseFloat(el.style.top),
@@ -2120,20 +2149,20 @@ for (const [width, height] of [
     await page.getByTestId('tool-market').click()
 
     const panel = page.getByTestId('market-panel')
-    const block = page.getByTestId('market-robusta')
-    const why = block.getByTestId('market-sell-why')
+    const block = page.getByTestId('ticket-robusta-raw')
+    const why = block.getByTestId('ticket-batches')
     await why.scrollIntoViewIfNeeded()
-    await expect(why).toHaveText('Menge zu klein')
-    await expect(block.getByTestId('market-sell')).toBeDisabled()
+    await expect(why).toHaveText('Menge zu klein: Die Bank zahlt dafür 0 CC.')
+    await expect(block.getByTestId('ticket-sell')).toBeDisabled()
     expect(await panel.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
     const inside = await page.evaluate(() => {
       const p = document.querySelector('[data-testid="market-panel"]')!.getBoundingClientRect()
-      const w = document.querySelector('[data-testid="market-sell-why"]')!.getBoundingClientRect()
+      const w = document.querySelector('[data-testid="ticket-batches"]')!.getBoundingClientRect()
       return w.left >= p.left && w.right <= p.right && w.top >= p.top && w.bottom <= p.bottom
     })
     expect(inside).toBe(true)
     const money = await page.getByTestId('money').textContent()
-    await block.getByTestId('market-sell').click({ force: true })
+    await block.getByTestId('ticket-sell').click({ force: true })
     await expect(page.getByTestId('money')).toHaveText(money!)
     expect(errors).toEqual([])
   })
@@ -2152,8 +2181,13 @@ for (const [width, height] of [
     await page.getByTestId('first-steps-close').click()
     await page.getByTestId('tool-market').click()
     const panel = page.getByTestId('market-panel')
-    await expect(panel.getByTestId('market-axis').first()).toHaveText('FebJan')
-    await expect(panel).toContainText('Kaffee, 12 Monate')
+    // A new game has no coffee to sell, so the seed tab shows the chart.
+    await page.getByTestId('market-tab-seed').click()
+    const chart = panel.getByTestId('price-chart').first()
+    await expect(chart).toContainText('Apr')
+    await expect(chart).toContainText('Jan')
+    await expect(chart).toContainText('Referenz')
+    await expect(panel).toContainText('Saatgut kostet je Einheit · 12 Monate')
     expect(await panel.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
     await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
     await page.screenshot({ path: `docs/progress/086-${width}.png` })
@@ -2233,5 +2267,86 @@ for (const [width, height] of [
     await expect(panel).toBeVisible()
     await page.keyboard.press('i')
     await expect(panel).toHaveCount(0)
+  })
+}
+
+// #20: the bank tab of the market panel with the sell ticket of raw Robusta, as in
+// docs/mockups/market-panel (12. März, Jahr 2, 50 % chosen).
+for (const [width, height] of [
+  [1440, 900],
+  [800, 900],
+  [390, 844],
+] as const) {
+  test(`#20: bank tab with the sell ticket at ${width} px`, async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', (e) => errors.push(e.message))
+    await page.setViewportSize({ width, height })
+    await page.goto('/?seed=48213')
+    await page.getByTestId('save-button').click()
+    await page.getByTestId('save-slot-1').getByTestId('save-slot-save').click()
+    await page.evaluate(() => {
+      const key = 'coffeechain.save.slot-1'
+      const save = JSON.parse(localStorage.getItem(key)!)
+      save.state.time = { ...save.state.time, day: 431, speed: 0 }
+      save.state.money = 125000
+      save.state.storage.batches = [
+        { variety: 'robusta', units: 140, quality: 74, storedDay: 300 },
+        { variety: 'robusta', units: 220, quality: 82, storedDay: 400 },
+        { variety: 'arabicaStandard', units: 60, quality: 85, storedDay: 410 },
+        { variety: 'arabicaStandard', units: 30, quality: 81, storedDay: 380, washed: true },
+      ]
+      save.state.market.volumes = {
+        coffee: {
+          robusta: {
+            units: 300,
+            day: 425,
+            monthEnds: [0, 0, 150, 500, 900, 700, 400, 100, 250, 400, 450],
+          },
+        },
+      }
+      localStorage.setItem(key, JSON.stringify(save))
+    })
+    await page.getByTestId('save-panel-close').click()
+    await page.getByTestId('save-button').click()
+    await page.getByTestId('save-slot-1').getByTestId('save-slot-load').click()
+    await page.getByTestId('first-steps-close').click()
+    await page.getByTestId('tool-market').click()
+
+    const panel = page.getByTestId('market-panel')
+    const ticket = page.getByTestId('ticket-robusta-raw')
+    const amount = ticket.getByTestId('ticket-amount')
+    const sell = ticket.getByTestId('ticket-sell')
+    // "Alles" is preselected.
+    await expect(amount).toHaveValue('360')
+    await expect(ticket.getByTestId('ticket-preset-1')).toHaveAttribute('aria-pressed', 'true')
+    await ticket.getByTestId('ticket-preset-0.5').click()
+    await expect(amount).toHaveValue('180')
+    await expect(ticket.getByTestId('ticket-range')).toHaveValue('180')
+    await expect(ticket.getByTestId('ticket-batches')).toHaveText(
+      'Die Bank nimmt die ältesten Chargen zuerst: 140 × Q 74, 40 × Q 82.',
+    )
+    await expect(ticket.getByTestId('preview-rest')).toHaveText('180 Einh.')
+    await expect(ticket.getByTestId('chart-after')).toBeAttached()
+    await expect(sell).toBeInViewport()
+    expect(await panel.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+    await expect(page.locator('canvas#scene[data-props="ready"]')).toBeAttached()
+    await page.screenshot({ path: `docs/progress/20-market-bank-${width}.png` })
+
+    // A typed amount sells part of the stock through Sell, at the previewed income.
+    await amount.fill('100')
+    await expect(ticket.getByTestId('ticket-range')).toHaveValue('100')
+    const income = Number(
+      (await ticket.getByTestId('preview-income').textContent())!.replace(/\D/g, ''),
+    )
+    const money = page.getByTestId('money')
+    const before = Number((await money.textContent())!.replace(/\D/g, ''))
+    await sell.click()
+    await expect(money).toHaveText(`${(before + income).toLocaleString('de-DE')} CC`)
+    await expect(page.getByTestId('bank-row-robusta-raw').getByTestId('bank-stock')).toHaveText(
+      '260',
+    )
+    // After the sale the ticket goes back to "Alles".
+    await expect(amount).toHaveValue('260')
+    expect(errors).toEqual([])
   })
 }
