@@ -109,6 +109,7 @@ export const balanceSchema = z.object({
     supplyUnitsForHalfFactor: val(num.positive()),
     demandUnitsForHalfFactor: val(num.positive()),
     historyMonths: val(int),
+    bankMinQuality: val(num.min(0).max(100)),
   }),
   orders: z.object({
     maxOpen: val(int),

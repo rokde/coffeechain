@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { Balance } from '../../../config/balance.schema'
 import { balance } from '../balance'
 import { dispatch } from '../commands'
 import type { Variety } from '../farm/yield'
@@ -10,9 +11,13 @@ import {
   marketPrice,
   priceAt,
   priceHistory,
+  sell,
+  sellableUnits,
   sellIncome,
+  unsellableUnits,
   volumeOn,
   type Good,
+  type SellGood,
   type Volumes,
 } from './market'
 
@@ -384,5 +389,177 @@ describe('sell one row (#9)', () => {
     expect(() =>
       dispatch(state, { type: 'Sell', variety: 'robusta', units: 5, quality: 90, storedDay: 0 }),
     ).toThrow(/Not enough/)
+  })
+})
+
+describe('bank minimum quality (#38)', () => {
+  // Test config with another bank minimum quality.
+  const withMin = (bankMinQuality: number): Balance => ({
+    ...cfg,
+    market: { ...cfg.market, bankMinQuality },
+  })
+
+  // Robusta oldest first: Q 30, Q 80, Q 39, Q 40, a washed Q 20, then Arabica Q 10.
+  function mixed(): GameState {
+    const state = createState(1)
+    return {
+      ...state,
+      storage: {
+        batches: [
+          { variety: 'robusta', units: 4, quality: 30, storedDay: 0 },
+          { variety: 'robusta', units: 6, quality: 80, storedDay: 1 },
+          { variety: 'robusta', units: 3, quality: 39, storedDay: 2 },
+          { variety: 'robusta', units: 5, quality: 40, storedDay: 3 },
+          { variety: 'robusta', units: 7, quality: 20, storedDay: 0, washed: true, readyDay: 0 },
+          { variety: 'arabicaStandard', units: 2, quality: 10, storedDay: 0 },
+        ],
+      },
+    }
+  }
+
+  const raw: SellGood = { kind: 'coffee', variety: 'robusta' }
+  const washed: SellGood = { kind: 'washed', variety: 'robusta' }
+
+  it('the config starts at 0, so the bank buys every batch (PRD §6)', () => {
+    expect(m.bankMinQuality).toBe(0)
+  })
+
+  it.each([
+    // min, raw sellable, raw unsellable, washed sellable, washed unsellable
+    [0, 18, 0, 7, 0],
+    [20, 18, 0, 7, 0],
+    [21, 18, 0, 0, 7],
+    [40, 11, 7, 0, 7],
+    [81, 0, 18, 0, 7],
+  ])('min %i: sellable and unsellable stock per good', (min, rs, ru, ws, wu) => {
+    const state = mixed()
+    const c = withMin(min)
+    expect([sellableUnits(state, raw, c), unsellableUnits(state, raw, c)]).toEqual([rs, ru])
+    expect([sellableUnits(state, washed, c), unsellableUnits(state, washed, c)]).toEqual([ws, wu])
+  })
+
+  it('a washed batch that is still running is neither sellable nor unsellable', () => {
+    const state = mixed()
+    const running = {
+      ...state,
+      storage: {
+        batches: [
+          { variety: 'robusta' as const, units: 7, quality: 20, storedDay: 0 },
+          { variety: 'robusta' as const, units: 7, quality: 90, storedDay: 0 },
+        ].map((b) => ({ ...b, washed: true as const, readyDay: 30 })),
+      },
+    }
+    expect(sellableUnits(running, washed, withMin(50))).toBe(0)
+    expect(unsellableUnits(running, washed, withMin(50))).toBe(0)
+  })
+
+  it.each([
+    // min, units, robusta batches left (units per quality, oldest first)
+    [
+      0,
+      12,
+      [
+        [30, 0],
+        [80, 0],
+        [39, 1],
+        [40, 5],
+      ],
+    ],
+    [
+      40,
+      8,
+      [
+        [30, 4],
+        [80, 0],
+        [39, 3],
+        [40, 3],
+      ],
+    ],
+    [
+      40,
+      11,
+      [
+        [30, 4],
+        [80, 0],
+        [39, 3],
+        [40, 0],
+      ],
+    ],
+  ] as const)(
+    'min %i: a sale of %i units takes the oldest batches from the minimum on',
+    (min, units, left) => {
+      const state = mixed()
+      const next = sell(state, { type: 'Sell', variety: 'robusta', units }, withMin(min))
+      const robusta = (q: number) =>
+        next.storage.batches.find((b) => b.variety === 'robusta' && !b.washed && b.quality === q)
+          ?.units ?? 0
+      expect(left.map(([q]) => [q, robusta(q)])).toEqual(left)
+      expect(next.money - state.money).toBe(
+        sellIncome(state, 'robusta', units, false, withMin(min)),
+      )
+    },
+  )
+
+  it('a sale above the sellable stock fails and names the unsellable units', () => {
+    const state = mixed()
+    const c = withMin(40)
+    expect(() => sell(state, { type: 'Sell', variety: 'robusta', units: 12 }, c)).toThrow(
+      /11 < 12.*7 units below quality 40/,
+    )
+    expect(() =>
+      sell(state, { type: 'Sell', variety: 'robusta', units: 3, quality: 39, storedDay: 2 }, c),
+    ).toThrow(/0 < 3/)
+    expect(() =>
+      sell(state, { type: 'Sell', variety: 'robusta', units: 1, washed: true }, withMin(21)),
+    ).toThrow(/0 < 1/)
+  })
+
+  it('sellIncome counts only the sellable stock', () => {
+    const state = mixed()
+    const c = withMin(40)
+    expect(sellIncome(state, 'robusta', 18, false, c)).toBe(
+      sellIncome(state, 'robusta', 11, false, c),
+    )
+    expect(sellIncome(state, 'robusta', 7, true, withMin(21))).toBe(0)
+    // With minimum 0 nothing changes: all 18 units count.
+    expect(sellIncome(state, 'robusta', 18, false, withMin(0))).toBe(
+      sellIncome(state, 'robusta', 18),
+    )
+    expect(sellIncome(state, 'robusta', 18)).toBeGreaterThan(sellIncome(state, 'robusta', 11))
+  })
+
+  it.each([0, 55])('min %i: 200 seeded random sales never sell a batch below it', (min) => {
+    const rand = mulberry32(3800 + min)
+    const c = withMin(min)
+    const pick = (n: number) => Math.floor(rand() * n)
+    let state: GameState = {
+      ...createState(1),
+      storage: {
+        batches: Array.from({ length: 40 }, (_, i) => ({
+          variety: 'robusta' as const,
+          units: 1 + pick(20),
+          quality: pick(101),
+          storedDay: i,
+        })),
+      },
+    }
+    const below = (s: GameState) =>
+      s.storage.batches.filter((b) => b.quality < min).map((b) => [b.storedDay, b.units])
+    const kept = below(state)
+    for (let i = 0; i < 200; i++) {
+      const stock = sellableUnits(state, raw, c)
+      if (stock === 0) break
+      const units = 1 + pick(stock)
+      // The sold units are the oldest sellable ones.
+      const oldest = state.storage.batches.find((b) => b.quality >= min)!
+      const next = sell(state, { type: 'Sell', variety: 'robusta', units }, c)
+      expect(sellableUnits(next, raw, c)).toBe(stock - units)
+      const after = next.storage.batches.find((b) => b.storedDay === oldest.storedDay)
+      expect(after?.units ?? 0).toBe(Math.max(0, oldest.units - units))
+      state = next
+    }
+    expect(sellableUnits(state, raw, c)).toBe(0)
+    expect(below(state)).toEqual(kept)
+    expect(unsellableUnits(state, raw, c)).toBe(kept.reduce((sum, [, u]) => sum + u!, 0))
   })
 })
