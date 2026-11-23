@@ -3,7 +3,7 @@ import { balance } from '../balance'
 import { dispatch } from '../commands'
 import { createState, type GameState } from '../state'
 import { step } from '../time/time'
-import { dailyOrders, deliverableUnits, type Order } from './orders'
+import { dailyOrders, deliverableUnits, orderStock, type Order } from './orders'
 
 const cfg = balance()
 
@@ -171,5 +171,49 @@ describe('orders (S56)', () => {
     const next = dailyOrders(state)
     expect(next.orders.open.map((o) => o.id)).not.toContain(4)
     expect({ ...next, orders: state.orders }).toEqual(state)
+  })
+})
+
+describe('orderStock (#22)', () => {
+  const at = (batches: GameState['storage']['batches']): GameState => ({
+    ...withOrder(),
+    storage: { batches },
+  })
+
+  it('lists the qualifying lots in delivery order, one per quality', () => {
+    const state = at([
+      { variety: 'robusta', units: 10, quality: 90, storedDay: 0 },
+      { variety: 'robusta', units: 20, quality: 82, storedDay: 3 },
+      { variety: 'robusta', units: 5, quality: 82, storedDay: 1 },
+      { variety: 'robusta', units: 7, quality: 85, storedDay: 0, washed: true, readyDay: 0 },
+      { variety: 'arabicaStandard', units: 50, quality: 95, storedDay: 0 },
+    ])
+    const stock = orderStock(state, order)
+    expect(stock.have).toBe(35)
+    expect(stock.have).toBe(deliverableUnits(state, order))
+    expect(stock.lots).toEqual([
+      { quality: 82, units: 25 },
+      { quality: 90, units: 10 },
+    ])
+  })
+
+  it('names the best raw lot below the minimum quality', () => {
+    const state = at([
+      { variety: 'robusta', units: 10, quality: 60, storedDay: 0 },
+      { variety: 'robusta', units: 30, quality: 79, storedDay: 0 },
+      { variety: 'robusta', units: 20, quality: 79, storedDay: 4 },
+      { variety: 'robusta', units: 9, quality: 95, storedDay: 0, washed: true, readyDay: 0 },
+      { variety: 'robusta', units: 4, quality: 80, storedDay: 0 },
+    ])
+    const stock = orderStock(state, order)
+    expect(stock).toEqual({
+      have: 4,
+      lots: [{ quality: 80, units: 4 }],
+      near: { quality: 79, units: 50 },
+    })
+  })
+
+  it('has no lots and no near lot with an empty storage', () => {
+    expect(orderStock(at([]), order)).toEqual({ have: 0, lots: [], near: undefined })
   })
 })

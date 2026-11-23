@@ -38,6 +38,40 @@ const qualifies = (order: Order) => (b: Batch) =>
 export const deliverableUnits = (state: GameState, order: Order): number =>
   state.storage.batches.filter(qualifies(order)).reduce((sum, b) => sum + b.units, 0)
 
+// Units of one quality in storage.
+export interface Lot {
+  quality: number
+  units: number
+}
+
+export interface OrderStock {
+  // Qualifying units.
+  have: number
+  // Qualifying lots, lowest quality first: the order in which a delivery takes them.
+  lots: Lot[]
+  // The best raw lot of the variety below the minimum quality.
+  near: Lot | undefined
+}
+
+const lotsOf = (batches: Batch[]): Lot[] => {
+  const units = new Map<number, number>()
+  for (const b of batches) units.set(b.quality, (units.get(b.quality) ?? 0) + b.units)
+  return [...units]
+    .map(([quality, n]) => ({ quality, units: n }))
+    .sort((a, b) => a.quality - b.quality)
+}
+
+// The stock that matches an order, for the order card. Reads the state only.
+export function orderStock(state: GameState, order: Order): OrderStock {
+  const lots = lotsOf(state.storage.batches.filter(qualifies(order)))
+  const below = lotsOf(
+    state.storage.batches.filter(
+      (b) => b.variety === order.variety && !b.washed && b.quality < order.minQuality,
+    ),
+  )
+  return { have: lots.reduce((sum, l) => sum + l.units, 0), lots, near: below.at(-1) }
+}
+
 // Runs once per day: drops expired orders and may post one new order.
 export function dailyOrders(state: GameState): GameState {
   const cfg = balance()
