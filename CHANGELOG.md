@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.7.0](https://github.com/rokde/coffeechain/compare/v0.6.0...v0.7.0) (2026-11-23)
+
+
+### Features
+
+* bank minimum quality for sales in the sim ([#38](https://github.com/rokde/coffeechain/issues/38)) ([f1d3b8e](https://github.com/rokde/coffeechain/commit/f1d3b8eaa8afcf819f103c1a9fc40ccd18e3054c))
+* bank minimum quality for sales in the sim ([#38](https://github.com/rokde/coffeechain/issues/38)) ([881f216](https://github.com/rokde/coffeechain/commit/881f216ec9c1fcedd75182f0f5d2bc181f67885d))
+* decaying market volume and a smooth price curve ([#18](https://github.com/rokde/coffeechain/issues/18)) ([#51](https://github.com/rokde/coffeechain/issues/51)) ([f249358](https://github.com/rokde/coffeechain/commit/f249358c5b226644b1fa890a2b8855308a27851d))
+* order cards with buyer, deadline, bank comparison and matching stock ([#22](https://github.com/rokde/coffeechain/issues/22)) ([#57](https://github.com/rokde/coffeechain/issues/57)) ([d0c9454](https://github.com/rokde/coffeechain/commit/d0c94540a56758b32d3acd419e656ed2ead598a7))
+* sell strategies bank-now, hold and orders for the balance bot ([#50](https://github.com/rokde/coffeechain/issues/50)) ([1fdeab2](https://github.com/rokde/coffeechain/commit/1fdeab2fb468e4aaa90767468cbc1b66c542e8d8))
+* sell UI with amount, preview and a fixed-scale price chart ([#20](https://github.com/rokde/coffeechain/issues/20)) ([#59](https://github.com/rokde/coffeechain/issues/59)) ([eb6d1dc](https://github.com/rokde/coffeechain/commit/eb6d1dc8ebcd6d6dc7e524bd0c4f3f542e76969b))
+* **tools:** sell strategies for the balance bot ([#50](https://github.com/rokde/coffeechain/issues/50)) ([d4b12db](https://github.com/rokde/coffeechain/commit/d4b12dbc4a280df4ea074b635496eda5822cc734))
+
 ## [0.6.0](https://github.com/rokde/coffeechain/compare/v0.5.0...v0.6.0) (2026-11-08)
 
 ### Features
